@@ -13,6 +13,7 @@ import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
 
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 256;
 const HAS_GOOGLE = !!process.env.NEXT_PUBLIC_GOOGLE_ENABLED;
 const RESEND_COOLDOWN_MS = 30_000;
 
@@ -136,6 +137,8 @@ function SignupInner() {
           setError("That email is already registered. Sign in or reset your password.");
         } else if (code === "PASSWORD_TOO_SHORT" || /password.*short/i.test(error.message ?? "")) {
           setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+        } else if (code === "PASSWORD_TOO_LONG" || /password.*long/i.test(error.message ?? "")) {
+          setError(`Password must be ${MAX_PASSWORD_LENGTH} characters or fewer.`);
         } else {
           setError(error.message ?? "Sign-up failed");
         }
@@ -230,6 +233,7 @@ function SignupInner() {
                     <FieldLabel htmlFor="signup-display-name">Display name</FieldLabel>
                     <Input
                       id="signup-display-name"
+                      aria-label="Display name"
                       type="text"
                       autoComplete="name"
                       value={displayName}
@@ -242,6 +246,7 @@ function SignupInner() {
                     <FieldLabel htmlFor="signup-email">Email</FieldLabel>
                     <Input
                       id="signup-email"
+                      aria-label="Email"
                       type="email"
                       autoComplete="email"
                       value={email}
@@ -255,9 +260,11 @@ function SignupInner() {
                     <FieldLabel htmlFor="signup-password">Password</FieldLabel>
                     <Input
                       id="signup-password"
+                      aria-label="Password"
                       type="password"
                       autoComplete="new-password"
                       minLength={MIN_PASSWORD_LENGTH}
+                      maxLength={MAX_PASSWORD_LENGTH}
                       value={password}
                       onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
                       required
@@ -372,19 +379,19 @@ function CheckInboxCard({
         >
           {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend email"}
         </Button>
-        <div className="flex w-full items-center justify-between text-sm">
+        <div className="flex w-full flex-col items-stretch gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
             onClick={onUseDifferentEmail}
             variant="link"
             size="sm"
-            className="px-0 text-muted-foreground"
+            className="justify-start px-0 text-muted-foreground sm:justify-center"
           >
             Use a different email
           </Button>
           <Link
             href={nextPath !== "/" ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}
-            className="text-muted-foreground hover:text-foreground"
+            className="inline-flex min-h-8 items-center text-muted-foreground hover:text-foreground"
           >
             Already verified? Sign in
           </Link>

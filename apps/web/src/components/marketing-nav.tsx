@@ -1,8 +1,9 @@
 "use client";
 
+import type React from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronDown, Menu as MenuIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -86,11 +87,87 @@ export function MarketingNav() {
           </MarketingButton>
         </nav>
 
-        <MarketingButton href="/signup" variant="nav-primary" className="md:!hidden">
-          Start
-        </MarketingButton>
+        <div className="flex items-center gap-2 md:hidden">
+          <MobileNavDropdown />
+          <MarketingButton href="/signup" variant="nav-primary">
+            Start
+          </MarketingButton>
+        </div>
       </div>
     </header>
+  );
+}
+
+function MobileNavDropdown() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <DropdownMenu onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        aria-label="Open marketing navigation"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-zinc-100 transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <MenuIcon className="h-4 w-4" aria-hidden="true" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-64 !border-zinc-800 !bg-zinc-950 !text-zinc-100 !shadow-[0_18px_45px_rgba(0,0,0,0.45)]"
+      >
+        <MobileNavItem href="/runtimes" label="Runtimes" />
+        <MobileNavItem href="/connectors" label="Connectors" />
+        <MobileNavItem href="/desktop" label="Desktop beta" />
+        <MobileNavItem href="/security" label="Security" />
+        <MobileNavItem href="/indie" label="For indie devs" description="Solo dev / AI tinkerer" />
+        <MobileNavItem
+          href="/teams"
+          label="For teams"
+          description="Mid-market eng orgs"
+          suffix={(
+            <Chip
+              size="sm"
+              variant="soft"
+              color="warning"
+              className="!bg-[var(--warning-soft)] !text-[9px] !text-[var(--warning)] uppercase tracking-wider"
+            >
+              Waitlist
+            </Chip>
+          )}
+        />
+        <MobileNavItem href="/login" label="Sign in" />
+        <MobileNavItem href="/signup" label="Get started" />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function MobileNavItem({
+  href,
+  label,
+  description,
+  suffix,
+}: {
+  href: string;
+  label: string;
+  description?: string;
+  suffix?: React.ReactNode;
+}) {
+  return (
+    <DropdownMenuItem
+      href={href}
+      textValue={label}
+      className="!px-3 !py-2.5 !text-zinc-100 hover:!bg-white/[0.06] focus-visible:!bg-white/[0.08]"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-zinc-100">{label}</span>
+          {suffix}
+        </div>
+        {description && <div className="mt-0.5 text-[11.5px] text-zinc-400">{description}</div>}
+      </div>
+    </DropdownMenuItem>
   );
 }
 
@@ -107,7 +184,7 @@ function ForDropdown() {
   return (
     <DropdownMenu onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+        className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -138,7 +215,7 @@ function ForDropdown() {
                 size="sm"
                 variant="soft"
                 color="warning"
-                className="!bg-amber-400/15 !text-[9px] !text-amber-300 uppercase tracking-wider"
+                className="!bg-[var(--warning-soft)] !text-[9px] !text-[var(--warning)] uppercase tracking-wider"
               >
                 Waitlist
               </Chip>

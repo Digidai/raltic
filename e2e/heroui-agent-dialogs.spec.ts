@@ -2,6 +2,7 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import {
   assertOverlayMetrics,
+  assertSelectedRadioOwnsSingleSurface,
   contrast,
   json,
   overlayMetrics,
@@ -163,12 +164,13 @@ test("create agent dialog covers mobile viewport, runtime controls, and iOS-safe
   await dialog.getByLabel("Description").fill("Tracks open research threads.");
   await dialog.getByLabel("System prompt").fill("You summarize research clearly.");
 
-  await dialog.getByRole("button", { name: /My machine \(Bridge\)/ }).click();
-  await expect(dialog.getByRole("group", { name: "Runtime" })).toBeVisible();
-  await dialog.getByRole("button", { name: /OpenAI Codex/ }).click();
-  await expect(dialog.getByRole("button", { name: /OpenAI Codex/ })).toHaveAttribute("aria-pressed", "true");
-  await dialog.getByRole("button", { name: "gpt-5.4", exact: true }).click();
-  await expect(dialog.getByRole("button", { name: "gpt-5.4", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await dialog.locator("[data-slot='radio']").filter({ hasText: "My machine (Bridge)" }).click();
+  await assertSelectedRadioOwnsSingleSurface(dialog.getByRole("radio", { name: /My machine \(Bridge\)/ }), "agent runtime mode");
+  await expect(dialog.getByRole("radiogroup", { name: "Runtime" })).toBeVisible();
+  await dialog.locator("[data-slot='radio']").filter({ hasText: "OpenAI Codex" }).click();
+  await assertSelectedRadioOwnsSingleSurface(dialog.getByRole("radio", { name: /OpenAI Codex/ }), "agent runtime");
+  await dialog.getByLabel("Agent model").selectOption("gpt-5.4");
+  await expect(dialog.getByLabel("Agent model")).toHaveValue("gpt-5.4");
 
   await assertDialogFooterVisibleInVisualViewport(page, dialogName, 500);
   await expect(dialog.getByRole("button", { name: "Create" })).toBeVisible();
@@ -200,7 +202,7 @@ test("edit agent dialog from settings loads readable content without horizontal 
   await expect(dialog.getByLabel("Identifier")).toHaveValue("cloud-test");
   await expect(dialog.getByLabel("Display name")).toHaveValue("Cloud Test Agent");
   await expect(dialog.getByLabel("Description")).toHaveValue("Runs in Raltic cloud");
-  await expect(dialog.getByRole("group", { name: "Model" })).toContainText("claude-haiku-4-5");
+  await expect(dialog.getByLabel("Agent model")).toHaveValue("claude-haiku-4-5");
 
   await dialog.getByLabel("Display name").focus();
   await assertFocusedControlKeepsIosSafeFontSize(page);

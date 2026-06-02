@@ -141,12 +141,13 @@ export default function ConnectorsPage() {
             </Field>
             <Field>
               <FieldLabel htmlFor="connector-label">Label</FieldLabel>
-              <Input id="connector-label" value={label} onChange={e => setLabel(e.target.value)} placeholder="personal-gh" />
+              <Input id="connector-label" aria-label="Connector label" value={label} onChange={e => setLabel(e.target.value)} placeholder="personal-gh" />
             </Field>
             <Field>
               <FieldLabel htmlFor="connector-token">Token</FieldLabel>
               <Input
                 id="connector-token"
+                aria-label="Connector token"
                 type="password"
                 value={token}
                 onChange={e => setToken(e.target.value)}

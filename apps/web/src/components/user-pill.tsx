@@ -8,6 +8,8 @@ import {
   DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
   DropdownMenuGroup,
 } from "@/components/heroui-pro/menu";
+import { CardPanel } from "@/components/heroui-pro/card";
+import { Chip } from "@/components/heroui-pro/chip";
 import { notifyThrown } from "@/lib/notify";
 import { WorkspaceMenuSection } from "./workspace-switcher";
 
@@ -48,7 +50,7 @@ export function UserPill({
   // review MED — without the reservation the footer jumps ~14px.
   if (isPending || !session?.user) {
     return (
-      <div className="flex items-center gap-2 rounded-[9px] border border-border bg-surface/85 px-2 py-1.5 !shadow-none dark:border-white/10 dark:bg-white/5">
+      <CardPanel render={<div />} className="flex items-center gap-2 rounded-[9px] border border-border bg-[var(--surface-secondary)] px-2 py-1.5">
         <div className="h-8 w-8 animate-pulse rounded-xl bg-muted/60" />
         <div className="min-w-0 flex-1">
           {/* Skeleton heights match the resolved pill: name row uses
@@ -59,7 +61,7 @@ export function UserPill({
           <div className="h-3 w-20 animate-pulse rounded bg-muted/40" />
           <div className="mt-0.5 h-3 w-14 animate-pulse rounded bg-muted/30" />
         </div>
-      </div>
+      </CardPanel>
     );
   }
 
@@ -70,7 +72,7 @@ export function UserPill({
     <DropdownMenu onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger
         data-testid="user-pill-trigger"
-        className="group flex w-full items-center gap-2 rounded-[9px] border border-border bg-surface/85 px-2 py-1.5 text-left !shadow-none transition-colors hover:border-accent/25 hover:bg-surface focus:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
+        className="group flex w-full items-center gap-2 rounded-[9px] border border-border bg-[var(--surface-secondary)] px-2 py-1.5 text-left !shadow-none transition-colors hover:border-accent/25 hover:bg-surface-secondary focus:bg-surface-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         // No aria-label here — when present, it OVERRIDES the accessible
         // name computed from contents, hiding the visible username from
         // screen readers. The trigger's accessible name now comes from
@@ -88,7 +90,7 @@ export function UserPill({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-amber-500 text-xs font-semibold text-white shadow-sm">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),var(--warning))] text-xs font-semibold text-[var(--accent-foreground)] shadow-sm ring-1 ring-accent/20">
             {initial}
           </div>
         )}
@@ -106,7 +108,7 @@ export function UserPill({
               (mirrored in the sr-only suffix above for AT users). */}
           <SelfStatusLine />
         </div>
-        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[7px] bg-default text-muted-foreground transition-colors group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-soft-foreground)] dark:bg-white/10">
+        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[7px] bg-default text-muted-foreground transition-colors group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-soft-foreground)]">
           <ChevronUp className="h-3 w-3" aria-hidden="true" />
         </span>
       </DropdownMenuTrigger>
@@ -162,12 +164,18 @@ export function UserPill({
  */
 function SelfStatusLine() {
   return (
-    <div className="mt-0.5 flex items-center gap-1 text-[10px] leading-tight text-muted-foreground">
+    <Chip
+      size="sm"
+      variant="soft"
+      color="success"
+      className="mt-0.5 h-auto gap-1 rounded-full px-1.5 py-0 text-[10px] leading-tight"
+      data-raltic-self-status="online"
+    >
       <span
-        className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_4px_rgba(16,185,129,0.55)]"
+        className="h-1.5 w-1.5 rounded-full bg-success"
         aria-hidden="true"
       />
       Online
-    </div>
+    </Chip>
   );
 }

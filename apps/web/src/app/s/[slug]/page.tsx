@@ -245,7 +245,7 @@ export default function ServerHomePage() {
                 size="sm"
                 className="w-full justify-center sm:w-auto"
               >
-                <Sparkles className="h-3.5 w-3.5 text-cyan-600" />
+                <Sparkles className="h-3.5 w-3.5 text-[var(--accent-soft-foreground)]" />
                 Set up your bridge in your own workspace to bring YOUR agents online
                 <ExternalLink className="h-3 w-3 opacity-60" />
               </Button>

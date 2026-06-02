@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Hash, Lock, Search, X } from "lucide-react";
+import { Hash, Lock, Search, X } from "lucide-react";
 import {
   Dialog, DialogPortal, DialogBackdrop, DialogPopup,
   DialogHeader, DialogTitle, DialogPanel, DialogFooter, DialogClose,
@@ -9,6 +9,10 @@ import {
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
+import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
+import { Checkbox } from "@/components/heroui-pro/checkbox";
+import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
+import { Chip } from "@/components/heroui-pro/chip";
 import { api, ApiError, type Agent } from "@/lib/api";
 
 interface Props {
@@ -148,6 +152,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                     </span>
                     <Input
                       id="channel-name"
+                      aria-label="Channel name"
                       className="pl-7"
                       value={name}
                       required
@@ -166,6 +171,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                   <FieldLabel htmlFor="channel-desc">Description <span className="text-muted-foreground">(optional)</span></FieldLabel>
                   <Input
                     id="channel-desc"
+                    aria-label="Channel description"
                     value={description}
                     onChange={(e) => setDescription((e.target as HTMLInputElement).value)}
                     placeholder="What is this channel for?"
@@ -174,16 +180,18 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                 </Field>
                 <Field>
                   <FieldLabel id="create-channel-visibility-label">Visibility</FieldLabel>
-                  <div role="group" aria-labelledby="create-channel-visibility-label" className="flex flex-col gap-2 sm:flex-row">
+                  <RadioGroup
+                    aria-labelledby="create-channel-visibility-label"
+                    value={type}
+                    onValueChange={(next) => setType(next === "private" ? "private" : "public")}
+                    className="grid gap-2 sm:grid-cols-2"
+                  >
                     {(["public", "private"] as const).map((t) => (
-                      <Button key={t} type="button"
-                        onClick={() => setType(t)}
-                        aria-pressed={type === t}
-                        variant="outline"
-                        size="sm"
-                        className={`!h-auto min-w-0 flex-1 flex-col !items-stretch !justify-start !whitespace-normal rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
-                          type === t ? "border-cyan-500 bg-cyan-500/10 text-foreground" : "border-border hover:bg-accent/40"
-                        }`}>
+                      <Radio
+                        key={t}
+                        value={t}
+                        controlClassName="mt-0.5"
+                      >
                         <div className="flex items-center gap-2 font-medium">
                           {t === "public" ? <Hash className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
                           {t === "public" ? "Public" : "Private"}
@@ -193,9 +201,9 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                             ? "Anyone in the workspace can find and join."
                             : "Only invited members can see this channel."}
                         </div>
-                      </Button>
+                      </Radio>
                     ))}
-                  </div>
+                  </RadioGroup>
                 </Field>
 
                 {/* Member / agent picker */}
@@ -212,6 +220,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                     <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="create-channel-member-search"
+                      aria-label="Search people or agents"
                       className="pl-7"
                       placeholder="Search people or agents"
                       value={query}
@@ -240,7 +249,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                                 avatar={m.image ? (
                                   <img src={m.image} alt="" className="h-6 w-6 rounded-full" referrerPolicy="no-referrer" />
                                 ) : (
-                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/10 text-[10px] font-semibold text-cyan-700 dark:text-cyan-300">
+                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[10px] font-semibold text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">
                                     {m.name.slice(0, 1).toUpperCase()}
                                   </div>
                                 )}
@@ -259,7 +268,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                                 checked={selectedAgents.has(a.id)}
                                 onToggle={() => toggleAgent(a.id)}
                                 avatar={
-                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/10 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[10px] font-semibold text-[var(--warning-soft-foreground)] ring-1 ring-warning/15">
                                     {a.displayName.slice(0, 1).toUpperCase()}
                                   </div>
                                 }
@@ -298,7 +307,9 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                 </Field>
 
                 {error && (
-                  <p role="alert" className="text-sm text-danger-text">{error}</p>
+                  <Alert variant="error">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
               </div>
             </DialogPanel>
@@ -318,15 +329,14 @@ function PickerRow({ checked, onToggle, avatar, primary, secondary }: {
   primary: string; secondary?: string;
 }) {
   return (
-    <Button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={checked}
-      variant="ghost"
-      size="sm"
-      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
-        checked ? "bg-cyan-500/10 text-foreground" : "hover:bg-accent/40"
-      } text-foreground`}
+    <Checkbox
+      checked={checked}
+      onCheckedChange={() => onToggle()}
+      aria-label={secondary ? `${primary}, ${secondary}` : primary}
+      surface="list"
+      className="w-full rounded-none border-0 px-3 py-2 text-sm"
+      controlClassName="mt-1"
+      contentClassName="flex min-w-0 flex-1 items-center gap-2.5"
     >
       {avatar}
       <div className="min-w-0 flex-1">
@@ -335,23 +345,13 @@ function PickerRow({ checked, onToggle, avatar, primary, secondary }: {
           <div className={`truncate text-[10.5px] ${checked ? "text-foreground/80" : "text-muted-foreground"}`}>{secondary}</div>
         )}
       </div>
-      <span
-        aria-hidden="true"
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-          checked ? "border-foreground bg-foreground text-background" : "border-border"
-        }`}
-      >
-        {checked && <Check className="h-3 w-3" />}
-      </span>
-    </Button>
+    </Checkbox>
   );
 }
 
 function SelectedChip({ label, agent, onRemove }: { label: string; agent?: boolean; onRemove: () => void }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-      agent ? "bg-amber-500/10 text-amber-700 dark:text-amber-300" : "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300"
-    }`}>
+    <Chip size="sm" variant="soft" color={agent ? "warning" : "accent"} className="gap-1 pr-1 text-[11px] font-medium">
       {label}
       <Button
         type="button"
@@ -363,6 +363,6 @@ function SelectedChip({ label, agent, onRemove }: { label: string; agent?: boole
       >
         <X className="h-3 w-3" />
       </Button>
-    </span>
+    </Chip>
   );
 }

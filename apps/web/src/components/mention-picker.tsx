@@ -25,10 +25,12 @@
  *   - Doesn't fuzzy-match — strict prefix/contains. Good enough until
  *     members grow > 50.
  */
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { AtSign, Bot } from "lucide-react";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { Button } from "@/components/heroui-pro/button";
+import { Card } from "@/components/heroui-pro/card";
+import { Chip } from "@/components/heroui-pro/chip";
 import { cn } from "@/lib/utils";
 
 export interface MentionMember {
@@ -183,12 +185,12 @@ export function useMentionPicker({ members, onPick }: UseMentionPickerOpts) {
   const render = useCallback(() => {
     if (!open || filtered.length === 0) return null;
     return (
-      <div
-        ref={panelRef}
+      <Card
+        render={<div ref={panelRef} />}
         id={listboxId}
         role="listbox"
         aria-label="Mention picker"
-        className="pointer-events-auto mb-2 max-h-72 w-72 overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
+        className="pointer-events-auto mb-2 max-h-72 w-72 overflow-y-auto rounded-xl bg-[var(--popover)] p-1 text-[var(--overlay-foreground)] shadow-overlay"
         // pointerdown puts us in mouse mode so the next hover applies;
         // when navigating by keyboard the mouse pointer over the panel
         // doesn't steal the active option.
@@ -197,18 +199,22 @@ export function useMentionPicker({ members, onPick }: UseMentionPickerOpts) {
         {filtered.map((m, idx) => (
           <Button
             key={`${m.kind}:${m.id}`}
+            render={createElement("div")}
             id={optionId(idx)}
             role="option"
             aria-selected={idx === activeIdx}
-            type="button"
             variant="ghost"
             size="sm"
+            tabIndex={-1}
             onMouseDown={(e) => { e.preventDefault(); pick(idx); }}
             onMouseEnter={() => { if (mode === "mouse") setActiveIdx(idx); }}
             className={cn(
               "!h-auto !w-full !justify-start !whitespace-normal rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
-              idx === activeIdx ? "bg-cyan-500/10 text-foreground ring-1 ring-cyan-500/25" : "hover:bg-accent/50",
+              idx === activeIdx
+                ? "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/20"
+                : "hover:bg-default",
             )}
+            style={idx === activeIdx ? { background: "var(--accent-soft)" } : undefined}
           >
             <div className="shrink-0">
               {m.image
@@ -220,9 +226,9 @@ export function useMentionPicker({ members, onPick }: UseMentionPickerOpts) {
               <div className="flex items-center gap-1 truncate text-[13px] font-medium">
                 <span className="truncate">{m.displayName}</span>
                 {m.kind === "agent" && (
-                  <span className="inline-flex items-center gap-0.5 rounded-full bg-cyan-500/10 px-1 py-px text-[9px] font-medium uppercase tracking-wider text-cyan-700 dark:text-cyan-400">
+                  <Chip size="sm" variant="soft" color="accent" className="gap-0.5 text-[9px] font-medium uppercase tracking-wider">
                     <Bot className="h-2.5 w-2.5" /> AI
-                  </span>
+                  </Chip>
                 )}
               </div>
               <div className={cn("truncate text-[11px]", idx === activeIdx ? "text-foreground/80" : "text-muted-foreground")}>@{m.slug}</div>
@@ -233,7 +239,7 @@ export function useMentionPicker({ members, onPick }: UseMentionPickerOpts) {
         <div className="border-t px-2 pt-1.5 pb-1 text-[10px] text-muted-foreground">
           ↑↓ navigate · enter / tab pick · esc cancel
         </div>
-      </div>
+      </Card>
     );
   }, [open, filtered, activeIdx, pick, listboxId, mode, optionId]);
 

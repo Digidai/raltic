@@ -1,18 +1,18 @@
 /**
  * Raltic brand primitives — tiny set of building blocks so we don't
- * repeat the cyan→amber gradient string in 20 files. Keep it small.
+ * repeat token-gradient strings in 20 files. Keep it small.
  */
 
 import { cn } from "@/lib/utils";
 
-/** Two-stop brand gradient as a text fill — use for hero words / titles. */
+/** Token-driven brand gradient as a text fill — use for hero words / titles. */
 export function GradientText({
   className,
   children,
 }: { className?: string; children: React.ReactNode }) {
   return (
     <span className={cn(
-      "bg-gradient-to-r from-cyan-500 via-cyan-600 to-amber-500 bg-clip-text text-transparent",
+      "bg-[linear-gradient(90deg,var(--accent),var(--accent-hover),var(--warning))] bg-clip-text text-transparent",
       className,
     )}>
       {children}
@@ -22,9 +22,8 @@ export function GradientText({
 
 /** Small monogram circle filled with the brand gradient — used as the
  *  workspace icon in the sidebar header so the chrome carries the brand
- *  without resorting to a logo image. Jelly-style: layered radial
- *  highlights + colored drop-glow so it reads as glossy, not a flat
- *  CSS-gradient disc. */
+ *  without resorting to a logo image. Uses Raltic theme tokens so it
+ *  follows the installed HeroUI Pro theme instead of a fixed hue pair. */
 export function BrandMonogram({
   letter,
   size = "md",
@@ -43,23 +42,23 @@ export function BrandMonogram({
   return (
     <div
       className={cn(
-        "relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold text-white ring-1 ring-black/10",
+        "relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold text-[var(--accent-foreground)] ring-1 ring-accent/20",
         sizes[size],
         className,
       )}
       style={{
         background: [
-          "radial-gradient(circle at 28% 22%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%)",
-          "radial-gradient(circle at 72% 78%, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0) 55%)",
-          "linear-gradient(140deg, hsl(190,90%,55%) 0%, hsl(38,95%,58%) 100%)",
+          "radial-gradient(circle at 28% 22%, color-mix(in srgb, var(--white) 55%, transparent) 0%, transparent 42%)",
+          "radial-gradient(circle at 72% 78%, color-mix(in srgb, var(--black) 20%, transparent) 0%, transparent 55%)",
+          "linear-gradient(140deg, var(--accent) 0%, var(--warning) 100%)",
         ].join(", "),
         boxShadow: [
-          "inset 0 1px 0 rgba(255,255,255,0.5)",
-          "inset 0 -2px 4px rgba(0,0,0,0.18)",
-          "0 4px 14px -4px rgba(6,182,212,0.55)",
-          "0 2px 6px -2px rgba(245,158,11,0.4)",
+          "inset 0 1px 0 color-mix(in srgb, var(--white) 48%, transparent)",
+          "inset 0 -2px 4px color-mix(in srgb, var(--black) 18%, transparent)",
+          "0 4px 14px -4px color-mix(in srgb, var(--accent) 55%, transparent)",
+          "0 2px 6px -2px color-mix(in srgb, var(--warning) 40%, transparent)",
         ].join(", "),
-        textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+        textShadow: "0 1px 2px color-mix(in srgb, var(--black) 18%, transparent)",
       }}
       aria-hidden
     >
@@ -72,14 +71,14 @@ export function BrandMonogram({
   );
 }
 
-/** Section divider that fades cyan→transparent — used between sidebar
+/** Section divider that fades through the current accent — used between sidebar
  *  groups to add a hint of structure without a hard line. */
 export function BrandHairline({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
       className={cn(
-        "h-px bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent",
+        "h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--accent)_28%,transparent),transparent)]",
         className,
       )}
     />

@@ -142,9 +142,9 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
                     size="sm"
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "h-8 w-full justify-start gap-2 rounded-[8px] border-l-2 px-2.5 text-sm",
+                      "h-8 w-full justify-start gap-2 rounded-[8px] border px-2.5 text-sm transition-[background-color,color,border-color,box-shadow]",
                       active
-                        ? "border-accent bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]"
+                        ? "border-accent/25 bg-[var(--accent-soft)] text-foreground shadow-xs"
                         : "border-transparent text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
                     )}
                   >
@@ -173,9 +173,9 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
                     size="sm"
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "h-8 w-full justify-start gap-1.5 rounded-[8px] border-l-2 px-2.5 text-xs",
+                      "h-8 w-full justify-start gap-1.5 rounded-[8px] border px-2.5 text-xs transition-[background-color,color,border-color,box-shadow]",
                       active
-                        ? "border-accent bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]"
+                        ? "border-accent/25 bg-[var(--accent-soft)] text-foreground shadow-xs"
                         : "border-transparent text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
                     )}
                   >

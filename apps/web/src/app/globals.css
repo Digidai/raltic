@@ -42,9 +42,9 @@
   --accent: #54A783;
   --accent-foreground: #18181B;
   --accent-hover: #4B9675;
-  --accent-soft: rgba(84, 167, 131, 0.15);
+  --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
   --accent-soft-foreground: #437861;
-  --accent-soft-hover: rgba(84, 167, 131, 0.2);
+  --accent-soft-hover: color-mix(in srgb, var(--accent) 20%, transparent);
   --danger: #DE365C;
   --danger-foreground: #FCFCFC;
   --danger-text: var(--danger-soft-foreground);
@@ -340,9 +340,9 @@
   --accent: #54A783;
   --accent-foreground: #18181B;
   --accent-hover: #4B9675;
-  --accent-soft: rgba(84, 167, 131, 0.12);
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
   --accent-soft-foreground: #85BEA3;
-  --accent-soft-hover: rgba(84, 167, 131, 0.16);
+  --accent-soft-hover: color-mix(in srgb, var(--accent) 16%, transparent);
   --danger: #DE365C;
   --danger-foreground: #FCFCFC;
   --danger-text: var(--danger-soft-foreground);
@@ -571,6 +571,11 @@
   box-shadow: none !important;
   gap: 0.5rem !important;
   padding-block: 0 !important;
+}
+
+[data-slot="checkbox"].raltic-checkbox--selected {
+  background-color: var(--accent-soft);
+  color: var(--accent-soft-foreground);
 }
 
 .raltic-overlay-scope {

@@ -6,6 +6,7 @@ import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/heroui-pro/alert";
+import { getApiOrigin } from "@/lib/auth-client";
 
 /**
  * Compact email-only signup. Sits at the bottom of /indie and /teams
@@ -31,7 +32,8 @@ export function NewsletterSignup({ apiOrigin, page = "/" }: {
 
     const utm = readUtmCookie();
     try {
-      const res = await fetch(`${apiOrigin}/api/v1/marketing/newsletter`, {
+      const requestOrigin = getApiOrigin(apiOrigin === "https://api.raltic.com" ? undefined : apiOrigin);
+      const res = await fetch(`${requestOrigin}/api/v1/marketing/newsletter`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -74,15 +76,15 @@ export function NewsletterSignup({ apiOrigin, page = "/" }: {
   return (
     <form
       onSubmit={handleSubmit}
-      // position:relative so absolute error overlay anchors here (Claude L6).
       // aria-busy so AT announces the in-flight state (codex 5 MED).
       aria-busy={state === "submitting"}
-      className="relative flex flex-col items-stretch gap-2 sm:flex-row sm:items-center"
+      className="relative flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center"
     >
-      <Field>
+      <Field className="min-w-0 flex-1">
         <FieldLabel htmlFor="newsletter-email" className="sr-only">Your email address</FieldLabel>
         <Input
           id="newsletter-email"
+          aria-label="Your email address"
           type="email"
           required
           autoComplete="email"
@@ -110,7 +112,7 @@ export function NewsletterSignup({ apiOrigin, page = "/" }: {
         )}
       </Button>
       {state === "error" && msg && (
-        <div className="sm:absolute sm:mt-12">
+        <div className="sm:basis-full">
           <Alert variant="error">
             <AlertDescription>{msg}</AlertDescription>
           </Alert>

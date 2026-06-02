@@ -165,7 +165,7 @@ function LoginInner() {
                 )}
                 <Field>
                   <FieldLabel htmlFor="login-email">Email</FieldLabel>
-                  <Input id="login-email" type="email" required autoComplete="email" value={email}
+                  <Input id="login-email" aria-label="Email" type="email" required autoComplete="email" value={email}
                     onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
                     placeholder="you@example.com" />
                 </Field>
@@ -178,7 +178,7 @@ function LoginInner() {
                       </Link>
                     </span>
                   </FieldLabel>
-                  <Input id="login-password" type="password" required autoComplete="current-password" value={password}
+                  <Input id="login-password" aria-label="Password" type="password" required autoComplete="current-password" value={password}
                     onChange={(e) => setPassword((e.target as HTMLInputElement).value)}
                     placeholder="Your password" />
                 </Field>

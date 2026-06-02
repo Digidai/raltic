@@ -222,9 +222,9 @@ function AgentRow({
   onDelete: () => void;
 }) {
   const statusColor =
-    agent.status === "online" ? "bg-emerald-500"
-    : agent.status === "sleeping" ? "bg-amber-500"
-    : "bg-zinc-400";
+    agent.status === "online" ? "bg-[var(--success)]"
+    : agent.status === "sleeping" ? "bg-[var(--warning)]"
+    : "bg-muted-foreground/70";
   const statusLabel =
     agent.status === "online" ? "online"
     : agent.status === "sleeping" ? "idle"

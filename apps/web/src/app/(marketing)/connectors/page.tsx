@@ -100,7 +100,7 @@ export default function ConnectorsPage() {
           </div>
           <p className="mt-6 text-sm text-zinc-500">
             Want one we don't have? Email
-            <a href="mailto:hello@raltic.com" className="text-zinc-800 hover:text-zinc-900"> hello@raltic.com</a> — we add what real users actually need.
+            <a href="mailto:hello@raltic.com" className="text-zinc-800 underline underline-offset-4 hover:text-zinc-900"> hello@raltic.com</a> — we add what real users actually need.
           </p>
         </CardPanel>
       </Card>

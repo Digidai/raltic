@@ -139,7 +139,7 @@ export default function TaskBoardPage() {
       title="Tasks"
       description="Kanban view of work across this workspace."
       icon={<ListChecks className="h-5 w-5" aria-hidden="true" />}
-      tone="amber"
+      tone="warning"
       contentClassName="space-y-5"
       actions={
           <Select
@@ -168,6 +168,7 @@ export default function TaskBoardPage() {
           >
           </Select>
                 <Input value={title}
+                  aria-label="Task title"
                   onChange={(e) => setTitle((e.target as HTMLInputElement).value)}
                   placeholder="Task title — what needs doing?" className="min-w-0 flex-1" />
                 <Button type="submit" className="w-full sm:w-auto">Add</Button>
@@ -195,7 +196,7 @@ export default function TaskBoardPage() {
                     <p className="text-xs text-muted-foreground">Loading…</p>
                   )}
                   {colTasks.map(t => (
-                    <Card key={t.id} className="border-transparent bg-background/80 !shadow-none">
+                    <Card key={t.id} data-testid="task-card" className="border-transparent bg-background/80 !shadow-none">
                       <CardPanel className="p-2 text-xs">
                       <div className="flex min-w-0 items-baseline justify-between gap-2">
                         <span className="font-mono text-[10px] text-muted-foreground">#{t.taskNumber}</span>
@@ -221,7 +222,9 @@ export default function TaskBoardPage() {
                             size="xs"
                             className="h-6 min-w-0 px-1.5 text-[10px]"
                             title={`Move to ${other.label}`}
-                          >{other.label.split(" ")[0]}</Button>
+                          >
+                            <span className="truncate">{other.label}</span>
+                          </Button>
                         ))}
                       </div>
                       </CardPanel>

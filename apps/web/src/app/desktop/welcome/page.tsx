@@ -68,8 +68,8 @@ export default function DesktopWelcomePage() {
             </div>
           </div>
 
-          <Card className="p-5">
-            <CardPanel className="space-y-3 p-0">
+          <Card>
+            <CardPanel className="space-y-3 p-5">
               {steps.map((step) => <WelcomeStep key={step.title} {...step} />)}
             </CardPanel>
           </Card>
@@ -89,16 +89,14 @@ function WelcomeStep({
   body: string;
 }) {
   return (
-    <Card className="grid grid-cols-[2.75rem_1fr] gap-3 p-4 shadow-none">
-      <CardPanel className="grid grid-cols-[2.75rem_1fr] gap-3 p-0">
-        <div className="flex size-11 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-700 dark:text-cyan-400">
-          <Icon className="size-5" aria-hidden="true" />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold">{title}</h2>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
-        </div>
-      </CardPanel>
-    </Card>
+    <div className="grid grid-cols-[2.75rem_1fr] gap-3 rounded-lg border border-border bg-[var(--surface-secondary)] p-4">
+      <div className="flex size-11 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">
+        <Icon className="size-5" aria-hidden="true" />
+      </div>
+      <div>
+        <h2 className="text-sm font-semibold">{title}</h2>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
+      </div>
+    </div>
   );
 }

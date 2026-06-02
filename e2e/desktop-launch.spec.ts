@@ -131,6 +131,20 @@ async function mockMachineKeys(page: Page, baseURL: string | undefined, opts?: {
   return { created, revoked };
 }
 
+async function expectNoHorizontalOverflow(page: Page, label: string) {
+  const metrics = await page.evaluate(() => ({
+    viewportWidth: window.innerWidth,
+    bodyScrollWidth: document.body.scrollWidth,
+    documentScrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(metrics.bodyScrollWidth, `${label} body overflow`).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+  expect(metrics.documentScrollWidth, `${label} document overflow`).toBeLessThanOrEqual(metrics.viewportWidth + 1);
+}
+
+async function expectNoNestedSurfaceCards(page: Page, label: string) {
+  await expect(page.locator(".shadow-surface .shadow-surface"), `${label} nested cards`).toHaveCount(0);
+}
+
 test.describe("desktop launch surface", () => {
   test("/desktop/welcome introduces the desktop flow before auth", async ({ page, request }) => {
     const res = await request.get("/desktop/welcome", { maxRedirects: 0 });
@@ -146,6 +160,32 @@ test.describe("desktop launch surface", () => {
     await expect(page.getByText("Use this computer as the local bridge")).toBeVisible();
     await expect(page.getByRole("link", { name: "Get started" })).toHaveAttribute("href", "/desktop/launch");
     await expect(page.getByRole("link", { name: "Beta install notes" })).toHaveAttribute("href", "/desktop?from=desktop-welcome#install");
+  });
+
+  test("desktop welcome and launch layouts stay single-layered and mobile-safe", async ({ page, baseURL }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    await page.goto("/desktop/welcome");
+    await expect(page.getByRole("heading", { name: "Connect this computer to your workspace." })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
+    await expect(page.getByText("Use this computer as the local bridge")).toBeVisible();
+    await expectNoHorizontalOverflow(page, "desktop welcome");
+    await expectNoNestedSurfaceCards(page, "desktop welcome");
+
+    await addFakeSession(page, baseURL);
+    await mockAuthAndMe(page, baseURL);
+    await page.addInitScript(() => {
+      (window as typeof window & { raltic?: unknown }).raltic = {
+        bridgeStatus: async () => ({ running: false, serverId: null }),
+      };
+    });
+    await page.goto("/desktop/launch");
+    await expect(page.getByRole("heading", { name: "Raltic Desktop" })).toBeVisible();
+    await expect(page.getByText("Ready for Desktop Home")).toBeVisible();
+    await expect(page.getByText("Setup checklist")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Connect this computer" })).toBeVisible();
+    await expectNoHorizontalOverflow(page, "desktop launch");
+    await expectNoNestedSurfaceCards(page, "desktop launch");
   });
 
   test("desktop beta notes can return to setup", async ({ page }) => {
@@ -246,6 +286,34 @@ test.describe("desktop launch surface", () => {
     await expect(page).toHaveURL(/\/desktop\/launch$/);
     await expect(page.getByText("Running for another workspace")).toBeVisible();
     await expect(page.getByRole("button", { name: "Connect this computer" })).toBeVisible();
+  });
+
+  test("session check failures keep recovery actions visible", async ({ page, baseURL }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await addFakeSession(page, baseURL);
+    await page.route("**/api/me/api-token", (route) => route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "UNAUTHENTICATED", message: "No API token in E2E" } }),
+    }));
+    await page.route(apiUrl("/api/v1/me**"), (route) => route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      headers: corsHeaders(baseURL),
+      body: JSON.stringify({ error: { code: "TEST_FAILURE", message: "session check failed" } }),
+    }));
+    await page.addInitScript(() => {
+      (window as typeof window & { raltic?: unknown }).raltic = {
+        bridgeStatus: async () => ({ running: false, serverId: null }),
+      };
+    });
+
+    await page.goto("/desktop/launch");
+
+    await expect(page.getByRole("alert").filter({ hasText: "session check failed" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Retry session check" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Back to desktop setup" })).toHaveAttribute("href", "/desktop/welcome");
+    await expectNoHorizontalOverflow(page, "desktop launch session error");
   });
 
   test("treats any running desktop workspace as connected", async ({ page, baseURL }) => {

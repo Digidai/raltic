@@ -12,6 +12,7 @@ import {
   DialogHeader, DialogTitle, DialogPanel,
 } from "@/components/heroui-pro/dialog";
 import { Button } from "@/components/heroui-pro/button";
+import { Chip } from "@/components/heroui-pro/chip";
 import { Input } from "@/components/heroui-pro/input";
 import { cn } from "@/lib/utils";
 
@@ -173,9 +174,9 @@ export function NewDmDialog({
                     <div className="flex items-center gap-1.5 truncate text-sm">
                       <span className="truncate text-foreground">{row.name}</span>
                       {row.kind === "agent" && (
-                        <span className="rounded-full bg-cyan-500/10 px-1 py-px text-[8px] font-medium uppercase tracking-wider text-cyan-700 dark:text-cyan-300">
+                        <Chip size="sm" variant="soft" color="accent" className="text-[8px] uppercase tracking-wider">
                           AI
-                        </span>
+                        </Chip>
                       )}
                     </div>
                     <div className="truncate text-[11px] text-muted-foreground">

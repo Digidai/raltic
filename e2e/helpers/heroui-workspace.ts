@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 export const server = {
   id: "srv-demo",
@@ -181,7 +181,74 @@ export function contrast(foreground: readonly number[], background: readonly num
   return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
 }
 
-export async function setupMockWorkspace(page: Page, context: BrowserContext) {
+export async function assertSelectedRadioOwnsSingleSurface(radio: Locator, label: string) {
+  await expect(radio, `${label} should be checked`).toBeChecked();
+  const metrics = await radio.evaluate((el) => {
+    const root = el.closest<HTMLElement>('[data-slot="radio"]');
+    if (!root) return null;
+    const style = getComputedStyle(root);
+    const className = typeof root.className === "string" ? root.className : "";
+    const surfaceChildren = Array.from(root.children).filter((child) => {
+      const childStyle = getComputedStyle(child);
+      return childStyle.backgroundColor !== "rgba(0, 0, 0, 0)" && childStyle.backgroundColor !== "transparent";
+    });
+    return {
+      background: style.backgroundColor,
+      borderColor: style.borderColor,
+      className,
+      surfaceChildCount: surfaceChildren.length,
+    };
+  });
+
+  expect(metrics, `${label} radio root should exist`).not.toBeNull();
+  expect(metrics!.className, `${label} should not carry page-level cyan selected classes`).not.toContain("border-cyan");
+  expect(metrics!.className, `${label} should not carry page-level cyan selected classes`).not.toContain("bg-cyan");
+  expect(metrics!.background, `${label} selected radio root should own the visible selected surface`).not.toBe("rgba(0, 0, 0, 0)");
+  expect(metrics!.borderColor, `${label} selected radio root should own the selected border`).not.toBe("rgba(0, 0, 0, 0)");
+  expect(metrics!.surfaceChildCount, `${label} should not nest a second selected surface`).toBeLessThanOrEqual(1);
+}
+
+export async function assertSelectedCheckboxOwnsSingleSurface(checkbox: Locator, label: string) {
+  await expect(checkbox, `${label} should be checked`).toBeChecked();
+  const metrics = await checkbox.evaluate((el) => {
+    let root: HTMLElement | null = el.parentElement;
+    while (root && root.getAttribute("data-slot") !== "checkbox") {
+      root = root.parentElement;
+    }
+    root ??= el.closest<HTMLElement>('[data-slot="checkbox"]');
+    if (!root) return null;
+    const style = getComputedStyle(root);
+    const className = typeof root.className === "string" ? root.className : "";
+    const surfaceChildren = Array.from(root.children).filter((child) => {
+      const childStyle = getComputedStyle(child);
+      return childStyle.backgroundColor !== "rgba(0, 0, 0, 0)" && childStyle.backgroundColor !== "transparent";
+    });
+    return {
+      background: style.backgroundColor,
+      className,
+      surfaceChildCount: surfaceChildren.length,
+    };
+  });
+
+  expect(metrics, `${label} checkbox root should exist`).not.toBeNull();
+  expect(metrics!.className, `${label} should not carry page-level cyan selected classes`).not.toContain("bg-cyan");
+  expect(metrics!.className, `${label} should not force selected background with !bg`).not.toContain("!bg");
+  expect(
+    metrics!.background,
+    `${label} selected checkbox root should own the visible selected surface: ${JSON.stringify(metrics)}`,
+  ).not.toBe("rgba(0, 0, 0, 0)");
+  expect(
+    metrics!.surfaceChildCount,
+    `${label} should not nest a second selected surface: ${JSON.stringify(metrics)}`,
+  ).toBeLessThanOrEqual(1);
+}
+
+export async function setupMockWorkspace(
+  page: Page,
+  context: BrowserContext,
+  options: { hasConnectedBridge?: boolean } = {},
+) {
+  const hasConnectedBridge = options.hasConnectedBridge ?? true;
   const baseURL = test.info().project.use.baseURL;
   const host = new URL(String(baseURL)).hostname;
   await context.addCookies([
@@ -205,7 +272,7 @@ export async function setupMockWorkspace(page: Page, context: BrowserContext) {
       personalServerSlug: "demo",
       defaultServerId: "srv-demo",
       defaultServerSlug: "demo",
-      hasConnectedBridge: true,
+      hasConnectedBridge,
     }));
     if (path === "/api/v1/inbox") return route.fulfill(json({ items: [], count: 0 }));
     if (path === "/api/v1/tasks" && method === "GET") return route.fulfill(json({ tasks: [] }));
@@ -220,6 +287,40 @@ export async function setupMockWorkspace(page: Page, context: BrowserContext) {
     if (path === "/api/v1/invites") return route.fulfill(json({ invites: [] }));
     if (path === "/api/v1/machine-keys") return route.fulfill(json({ keys: [] }));
     if (path === "/api/v1/servers/srv-demo/members") return route.fulfill(json({ members: workspaceMembers, viewerRole: "owner" }));
+    if (path === "/api/v1/agents/agent-cloud/workspace/list") {
+      const requestedPath = url.searchParams.get("path") ?? ".";
+      if (requestedPath === ".") {
+        return route.fulfill(json({
+          entries: [
+            { name: "README.md", kind: "file" },
+            { name: "src", kind: "dir" },
+          ],
+        }));
+      }
+      if (requestedPath === "src") {
+        return route.fulfill(json({
+          entries: [
+            { name: "agent.ts", kind: "file" },
+          ],
+        }));
+      }
+      if (requestedPath.startsWith(".memory/")) {
+        return route.fulfill(json({ entries: [] }));
+      }
+      return route.fulfill(json({ entries: [] }));
+    }
+    if (path === "/api/v1/agents/agent-cloud/workspace/read") {
+      const requestedPath = url.searchParams.get("path") ?? "README.md";
+      return route.fulfill(json({
+        content: requestedPath === "src/agent.ts"
+          ? "export async function run() {\\n  return 'ready';\\n}\\n"
+          : "# Cloud workspace\\n\\nThis workspace is ready for review.\\n",
+        truncated: false,
+      }));
+    }
+    if (path === "/api/v1/agents/agent-cloud/workspace/terminal") {
+      return route.fulfill(json({ tail: "$ raltic agent boot\\nready\\n" }));
+    }
     if (path === "/api/v1/channels/ch-onboarding") return route.fulfill(json({
       channel: onboardingChannel,
       members: channelMembers,

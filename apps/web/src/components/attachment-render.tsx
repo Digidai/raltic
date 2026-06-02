@@ -6,6 +6,7 @@ import {
   Dialog, DialogPortal, DialogBackdrop, DialogPopup, DialogPanel,
 } from "@/components/heroui-pro/dialog";
 import { Button } from "@/components/heroui-pro/button";
+import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { authedAttachmentObjectURL } from "@/lib/api";
 
 interface Attachment {
@@ -54,7 +55,7 @@ function ImageAttachment({ a }: { a: Attachment }) {
         onClick={() => objectUrl && setOpen(true)}
         disabled={!objectUrl}
         variant="outline"
-        className="group relative !h-auto !w-fit overflow-hidden rounded-md border bg-card !p-0 transition-colors hover:border-foreground/30 disabled:cursor-default"
+        className="group relative !h-auto !w-fit overflow-hidden rounded-xl border-border bg-[var(--surface-secondary)] !p-0 shadow-surface transition-colors hover:border-foreground/30 disabled:cursor-default"
         aria-label={`Open ${a.filename} in lightbox`}
       >
         {objectUrl ? (
@@ -107,24 +108,31 @@ function FileAttachment({ a }: { a: Attachment }) {
   // download="..." attribute correctly against blob: URLs.
   const objectUrl = useAuthedAttachment(a.url);
   return (
-    <a
-      href={objectUrl ?? "#"}
-      onClick={(e) => { if (!objectUrl) e.preventDefault(); }}
-      download={a.filename}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`Download ${a.filename} (${formatSize(a.sizeBytes)}, opens in new tab)`}
-      className="group inline-flex max-w-xs items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-xs transition-colors hover:border-foreground/30"
+    <Card
+      render={(
+        <a
+          href={objectUrl ?? "#"}
+          onClick={(e) => { if (!objectUrl) e.preventDefault(); }}
+          download={a.filename}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-disabled={!objectUrl}
+          aria-label={`Download ${a.filename} (${formatSize(a.sizeBytes)}, opens in new tab)`}
+        />
+      )}
+      className="group inline-flex max-w-xs items-center rounded-xl border-border bg-[var(--surface-secondary)] shadow-surface transition-colors hover:border-foreground/30 aria-disabled:cursor-not-allowed aria-disabled:opacity-70"
     >
-      <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate font-medium">{a.filename}</div>
-        <div className="text-[10.5px] text-muted-foreground">
-          {formatSize(a.sizeBytes)} · {a.contentType.split("/")[1] ?? a.contentType}
+      <CardPanel className="flex min-w-0 items-center gap-2 px-2.5 py-1.5 text-xs">
+        <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium">{a.filename}</div>
+          <div className="text-[10.5px] text-muted-foreground">
+            {formatSize(a.sizeBytes)} · {a.contentType.split("/")[1] ?? a.contentType}
+          </div>
         </div>
-      </div>
-      <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
-    </a>
+        <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
+      </CardPanel>
+    </Card>
   );
 }
 

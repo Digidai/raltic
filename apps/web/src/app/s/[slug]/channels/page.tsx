@@ -71,7 +71,7 @@ export default function ChannelsBrowsePage() {
       title="Channels"
       description={<>Public channels in this workspace. Click <em>Join</em> to add one to your sidebar.</>}
       icon={<Hash className="h-5 w-5" aria-hidden="true" />}
-      tone="cyan"
+      tone="accent"
     >
           {rows === null && (
             <p className="text-sm text-muted-foreground">Loading…</p>
@@ -92,7 +92,7 @@ export default function ChannelsBrowsePage() {
               {rows.map((r) => (
                 <Card render={<li />} key={r.id} className="border-border/60 bg-surface/80 !shadow-none transition-colors hover:border-accent/25">
                   <CardPanel className="flex flex-wrap items-center gap-3 p-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-700 dark:text-cyan-400">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">
                     <Hash className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">

@@ -69,7 +69,7 @@ export default function InboxPage() {
       title="Inbox"
       description={<>Direct messages and tasks waiting on you in {server.name}.</>}
       icon={<InboxIcon className="h-5 w-5" aria-hidden="true" />}
-      tone="cyan"
+      tone="accent"
       contentClassName="flex flex-col gap-3"
     >
           {loadError && (
@@ -130,8 +130,8 @@ function InboxRow({ item }: { item: InboxItem }) {
         <div className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
           item.kind === "task"
-            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
-            : "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
+            ? "bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)] ring-1 ring-warning/15"
+            : "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15",
         )}>
           <Icon className="h-4 w-4" aria-hidden="true" />
         </div>

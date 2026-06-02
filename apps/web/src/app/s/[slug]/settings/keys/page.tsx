@@ -98,6 +98,7 @@ export default function MachineKeysPage() {
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="machine-key-name"
+                  aria-label="Key name"
                   value={keyName}
                   placeholder="e.g. macbook-pro"
                   className="min-w-0 flex-1"
@@ -181,8 +182,8 @@ export default function MachineKeysPage() {
  *
  * Bridge heartbeats every 60s; machine_keys.last_used_at gets bumped
  * on each beat. The page reads that timestamp and renders:
- *   - "Active" (emerald) if heartbeat within the freshness window
- *   - "Idle Nm ago" (zinc) if older
+ *   - "Active" (success) if heartbeat within the freshness window
+ *   - "Idle Nm ago" (default) if older
  *   - "Never connected" if last_used_at is null
  *
  * Freshness window is 2× heartbeat interval (120s) so a single dropped
@@ -193,7 +194,7 @@ function ActiveBadge({ lastUsedAt }: { lastUsedAt: number | null }) {
   if (lastUsedAt === null) {
     return (
       <Chip size="sm" variant="soft" color="default" className="gap-1 text-[9px] uppercase tracking-wider">
-        <span className="h-1.5 w-1.5 rounded-full bg-zinc-400" aria-hidden="true" /> Never connected
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/70" aria-hidden="true" /> Never connected
       </Chip>
     );
   }
@@ -204,7 +205,7 @@ function ActiveBadge({ lastUsedAt }: { lastUsedAt: number | null }) {
   if (ageMs < FRESH_WINDOW_MS) {
     return (
       <Chip size="sm" variant="soft" color="success" className="gap-1 text-[9px] uppercase tracking-wider">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" /> Active
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--success)]" aria-hidden="true" /> Active
       </Chip>
     );
   }
@@ -214,7 +215,7 @@ function ActiveBadge({ lastUsedAt }: { lastUsedAt: number | null }) {
     : `${Math.floor(mins / (60 * 24))}d ago`;
   return (
     <Chip size="sm" variant="soft" color="default" className="gap-1 text-[9px] uppercase tracking-wider">
-      <span className="h-1.5 w-1.5 rounded-full bg-zinc-400" aria-hidden="true" /> Idle {label}
+      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/70" aria-hidden="true" /> Idle {label}
     </Chip>
   );
 }

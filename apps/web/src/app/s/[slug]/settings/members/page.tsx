@@ -10,6 +10,7 @@ import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { ConfirmDialog } from "@/components/heroui-pro/confirm-dialog";
 import { Chip } from "@/components/heroui-pro/chip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/heroui-pro/alert";
 import { InvitePresetButton, InviteRow, KeyCommandBlock } from "@/components/settings-shared";
 import { useSettings, SettingsSection } from "../layout";
 
@@ -124,6 +125,7 @@ export default function MembersSettingsPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 id="invite-email"
+                aria-label="Invite email"
                 type="email"
                 placeholder="teammate@example.com"
                 value={inviteEmail}
@@ -168,12 +170,13 @@ export default function MembersSettingsPage() {
           </div>
 
           {issuedInvite && (
-            <Card className="border-emerald-500/40 bg-emerald-50">
-              <CardPanel className="p-3 text-xs">
-              <p className="mb-2 font-medium text-emerald-800">✓ Link copied — share it with whoever should join:</p>
+            <Alert variant="success" className="text-xs">
+              <AlertTitle>Link copied</AlertTitle>
+              <AlertDescription className="mb-2">
+                Share it with whoever should join:
+              </AlertDescription>
               <KeyCommandBlock cmd={issuedInvite.url} />
-              </CardPanel>
-            </Card>
+            </Alert>
           )}
 
           {invites.filter(i => !i.revokedAt).length > 0 && (
@@ -207,7 +210,7 @@ export default function MembersSettingsPage() {
                   <CardPanel className="flex flex-wrap items-center gap-3 p-2.5 text-sm">
                   {m.image
                     ? <img src={m.image} alt="" className="h-8 w-8 rounded-full object-cover" />
-                    : <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500/10 text-xs font-medium text-cyan-700">{m.name.slice(0, 1).toUpperCase()}</div>}
+                    : <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-medium text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">{m.name.slice(0, 1).toUpperCase()}</div>}
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{m.name}</div>
                     {m.email && <div className="truncate text-xs text-muted-foreground">{m.email}</div>}

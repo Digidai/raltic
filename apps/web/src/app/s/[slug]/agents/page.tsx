@@ -82,7 +82,7 @@ export default function AgentsIndexPage() {
       title="Agents"
       description="AI teammates in this workspace. Click to view profile; Message opens the direct chat."
       icon={<Cpu className="h-5 w-5" aria-hidden="true" />}
-      tone="emerald"
+      tone="success"
       actions={
         serverId ? (
             <Button
@@ -209,10 +209,10 @@ function RuntimeChip({ runtime }: { runtime: string }) {
 
 function StatusDot({ status }: { status: string }) {
   const color =
-    status === "thinking" ? "bg-violet-500 animate-pulse" :
-    status === "working"  ? "bg-blue-500 animate-pulse" :
-    status === "error"    ? "bg-red-500" :
-    status === "idle"     ? "bg-emerald-500" : "bg-zinc-400";
+    status === "thinking" ? "bg-[var(--accent)] animate-pulse" :
+    status === "working"  ? "bg-[var(--accent)] animate-pulse" :
+    status === "error"    ? "bg-[var(--danger)]" :
+    status === "idle"     ? "bg-[var(--success)]" : "bg-muted-foreground/70";
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className={cn("h-2 w-2 rounded-full", color)} aria-hidden="true" />

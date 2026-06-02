@@ -20,9 +20,13 @@ import { cn } from "@/lib/utils";
 export function KeyCommandBlock({ cmd }: { cmd: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="rounded border bg-zinc-900 text-zinc-100">
+    <Card
+      data-raltic-terminal-command
+      render={<div />}
+      className="overflow-hidden border-zinc-800 bg-zinc-950 text-zinc-100 shadow-overlay"
+    >
       <div className="flex items-center justify-between border-b border-zinc-800 px-2 py-1">
-        <span className="text-[10px] uppercase tracking-wider text-zinc-500">terminal</span>
+        <span className="text-[10px] uppercase tracking-wider text-zinc-400">terminal</span>
         <Button
           type="button"
           onClick={async () => {
@@ -33,13 +37,15 @@ export function KeyCommandBlock({ cmd }: { cmd: string }) {
           variant="ghost"
           size="xs"
           className={"h-6 text-[11px] " +
-            (copied ? "bg-emerald-600/20 text-emerald-400" : "text-zinc-400 hover:bg-zinc-800 hover:text-white")}
+            (copied
+              ? "bg-[var(--success-soft)] text-[var(--success-soft-foreground)]"
+              : "text-zinc-400 hover:bg-zinc-800 hover:text-white")}
         >
           <Copy className="h-3 w-3" />{copied ? "Copied!" : "Copy"}
         </Button>
       </div>
       <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-all p-2 font-mono text-[11px] leading-relaxed">{cmd}</pre>
-    </div>
+    </Card>
   );
 }
 
@@ -172,7 +178,7 @@ export function InvitePresetButton({ title, detail, onClick }: { title: string; 
       type="button"
       onClick={onClick}
       variant="outline"
-      className="h-auto flex-1 justify-start p-3 text-left hover:border-cyan-500/40 hover:bg-cyan-500/5"
+      className="h-auto flex-1 justify-start p-3 text-left hover:border-accent/40 hover:bg-[var(--accent-soft)]"
     >
       <span className="block">
         <span className="block text-sm font-medium">{title}</span>

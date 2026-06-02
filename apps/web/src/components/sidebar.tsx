@@ -348,15 +348,15 @@ const SIDEBAR_ITEM_CLASS =
   "!my-0 !rounded-[8px] !outline-none !p-0";
 
 const SIDEBAR_LINK_CLASS =
-  "flex h-8 w-full min-w-0 items-center gap-2 rounded-[8px] border-l-2 border-transparent px-2.5 text-sm text-sidebar-foreground transition-[background-color,color,border-color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[current=true]:border-sidebar-primary data-[current=true]:bg-[var(--accent-soft)] data-[current=true]:text-sidebar-accent-foreground data-[current=true]:font-semibold";
+  "flex h-8 w-full min-w-0 items-center gap-2 rounded-[8px] border border-transparent px-2.5 text-sm text-sidebar-foreground transition-[background-color,color,border-color,box-shadow] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[current=true]:border-accent/25 data-[current=true]:bg-[var(--accent-soft)] data-[current=true]:text-sidebar-accent-foreground data-[current=true]:font-semibold data-[current=true]:shadow-xs";
 
 /** Map each section name to a brand-tinted dot — visual rhythm that says
  *  "this is Raltic" without printing the logo on every group label. */
 const GROUP_DOT: Record<string, string> = {
-  "Joined channels": "bg-cyan-500/70",
-  "Direct messages": "bg-amber-500/70",
-  Private: "bg-violet-500/70",
-  Agents: "bg-gradient-to-br from-cyan-500 to-amber-500",
+  "Joined channels": "bg-[var(--accent)]",
+  "Direct messages": "bg-[var(--warning)]",
+  Private: "bg-[var(--default-soft-foreground)]",
+  Agents: "bg-[var(--accent)]",
 };
 
 function SidebarGroup({
@@ -477,12 +477,12 @@ function ChannelLink({ channel, activeId, serverSlug, serverId, icon }: {
         <HeroSidebar.MenuIcon className="shrink-0 text-current">{icon}</HeroSidebar.MenuIcon>
         <HeroSidebar.MenuLabel className="min-w-0 flex-1 truncate !text-current [&_[data-slot=sidebar-menu-label-text]]:!text-current">{displayName}</HeroSidebar.MenuLabel>
         {channel.type !== "dm" && channel.starredAt != null && (
-          <Star className="h-3 w-3 shrink-0 fill-current text-amber-500" aria-label="Starred" />
+          <Star className="h-3 w-3 shrink-0 fill-current text-[var(--warning)]" aria-label="Starred" />
         )}
         {channel.type !== "dm" && isMuted && (
           <BellOff className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Muted" />
         )}
-        {/* For human DMs: emerald dot if peer's online, zinc dot if seen
+        {/* For human DMs: success dot if peer's online, muted dot if seen
             recently, none if never connected. Real workspace presence —
             not the hardcoded green the user-pill used to show. */}
         {humanPeerPresence !== undefined && (
@@ -490,8 +490,8 @@ function ChannelLink({ channel, activeId, serverSlug, serverId, icon }: {
             className={cn(
               "h-1.5 w-1.5 shrink-0 rounded-full",
               humanPeerPresence.online
-                ? "bg-success shadow-[0_0_5px_rgba(16,185,129,0.55)]"
-                : "bg-zinc-400/60",
+                ? "bg-[var(--success)] shadow-xs"
+                : "bg-muted-foreground/70",
             )}
             aria-label={humanPeerPresence.online ? "Online" : "Offline"}
           />
@@ -561,18 +561,24 @@ function RuntimeDot({ runtime }: { runtime: string }) {
   // Accept `string` so a legacy "gemini"/"copilot" value from the DB
   // doesn't crash with palette.bg on undefined. Falls through to a
   // neutral zinc dot. Detected by review (backcompat H1).
-  const palette: Record<string, { bg: string; text: string; shape: string; label: string }> = {
-    claude:   { bg: "bg-cyan-500",   text: "C", shape: "rounded-sm",   label: "Claude" },
-    codex:    { bg: "bg-amber-500",  text: "X", shape: "rounded-full", label: "Codex" },
-    openclaw: { bg: "bg-violet-500", text: "O", shape: "rounded-md",   label: "OpenClaw" },
-    hermes:   { bg: "bg-rose-500",   text: "H", shape: "rounded-sm",   label: "Hermes" },
+  const palette: Record<string, { bg: string; fg: string; text: string; shape: string; label: string }> = {
+    claude:   { bg: "bg-[var(--accent)]",  fg: "text-[var(--accent-foreground)]",  text: "C", shape: "rounded-sm",   label: "Claude" },
+    codex:    { bg: "bg-[var(--warning)]", fg: "text-[var(--warning-foreground)]", text: "X", shape: "rounded-full", label: "Codex" },
+    openclaw: { bg: "bg-[var(--default)]", fg: "text-[var(--default-foreground)]", text: "O", shape: "rounded-md",   label: "OpenClaw" },
+    hermes:   { bg: "bg-[var(--danger)]",  fg: "text-[var(--danger-foreground)]",  text: "H", shape: "rounded-sm",   label: "Hermes" },
   };
-  const entry = palette[runtime] ?? { bg: "bg-zinc-400", text: "?", shape: "rounded-sm", label: runtime || "Unknown runtime" };
+  const entry = palette[runtime] ?? {
+    bg: "bg-muted-foreground/70",
+    fg: "text-background",
+    text: "?",
+    shape: "rounded-sm",
+    label: runtime || "Unknown runtime",
+  };
   return (
     <span
       title={entry.label}
       aria-label={`Runtime: ${entry.label}`}
-      className={`inline-flex h-3 w-3 shrink-0 items-center justify-center ${entry.shape} ${entry.bg} text-[8px] font-bold leading-none text-white`}
+      className={`inline-flex h-3 w-3 shrink-0 items-center justify-center ${entry.shape} ${entry.bg} ${entry.fg} text-[8px] font-bold leading-none`}
     >
       {entry.text}
     </span>

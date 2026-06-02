@@ -54,8 +54,8 @@ export default function TeamsPage() {
               Request access <ArrowRight className="h-4 w-4" />
             </MarketingButton>
           </div>
-          <p className="mt-5 text-[12px] text-zinc-500">
-            Each teammate can already <Link href="/signup" className="underline-offset-4 hover:underline">sign up for the free indie tier</Link>; team-level features land with P4 billing.
+          <p className="mt-5 text-[12px] text-zinc-400">
+            Each teammate can already <Link href="/signup" className="underline underline-offset-4 hover:text-white">sign up for the free indie tier</Link>; team-level features land with P4 billing.
           </p>
         </CardPanel>
       </Card>
@@ -150,7 +150,7 @@ function BoxCard({ title, children }: { title: string; children: React.ReactNode
   return (
     <Card className="border-zinc-200 bg-zinc-50">
       <CardPanel className="p-5">
-        <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-500">{title}</p>
+        <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-600">{title}</p>
         <div className="mt-3">{children}</div>
       </CardPanel>
     </Card>

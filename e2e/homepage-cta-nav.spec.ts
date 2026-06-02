@@ -107,6 +107,19 @@ async function expectPathAndSearch(page: Page, pathname: string, search: string)
   }).toBe(`${pathname}${search}`);
 }
 
+async function expectNoHorizontalOverflow(page: Page, label: string) {
+  const metrics = await page.evaluate(() => ({
+    bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
+    documentOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
+    viewportWidth: window.innerWidth,
+    bodyScrollWidth: document.body.scrollWidth,
+    documentScrollWidth: document.documentElement.scrollWidth,
+  }));
+
+  expect(metrics.bodyOverflowX, `${label}: body ${metrics.bodyScrollWidth}px vs viewport ${metrics.viewportWidth}px`).toBe(false);
+  expect(metrics.documentOverflowX, `${label}: html ${metrics.documentScrollWidth}px vs viewport ${metrics.viewportWidth}px`).toBe(false);
+}
+
 test.describe("homepage CTAs", () => {
   test("anonymous hero CTAs point at signup flows", async ({ page }) => {
     await page.goto("/");
@@ -159,6 +172,37 @@ test.describe("homepage top navigation", () => {
       await expectPathname(page, path);
     });
   }
+
+  test("mobile navigation exposes product, audience, auth, and signup links", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+
+    const menuButton = page.getByRole("button", { name: "Open marketing navigation" });
+    await expect(menuButton).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Start$/ })).toHaveAttribute("href", "/signup");
+
+    await menuButton.click();
+    const menu = page.locator("[data-slot=\"dropdown-menu\"]");
+    await expect(menu).toBeVisible();
+
+    for (const label of [
+      "Runtimes",
+      "Connectors",
+      "Desktop beta",
+      "Security",
+      "For indie devs",
+      "For teams",
+      "Sign in",
+      "Get started",
+    ]) {
+      await expect(menu.getByRole("menuitem", { name: new RegExp(label) })).toBeVisible();
+    }
+    await expect(menu.getByText("Waitlist")).toBeVisible();
+    await expectNoHorizontalOverflow(page, "homepage mobile marketing navigation");
+
+    await menu.getByRole("menuitem", { name: /Sign in/ }).click();
+    await expectPathname(page, "/login");
+  });
 });
 
 test.describe("homepage ForDropdown audience menu", () => {

@@ -118,6 +118,7 @@ function VerifyEmailInner() {
     <div className="flex min-h-screen items-center justify-center bg-background p-8">
       <Card className="w-full max-w-sm text-center">
         <CardHeader>
+          <h1 className="sr-only">Email verified</h1>
           <CardTitle>Email verified</CardTitle>
           <CardDescription>
           If you signed up on a different device, return there — this
@@ -180,6 +181,9 @@ function ErrorPanel({
     <div className="flex min-h-screen items-center justify-center bg-background p-8">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
+        <h1 className="sr-only">
+          {isExpired ? "This link expired" : isInvalid ? "This link is invalid" : "Verification failed"}
+        </h1>
         <CardTitle>
           {isExpired ? "This link expired" : isInvalid ? "This link is invalid" : "Verification failed"}
         </CardTitle>
@@ -204,6 +208,7 @@ function ErrorPanel({
               <FieldLabel htmlFor="resend-email">Email</FieldLabel>
               <Input
                 id="resend-email"
+                aria-label="Email"
                 type="email"
                 autoComplete="email"
                 required
@@ -231,7 +236,7 @@ function ErrorPanel({
         <p className="mt-6 text-xs text-muted-foreground">
           Already verified? <Link href="/login" className="underline hover:text-foreground">Sign in</Link>.
           {" "}
-          <span className="opacity-60">[ref: {errorCode}]</span>
+          <span>[ref: {errorCode}]</span>
         </p>
         </CardFooter>
       </Card>

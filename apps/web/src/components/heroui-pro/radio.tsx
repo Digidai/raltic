@@ -31,7 +31,13 @@ export function Radio({ className, controlClassName, contentClassName, children,
   return (
     <HeroRadio.Root
       {...props}
-      className={cn("items-start gap-2 rounded-lg border border-border bg-card/40 p-3 transition-colors hover:border-cyan-500/40 hover:bg-cyan-500/5", className)}
+      className={cn(
+        "items-start gap-2 rounded-lg border border-border bg-[var(--surface-secondary)] p-3 text-foreground transition-colors",
+        "hover:border-accent/25 hover:bg-surface-secondary",
+        "data-[selected]:border-accent/40 data-[selected]:bg-[var(--accent-soft)] data-[selected]:text-[var(--accent-soft-foreground)]",
+        "aria-checked:border-accent/40 aria-checked:bg-[var(--accent-soft)] aria-checked:text-[var(--accent-soft-foreground)]",
+        className,
+      )}
     >
       <HeroRadio.Control className={controlClassName}>
         <HeroRadio.Indicator />

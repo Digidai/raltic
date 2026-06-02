@@ -7,6 +7,7 @@ import { AgentActivityProvider } from "@/hooks/use-agent-activity";
 import { WelcomeToast } from "@/components/welcome-toast";
 import { WorkspaceShell } from "@/components/workspace-shell";
 import { Button } from "@/components/heroui-pro/button";
+import { Card, CardPanel } from "@/components/heroui-pro/card";
 
 export default function ServerLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
@@ -55,21 +56,23 @@ export default function ServerLayout({ children }: { children: React.ReactNode }
   if (loadErr || !server) {
     return (
       <div className="flex h-dvh items-center justify-center bg-background p-8">
-        <div className="max-w-md rounded-lg border bg-card p-6 text-center shadow-sm">
-          <h2 className="text-base font-semibold">Couldn&apos;t load this workspace</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {loadErr ?? "Workspace not found."}
-          </p>
-          <Button
-            type="button"
-            onClick={() => { setLoading(true); setLoadErr(null); router.refresh(); }}
-            variant="outline"
-            size="sm"
-            className="mt-4"
-          >
-            Try again
-          </Button>
-        </div>
+        <Card className="w-full max-w-md text-center">
+          <CardPanel className="p-6">
+            <h2 className="text-base font-semibold">Couldn&apos;t load this workspace</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {loadErr ?? "Workspace not found."}
+            </p>
+            <Button
+              type="button"
+              onClick={() => { setLoading(true); setLoadErr(null); router.refresh(); }}
+              variant="outline"
+              size="sm"
+              className="mt-4"
+            >
+              Try again
+            </Button>
+          </CardPanel>
+        </Card>
       </div>
     );
   }

@@ -141,7 +141,7 @@ export function ChannelActions({ channel, members, selfUserId, serverSlug, canMa
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200/80 bg-white/80 text-muted-foreground shadow-sm transition-colors hover:border-cyan-200 hover:text-foreground dark:border-white/10 dark:bg-white/5"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground shadow-sm transition-colors hover:border-accent/25 hover:bg-surface-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Channel actions"
         >
           <MoreHorizontal className="h-4 w-4" />

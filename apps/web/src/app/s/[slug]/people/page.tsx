@@ -84,7 +84,7 @@ export default function PeoplePage() {
       title="People"
       description={<>Humans in this workspace. Click <em>Message</em> to start a direct chat.</>}
       icon={<Users className="h-5 w-5" aria-hidden="true" />}
-      tone="violet"
+      tone="default"
     >
           {(members === null || sessionPending) && (
             // Keep the page in Loading state until BOTH the members

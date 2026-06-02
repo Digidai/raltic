@@ -17,8 +17,12 @@ function renderDiv(defaultClassName: string, { className, render, children, ...p
 
 export function Card({ className, render, children, ...props }: DivProps) {
   if (render && React.isValidElement(render)) {
+    const slot = (props as { "data-slot"?: string })["data-slot"]
+      ?? (render.props as { "data-slot"?: string })["data-slot"]
+      ?? "card";
     return React.cloneElement(render, {
       ...props,
+      "data-slot": slot,
       className: cn("rounded-xl border border-border bg-background shadow-surface", className, (render.props as { className?: string }).className),
       children,
     } as React.HTMLAttributes<HTMLElement>);
@@ -31,33 +35,23 @@ export function Card({ className, render, children, ...props }: DivProps) {
 }
 
 export function CardHeader(props: DivProps) {
-  const { render, ...rest } = props;
-  void render;
-  return <div {...rest} className={cn("px-5 py-4", props.className)} data-slot="card-header" />;
+  return renderDiv("px-5 py-4", { ...props, "data-slot": "card-header" } as DivProps);
 }
 
 export function CardTitle(props: DivProps) {
-  const { render, ...rest } = props;
-  void render;
-  return <div {...rest} className={cn("text-base font-semibold", props.className)} data-slot="card-title" />;
+  return renderDiv("text-base font-semibold", { ...props, "data-slot": "card-title" } as DivProps);
 }
 
 export function CardDescription(props: DivProps) {
-  const { render, ...rest } = props;
-  void render;
-  return <div {...rest} className={cn("text-sm text-muted-foreground", props.className)} data-slot="card-description" />;
+  return renderDiv("text-sm text-muted-foreground", { ...props, "data-slot": "card-description" } as DivProps);
 }
 
 export function CardPanel(props: DivProps) {
-  const { render, ...rest } = props;
-  void render;
-  return <div {...rest} className={cn("px-5 py-4", props.className)} data-slot="card-panel" />;
+  return renderDiv("px-5 py-4", { ...props, "data-slot": "card-panel" } as DivProps);
 }
 
 export function CardFooter(props: DivProps) {
-  const { render, ...rest } = props;
-  void render;
-  return <div {...rest} className={cn("flex gap-2 px-5 py-4", props.className)} data-slot="card-footer" />;
+  return renderDiv("flex gap-2 px-5 py-4", { ...props, "data-slot": "card-footer" } as DivProps);
 }
 
 export function CardAction(props: DivProps) {

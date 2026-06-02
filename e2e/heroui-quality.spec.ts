@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
   assertOverlayMetrics,
+  assertSelectedRadioOwnsSingleSurface,
   clickVisible,
   openMockChannel,
   overlayMetrics,
@@ -74,7 +75,8 @@ test.describe("HeroUI Pro global quality gates", () => {
       await assertNamedDialog(page, /Channel settings/);
       await assertCloseControl(settingsDialog);
       await assertEnabledButtonsUsable(settingsDialog);
-      await settingsDialog.getByRole("button", { name: "Private" }).click();
+      await assertSelectedRadioOwnsSingleSurface(settingsDialog.getByRole("radio", { name: /Public/ }), "channel settings visibility");
+      await settingsDialog.locator('[data-slot="radio"]').filter({ hasText: "Private" }).click();
       await assertNamedDialog(page, /Convert #onboarding to private/, "alertdialog", { requireClose: false });
       await assertEnabledButtonsUsable(page.getByRole("alertdialog", { name: /Convert #onboarding to private/ }));
       await page.getByRole("button", { name: "Cancel" }).click();

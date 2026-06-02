@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { BrandMonogram } from "@/components/brand";
 import { Button } from "@/components/heroui-pro/button";
 
 export default function NotFound(): React.ReactElement {
@@ -7,9 +7,7 @@ export default function NotFound(): React.ReactElement {
     <div className="flex min-h-screen items-center justify-center bg-background p-8">
       <div className="max-w-md text-center">
         <Link href="/" className="inline-flex items-center gap-2 font-semibold tracking-tight">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-amber-500 text-white shadow-sm">
-            <Sparkles className="h-4 w-4" />
-          </span>
+          <BrandMonogram letter="R" size="sm" className="rounded-lg" />
           Raltic
         </Link>
         <h1 className="mt-8 text-4xl font-semibold tracking-tight">Page not found</h1>

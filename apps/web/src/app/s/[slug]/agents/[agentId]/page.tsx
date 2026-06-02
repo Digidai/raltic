@@ -56,13 +56,13 @@ function SystemPromptCard({ prompt }: { prompt: string }) {
   );
 }
 
-const STATUS_LABEL: Record<string, { dot: string; text: string }> = {
-  thinking: { dot: "bg-violet-500 animate-pulse", text: "Thinking…" },
-  working:  { dot: "bg-blue-500 animate-pulse",   text: "Working…" },
-  error:    { dot: "bg-red-500",                  text: "Error" },
-  online:   { dot: "bg-emerald-500",              text: "Online" },
-  sleeping: { dot: "bg-amber-500",                text: "Sleeping" },
-  offline:  { dot: "bg-zinc-400",                 text: "Offline" },
+const STATUS_LABEL: Record<string, { dot: string; text: string; color: "accent" | "danger" | "success" | "warning" | "default" }> = {
+  thinking: { dot: "bg-[var(--accent)] animate-pulse", text: "Thinking…", color: "accent" },
+  working:  { dot: "bg-[var(--accent)] animate-pulse", text: "Working…",  color: "accent" },
+  error:    { dot: "bg-[var(--danger)]",               text: "Error",     color: "danger" },
+  online:   { dot: "bg-[var(--success)]",              text: "Online",    color: "success" },
+  sleeping: { dot: "bg-[var(--warning)]",              text: "Sleeping",  color: "warning" },
+  offline:  { dot: "bg-muted-foreground/70",           text: "Offline",   color: "default" },
 };
 
 export default function AgentProfilePage() {
@@ -250,10 +250,10 @@ export default function AgentProfilePage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold">{agent.displayName}</h1>
-              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
+              <Chip size="sm" variant="soft" color={statusInfo.color} className="gap-1 text-[11px]">
                 <span className={`h-1.5 w-1.5 rounded-full ${statusInfo.dot}`} />
                 {statusInfo.text}
-              </span>
+              </Chip>
             </div>
             <p className="text-xs text-muted-foreground">{headerSubtitle}</p>
             {agent.description && <p className="mt-1 text-sm">{agent.description}</p>}
@@ -299,10 +299,10 @@ export default function AgentProfilePage() {
       <Tabs
         selectedKey={tab}
         onSelectionChange={(key) => setTab(key as TabKey)}
-        className="shrink-0 border-b border-border/70 bg-card"
+        className="shrink-0 border-b border-border/70 bg-background/85 backdrop-blur"
       >
-        <TabsListContainer className="mx-auto w-full max-w-5xl px-3 sm:px-6">
-          <TabsList aria-label="Agent sections" className="flex w-full min-w-0 gap-0 sm:gap-1">
+        <TabsListContainer className="mx-auto w-full max-w-5xl px-3 py-2 sm:px-6">
+          <TabsList aria-label="Agent sections" className="flex w-full min-w-0 gap-1 rounded-[10px] border border-border/70 bg-[var(--surface-secondary)] p-1 shadow-xs">
           {([
             { key: "chat",     label: "Chat",     icon: MessageSquare },
             { key: "tasks",    label: "Tasks",    icon: ListChecks },
@@ -316,10 +316,10 @@ export default function AgentProfilePage() {
                 key={t.key}
                 id={t.key}
                 className={cn(
-                  "h-10 min-w-0 flex-1 justify-center gap-1 rounded-none border-b-2 px-1.5 text-xs sm:gap-1.5 sm:px-3 sm:text-sm",
+                  "h-8 min-w-0 flex-1 justify-center gap-1 rounded-[8px] border border-transparent px-1.5 text-xs transition-[background-color,color,border-color,box-shadow] sm:gap-1.5 sm:px-3 sm:text-sm",
                   active
-                    ? "border-cyan-600 text-cyan-700 dark:border-cyan-400 dark:text-cyan-400"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
+                    ? "border-accent/25 bg-[var(--accent-soft)] text-foreground shadow-xs"
+                    : "text-muted-foreground hover:bg-background/80 hover:text-foreground",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -395,10 +395,10 @@ export default function AgentProfilePage() {
                         <CardPanel className="flex flex-wrap items-center gap-3 p-3 text-sm">
                         <span className={cn(
                           "h-2 w-2 shrink-0 rounded-full",
-                          t.status === "done" ? "bg-emerald-500"
-                            : t.status === "in_progress" ? "bg-blue-500"
-                            : t.status === "in_review" ? "bg-amber-500"
-                            : "bg-zinc-400",
+                          t.status === "done" ? "bg-[var(--success)]"
+                            : t.status === "in_progress" ? "bg-[var(--accent)]"
+                            : t.status === "in_review" ? "bg-[var(--warning)]"
+                            : "bg-muted-foreground/70",
                         )} aria-hidden="true" />
                         <div className="min-w-0 flex-1">
                           <div className="truncate font-medium">{t.title ?? `#${t.taskNumber}`}</div>

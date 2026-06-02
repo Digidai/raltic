@@ -28,9 +28,9 @@ export default function TermsPage() {
     <>
       <Card render={<article className="max-w-3xl" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto px-6 pt-32 pb-24 text-zinc-200 sm:pt-40">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Legal</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">Legal</p>
           <h1 className="mt-3 text-4xl font-medium tracking-[-0.02em] text-white">Terms of Service</h1>
-          <p className="mt-3 text-sm text-zinc-500">Last updated: {LAST_UPDATED}</p>
+          <p className="mt-3 text-sm text-zinc-400">Last updated: {LAST_UPDATED}</p>
 
           <TermsNote>
             Working draft pending external legal review. These terms cover the private-beta phase of Raltic; we will publish revised terms before any paid tier ships.

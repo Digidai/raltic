@@ -51,7 +51,7 @@ export default function IndiePage() {
               Browse runtimes
             </MarketingButton>
           </div>
-          <p className="mt-5 text-[12px] text-zinc-500">
+          <p className="mt-5 text-[12px] text-zinc-400">
             No credit card · Local-first by default · Free during private beta
           </p>
         </CardPanel>
@@ -103,7 +103,7 @@ export default function IndiePage() {
           </div>
           <Card className="mx-auto mt-12 max-w-md">
             <CardPanel>
-              <p className="mb-3 text-[11.5px] uppercase tracking-[0.18em] text-zinc-500">
+              <p className="mb-3 text-[11.5px] uppercase tracking-[0.18em] text-zinc-400">
                 Or just keep tabs on us
               </p>
               <NewsletterSignup apiOrigin={API_ORIGIN} page="/indie" />

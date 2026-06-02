@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Loader2, Monitor, PlugZap, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/heroui-pro/button";
 import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
-import { Card, CardHeader, CardPanel } from "@/components/heroui-pro/card";
+import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { api, ApiError } from "@/lib/api";
 import { apiOrigin } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 
 type LaunchState = "loading" | "ready" | "connecting" | "connected" | "error";
 
@@ -62,9 +64,7 @@ export default function DesktopLaunchPage() {
   const skipDestination = useMemo(() => workspaceHref(target, { skipBridgeSetup: true }), [target]);
   const bridgeConnectedToTarget = bridgeRunning && !!target && bridgeServerIds.includes(target.id);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  const checkDesktopSession = useCallback(async (isCancelled: () => boolean = () => false) => {
       setState("loading");
       setError(null);
       try {
@@ -75,7 +75,7 @@ export default function DesktopLaunchPage() {
           api.me(),
           desktopApi?.bridgeStatus().catch(() => null) ?? Promise.resolve(null),
         ]);
-        if (cancelled) return;
+        if (isCancelled()) return;
 
         const fallbackServer = me.servers[0] ?? null;
         const targetId = me.personalServerId ?? me.defaultServerId ?? fallbackServer?.id ?? null;
@@ -96,7 +96,7 @@ export default function DesktopLaunchPage() {
           setState("ready");
         }
       } catch (e) {
-        if (cancelled) return;
+        if (isCancelled()) return;
         if (e instanceof ApiError && e.status === 401) {
           router.replace(`/login?client=desktop&next=${encodeURIComponent("/desktop/launch")}`);
           return;
@@ -104,9 +104,13 @@ export default function DesktopLaunchPage() {
         setError(e instanceof Error ? e.message : String(e));
         setState("error");
       }
-    })();
-    return () => { cancelled = true; };
   }, [router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void checkDesktopSession(() => cancelled);
+    return () => { cancelled = true; };
+  }, [checkDesktopSession]);
 
   async function connectThisComputer() {
     if (!target) {
@@ -171,12 +175,12 @@ export default function DesktopLaunchPage() {
           <div className="border-r border-border">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md border bg-background">
-                  <Monitor className="h-5 w-5 text-cyan-600" />
-                </div>
+                <Chip size="lg" variant="soft" color="accent" className="h-10 w-10 shrink-0 justify-center rounded-lg p-0">
+                  <Monitor className="h-5 w-5" aria-hidden="true" />
+                </Chip>
                 <div>
-                  <h1 className="font-heading text-xl font-semibold">Raltic Desktop</h1>
-                  <p className="text-sm text-muted-foreground">Connect this computer, then jump into your workspace.</p>
+                  <CardTitle render={<h1 />} className="font-heading text-xl">Raltic Desktop</CardTitle>
+                  <CardDescription>Connect this computer, then jump into your workspace.</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -203,7 +207,16 @@ export default function DesktopLaunchPage() {
               )}
 
               <div className="mt-7 flex flex-col gap-2 sm:flex-row">
-                {loading || connected ? (
+                {state === "error" && !target ? (
+                  <>
+                    <Button className="w-full sm:w-auto" onClick={() => { void checkDesktopSession(); }}>
+                      Retry session check
+                    </Button>
+                    <Button type="button" variant="outline" className="w-full sm:w-auto" render={<Link href="/desktop/welcome" />}>
+                      Back to desktop setup
+                    </Button>
+                  </>
+                ) : loading || connected ? (
                   <Button className="w-full sm:w-auto" disabled>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {connected ? "Opening workspace..." : "Checking desktop session..."}
@@ -226,7 +239,7 @@ export default function DesktopLaunchPage() {
             </CardPanel>
           </div>
 
-          <Card className="rounded-none border-0 border-l border-t md:border-t-0">
+          <aside className="border-t border-border bg-[var(--surface-secondary)] md:border-l md:border-t-0">
             <CardHeader>
               <p className="text-sm font-semibold text-muted-foreground">Setup checklist</p>
             </CardHeader>
@@ -235,7 +248,7 @@ export default function DesktopLaunchPage() {
               <Step n="2" title="Connect this computer" body="A per-machine key is created and stored locally with restricted permissions." done={bridgeConnectedToTarget || connected} />
               <Step n="3" title="Work in channels" body="Local agents can read your repo on this machine; only chat crosses the wire." done={connected} />
             </CardPanel>
-          </Card>
+          </aside>
         </div>
       </Card>
     </main>
@@ -250,26 +263,26 @@ function StatusRow({
   value: string;
   tone: "ok" | "warn" | "muted";
 }) {
-  const toneClass = tone === "ok"
-    ? "text-emerald-600"
-    : tone === "warn"
-      ? "text-amber-600"
-      : "text-muted-foreground";
-  const toneBorderClass = tone === "ok"
-    ? "border-emerald-400/20 bg-emerald-50/60 dark:bg-emerald-950/20"
-    : tone === "warn"
-      ? "border-amber-400/30 bg-amber-50/50 dark:bg-amber-950/25"
-      : "border-border bg-card";
+  const toneClass = tone === "ok" ? "text-success" : tone === "warn" ? "text-warning" : "text-muted-foreground";
+  const chipColor = tone === "ok" ? "success" : tone === "warn" ? "warning" : "default";
   return (
-    <Card className={`rounded-lg border ${toneBorderClass}`}>
-      <CardPanel className="flex items-center justify-between gap-4 px-3 py-2.5">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className={toneClass}>{icon}</span>
-          <span className="text-sm font-medium">{label}</span>
-        </div>
-        <span className={`min-w-0 truncate text-right text-sm ${toneClass}`}>{value}</span>
-      </CardPanel>
-    </Card>
+    <CardPanel
+      render={<div />}
+      data-raltic-desktop-status-row={tone}
+      className={cn(
+        "flex items-center justify-between gap-4 rounded-lg border border-border bg-[var(--surface-secondary)] px-3 py-2.5",
+        tone === "ok" && "border-success/20 bg-success/5",
+        tone === "warn" && "border-warning/25 bg-warning/10",
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={toneClass}>{icon}</span>
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <Chip size="sm" variant="soft" color={chipColor} className="max-w-[55%] justify-end">
+        <span className="min-w-0 truncate">{value}</span>
+      </Chip>
+    </CardPanel>
   );
 }
 

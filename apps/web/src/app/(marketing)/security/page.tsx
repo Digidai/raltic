@@ -32,8 +32,7 @@ export const metadata: Metadata = {
 export default function SecurityPage() {
   return (
     <>
-      <Card render={<main className="min-h-screen text-white" />} className="w-full rounded-none border-0 shadow-none">
-        <CardPanel>
+      <main className="min-h-screen text-white">
           <Card render={<section className="border-b border-zinc-900 bg-black px-6 pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-3xl text-center">
               <Chip size="sm" variant="soft" color="default" className="gap-2">
@@ -140,25 +139,23 @@ export default function SecurityPage() {
                 <li><span className="font-semibold text-zinc-200">BYO-bucket / data residency</span> — D1 / Workers run on Cloudflare's global edge. Region pinning isn't currently configurable per workspace.</li>
                 <li><span className="font-semibold text-zinc-200">Customer-managed encryption keys</span> — not built. Connector tokens use envelope encryption with a Raltic-held KEK today.</li>
               </ul>
-              <p className="mt-6 text-sm text-zinc-500">
+              <p className="mt-6 text-sm text-zinc-400">
                 If any of these would block your team from using Raltic, tell us — at
-                <a href="mailto:hello@raltic.com" className="text-zinc-300 hover:text-white"> hello@raltic.com</a>. We prioritize what real conversations surface, not a hypothetical compliance roadmap.
+                <a href="mailto:hello@raltic.com" className="text-zinc-300 underline underline-offset-4 hover:text-white"> hello@raltic.com</a>. We prioritize what real conversations surface, not a hypothetical compliance roadmap.
               </p>
             </CardPanel>
           </Card>
 
           <Card render={<section className="bg-black px-6 py-16" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-3xl">
-              <Card className="border-zinc-900 bg-zinc-950">
-                <CardPanel className="text-center">
-                  <h3 className="text-lg font-medium text-white">Responsible disclosure</h3>
-                  <p className="mt-2 text-sm text-zinc-400">
-                    Found a vulnerability? Email
-                    <a href="mailto:security@raltic.com" className="text-zinc-200 underline-offset-4 hover:text-white hover:underline"> security@raltic.com</a>.
-                    We acknowledge within 1 business day and credit reporters in the resolution note unless they ask otherwise.
-                  </p>
-                </CardPanel>
-              </Card>
+              <div className="rounded-xl border border-zinc-900 bg-zinc-950 px-6 py-6 text-center">
+                <h3 className="text-lg font-medium text-white">Responsible disclosure</h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Found a vulnerability? Email
+                  <a href="mailto:security@raltic.com" className="text-zinc-200 underline underline-offset-4 hover:text-white"> security@raltic.com</a>.
+                  We acknowledge within 1 business day and credit reporters in the resolution note unless they ask otherwise.
+                </p>
+              </div>
             </CardPanel>
           </Card>
 
@@ -175,8 +172,7 @@ export default function SecurityPage() {
               </div>
             </CardPanel>
           </Card>
-        </CardPanel>
-      </Card>
+      </main>
       <MarketingFooter />
     </>
   );

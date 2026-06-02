@@ -8,7 +8,7 @@
 // Design constraints:
 //   • Reads the workspace list lazily, on first hover/click — most renders
 //     are noise and the API hit ($) isn't free on Cloudflare Workers.
-//   • Active workspace shown with a check + cyan accent so the dropdown
+//   • Active workspace shown with a check + accent surface so the dropdown
 //     doubles as orientation, not just navigation.
 //   • Workspace management actions stay here; account/session actions stay
 //     in the bottom UserPill so the two menus do not duplicate scope.
@@ -306,7 +306,10 @@ export function WorkspaceMenuSection({
       <DropdownMenuLabel className="pt-1.5 pb-0.5 text-[10px] uppercase tracking-wider">
         Current workspace
       </DropdownMenuLabel>
-      <DropdownMenuLabel className="flex min-h-10 items-center gap-2.5 rounded-md px-2 py-1.5 text-foreground">
+      <DropdownMenuLabel
+        className="flex min-h-10 items-center gap-2.5 rounded-md px-2 py-1.5 text-[var(--accent-soft-foreground)]"
+        style={{ backgroundColor: "var(--accent-soft)" }}
+      >
         <WorkspaceIcon iconUrl={currentIconUrl} name={currentServerName} size="sm" />
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium text-foreground">{currentServerName}</span>
@@ -380,8 +383,9 @@ function WorkspaceRow({
         onClick={onClick}
         className={cn(
           "gap-2.5",
-          active && "bg-cyan-500/8 text-cyan-700 dark:text-cyan-400",
+          active && "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]",
         )}
+        style={active ? { backgroundColor: "var(--accent-soft)" } : undefined}
       >
         <WorkspaceIcon iconUrl={s.iconUrl} name={s.name} size="sm" />
         <div className="min-w-0 flex-1">
@@ -390,8 +394,8 @@ function WorkspaceRow({
             /{s.slug}{isDefault ? " · default" : ""}
           </div>
         </div>
-        {active && <Check className="h-3.5 w-3.5 shrink-0 text-cyan-700 dark:text-cyan-400" aria-hidden="true" />}
-        {isDefault && <Star className="h-3.5 w-3.5 shrink-0 fill-current text-amber-500" aria-hidden="true" />}
+        {active && <Check className="h-3.5 w-3.5 shrink-0 text-[var(--accent-soft-foreground)]" aria-hidden="true" />}
+        {isDefault && <Star className="h-3.5 w-3.5 shrink-0 fill-current text-[var(--warning)]" aria-hidden="true" />}
       </DropdownMenuItem>
       {!isDefault && (
         <DropdownMenuItem
@@ -429,7 +433,7 @@ export function WorkspaceIcon({
     <div
       className={cn(
         dim, text,
-        "flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-amber-500 font-semibold text-white shadow-sm",
+        "flex shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),var(--warning))] font-semibold text-[var(--accent-foreground)] shadow-sm ring-1 ring-accent/20",
       )}
       aria-hidden="true"
     >

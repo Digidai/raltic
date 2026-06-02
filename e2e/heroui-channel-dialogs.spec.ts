@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   assertOverlayMetrics,
+  assertSelectedCheckboxOwnsSingleSurface,
+  assertSelectedRadioOwnsSingleSurface,
   clickVisible,
   contrast,
   openMembersDialog,
@@ -141,7 +143,24 @@ test.describe("HeroUI Pro channel dialogs", () => {
     await clickVisible(page, 'button[aria-label="Create channel"]');
 
     assertOverlayMetrics(await overlayMetrics(page, /Create channel/));
-    await expect(page.getByRole("textbox", { name: "Name" })).toHaveCSS("font-size", /16px/);
+    await expect(page.getByRole("textbox", { name: "Channel name" })).toHaveCSS("font-size", /16px/);
+    const publicVisibility = page.getByRole("radio", { name: /Public/ });
+    const privateVisibility = page.getByRole("radio", { name: /Private/ });
+    await expect(publicVisibility).toBeChecked();
+    await page.locator('[data-slot="radio"]').filter({ hasText: "Private" }).click();
+    await assertSelectedRadioOwnsSingleSurface(privateVisibility, "create channel visibility");
+    await page.locator('[data-slot="checkbox"]').filter({ hasText: "Olivia" }).click();
+    await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Olivia/ }), "create channel member picker");
+    await page.locator('[data-slot="checkbox"]').filter({ hasText: "Cloud Test Agent" }).click();
+    await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Cloud Test Agent/ }), "create channel agent picker");
+    const createDialog = page.getByRole("dialog", { name: /Create channel/ });
+    for (const label of ["Olivia", "Cloud Test Agent"]) {
+      const chip = createDialog.locator("[data-slot='chip']").filter({ hasText: label });
+      await expect(chip).toBeVisible();
+      const chipClassName = await chip.evaluate((el) => el.getAttribute("class") ?? "");
+      expect(chipClassName, `${label} selected chip should not use page-level cyan background`).not.toContain("bg-cyan");
+      expect(chipClassName, `${label} selected chip should not use page-level cyan text`).not.toContain("text-cyan");
+    }
     await assertDialogFooterWithinVisualViewport(page, /Create channel/);
 
     await page.keyboard.press("Escape");
@@ -169,8 +188,13 @@ test.describe("HeroUI Pro channel dialogs", () => {
     await expect(page.getByRole("menuitem", { name: "Members" })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: "Leave channel" })).toBeVisible();
     await page.getByRole("menuitem", { name: "Members" }).click();
+    let membersDialog = page.getByRole("dialog", { name: /Members of #onboarding/ });
     assertOverlayMetrics(await overlayMetrics(page, /Members of #onboarding/));
     await assertMembersTextSamplesReadable(page);
+    await membersDialog.getByRole("button", { name: "Add people or agents" }).click();
+    await membersDialog.locator('[data-slot="checkbox"]').filter({ hasText: "Olivia" }).click();
+    await assertSelectedCheckboxOwnsSingleSurface(membersDialog.getByRole("checkbox", { name: /Olivia/ }), "channel members picker");
+    await membersDialog.getByRole("button", { name: "Cancel" }).click();
     await page.getByRole("dialog", { name: /Members of #onboarding/ })
       .locator('[data-slot="modal-footer"]')
       .getByRole("button", { name: "Close" })
@@ -182,8 +206,11 @@ test.describe("HeroUI Pro channel dialogs", () => {
       document.documentElement.setAttribute("data-theme", "dark");
     });
     await openMembersDialog(page);
+    membersDialog = page.getByRole("dialog", { name: /Members of #onboarding/ });
     assertOverlayMetrics(await overlayMetrics(page, /Members of #onboarding/));
     await assertMembersTextSamplesReadable(page);
+    await membersDialog.getByRole("button", { name: "Add people or agents" }).click();
+    await expect(membersDialog.getByRole("checkbox", { name: /Olivia/ })).toBeVisible();
   });
 
   test("leave channel alert remains modal when backdrop is clicked", async ({ page, context }) => {

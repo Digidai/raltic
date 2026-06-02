@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError, type RuntimeId } from "@/lib/api";
 import { getApiOrigin } from "@/lib/auth-client";
@@ -11,8 +11,9 @@ import { Dialog, DialogPortal, DialogBackdrop, DialogPopup } from "@/components/
 import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
 import { Tabs, TabsList, TabsListContainer, TabsTrigger } from "@/components/heroui-pro/tabs";
 import { Chip } from "@/components/heroui-pro/chip";
-import { MachineRow } from "@/components/settings-shared";
-import { CheckCircle2, Circle, Copy, KeyRound, Terminal, MessageSquare, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/heroui-pro/alert";
+import { KeyCommandBlock, MachineRow } from "@/components/settings-shared";
+import { CheckCircle2, Circle, KeyRound, Terminal, MessageSquare, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -57,6 +58,7 @@ const BRIDGE_POLL_INTERVAL_MS = 3_000;
  *  user already copied the plaintext into their terminal; on resume we
  *  poll for connection without needing to re-show the secret. */
 const RESUME_KEY_PREFIX = "raltic:wizard:resume:";
+type RuntimeChipTone = NonNullable<ComponentProps<typeof Chip>["color"]>;
 
 interface ResumeState {
   issuedKeyId: string;
@@ -102,6 +104,7 @@ export function SetupWizard({
   flavor = "solo", inviterWorkspaceName, onDismiss,
 }: Props) {
   const router = useRouter();
+  const helpPanelId = useId();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [keyName, setKeyName] = useState("My Mac");
   // Runtime choice made on step 1 — applied to the personal workspace's
@@ -480,19 +483,18 @@ export function SetupWizard({
                 title={firstReplySeen ? "First reply received ✓" : "Send your first message"} />
             </ol>
 
-            <div className="mt-6 rounded border bg-muted/30 p-4">
+            <Card render={<section />} className="mt-6 bg-[var(--surface-secondary)] !shadow-none">
+              <CardPanel className="p-4">
               {step === 1 && (
                 <div className="space-y-4 text-sm">
                   {hasExistingBridge && (
-                    <div className="rounded border border-cyan-500/40 bg-cyan-50 p-3 text-xs dark:bg-cyan-950/20">
-                      <p className="font-medium text-cyan-700 dark:text-cyan-400">
-                        You already have a bridge connected.
-                      </p>
-                      <p className="mt-1 text-muted-foreground">
+                    <Alert variant="info" className="text-xs">
+                      <AlertTitle>You already have a bridge connected.</AlertTitle>
+                      <AlertDescription>
                         This will issue a NEW machine key for an additional laptop. Your existing
                         key + bridge keep working — agents are leader-elected so you won&apos;t double-reply.
-                      </p>
-                    </div>
+                      </AlertDescription>
+                    </Alert>
                   )}
 
                   {/* Runtime selector — captures the user's choice upfront
@@ -510,25 +512,24 @@ export function SetupWizard({
                         All run locally on YOUR laptop. You can change per-agent later.
                       </p>
                       <RadioGroup
+                        aria-label="AI runtime"
                         value={runtime}
                         onValueChange={(next) => setRuntime(next as typeof runtime)}
                         className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2"
                       >
                         <RuntimePick
                           id="claude"
-                          checked={runtime === "claude"}
                           title="Claude Code"
                           chip="Recommended"
-                          chipTone="cyan"
+                          chipTone="accent"
                           body="Anthropic Claude — Sonnet 4.6 default, also Opus/Haiku. Requires the claude CLI."
                           installHref="https://docs.claude.com/en/docs/claude-code/setup"
                         />
                         <RuntimePick
                           id="codex"
-                          checked={runtime === "codex"}
                           title="OpenAI Codex"
                           chip="Preview"
-                          chipTone="amber"
+                          chipTone="warning"
                           body="OpenAI Codex — GPT-5.5 default. Requires the codex CLI logged in."
                           installHref="https://platform.openai.com/docs/codex/cli"
                         />
@@ -540,19 +541,17 @@ export function SetupWizard({
                             Hermes) most new Raltic users don't need yet. */}
                         <RuntimePick
                           id="openclaw"
-                          checked={runtime === "openclaw"}
                           title="OpenClaw"
                           chip="Advanced"
-                          chipTone="violet"
+                          chipTone="default"
                           body="Local-first multi-channel assistant. Install separately; Raltic detects your daemon."
                           installHref="https://github.com/openclaw/openclaw"
                         />
                         <RuntimePick
                           id="hermes"
-                          checked={runtime === "hermes"}
                           title="Hermes Agent"
                           chip="Advanced"
-                          chipTone="rose"
+                          chipTone="danger"
                           body="Nous Research's self-improving agent with persistent memory + auto skills. Install separately."
                           installHref="https://hermes-agent.nousresearch.com/"
                         />
@@ -560,7 +559,8 @@ export function SetupWizard({
                     </div>
                   )}
 
-                  <div className="rounded border bg-card p-3 text-xs">
+                  <Card render={<section />} className="bg-background !shadow-none">
+                    <CardPanel className="p-3 text-xs">
                     <p className="font-medium">You&apos;ll need on this laptop:</p>
                     <ul className="mt-1 space-y-0.5 text-muted-foreground">
                       <li>• <strong>Node ≥ 20</strong> — check with <code className="rounded bg-muted px-1">node -v</code></li>
@@ -600,7 +600,8 @@ export function SetupWizard({
                         </>
                       )}
                     </ul>
-                  </div>
+                    </CardPanel>
+                  </Card>
 
                   <Button onClick={() => setStep(2)} className="mt-2">
                     {hasExistingBridge ? "Issue a new machine key" : "Continue"}
@@ -612,7 +613,7 @@ export function SetupWizard({
                 <div className="space-y-3 text-sm">
                   <p>Pick a name for this laptop — you'll see it in your settings.</p>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input value={keyName} onChange={(e) => setKeyName((e.target as HTMLInputElement).value)} placeholder="My Mac" className="min-w-0 flex-1" />
+                    <Input aria-label="Machine key name" value={keyName} onChange={(e) => setKeyName((e.target as HTMLInputElement).value)} placeholder="My Mac" className="min-w-0 flex-1" />
                     <Button onClick={createKey} loading={creating} className="w-full sm:w-auto">
                       <KeyRound className="mr-1 h-3.5 w-3.5" /> Issue key
                     </Button>
@@ -627,34 +628,36 @@ export function SetupWizard({
               {step === 3 && (issued || resumed) && (
                 <div className="space-y-3 text-sm">
                   {resumed ? (
-                    <div className="rounded border border-cyan-500/40 bg-cyan-50 p-3 text-xs dark:bg-cyan-950/20">
-                      <p className="font-medium text-cyan-700 dark:text-cyan-400">Resumed from a previous session</p>
-                      <p className="mt-1 text-muted-foreground">
+                    <Alert variant="info" className="text-xs">
+                      <AlertTitle>Resumed from a previous session</AlertTitle>
+                      <AlertDescription>
                         We&apos;re watching for the bridge from key{" "}
                         <code className="rounded bg-muted px-1">{keyName}</code>.
                         Already pasted the command in your terminal? Just keep it running and we&apos;ll detect the connection.
-                      </p>
-                      <p className="mt-1 text-muted-foreground">
+                      </AlertDescription>
+                      <AlertDescription className="mt-1">
                         Lost the command?{" "}
                         <Button type="button" variant="link" size="xs" className="h-auto px-0 py-0 text-xs" onClick={() => { void startOverFromStep2(); }}>
                           Start over to issue a fresh key
                         </Button>.
-                      </p>
-                    </div>
+                      </AlertDescription>
+                    </Alert>
                   ) : (
                     <>
                       {/* What the command DOES — three-bullet explainer
                           so users aren't pasting a black-box one-liner.
                           Lifted directly from a real install run so the
                           terms match what they'll see in their terminal. */}
-                      <div className="rounded border border-cyan-500/30 bg-cyan-50/40 p-2.5 text-[11px] text-muted-foreground dark:bg-cyan-950/10">
-                        <p className="font-medium text-foreground">What this command does:</p>
-                        <ul className="mt-1 space-y-0.5">
-                          <li>1. Downloads <code className="rounded bg-muted px-1">@raltic/bridge</code> via npx (no global install)</li>
-                          <li>2. Registers this laptop with your workspace using the API key below</li>
-                          <li>3. Stays running in this terminal — watches for messages from your agents</li>
-                        </ul>
-                      </div>
+                      <Alert variant="info" className="text-[11px]">
+                        <AlertTitle>What this command does:</AlertTitle>
+                        <AlertDescription>
+                          <ul className="mt-1 space-y-0.5">
+                            <li>1. Downloads <code className="rounded bg-muted px-1">@raltic/bridge</code> via npx (no global install)</li>
+                            <li>2. Registers this laptop with your workspace using the API key below</li>
+                            <li>3. Stays running in this terminal — watches for messages from your agents</li>
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
 
                       {/* Tabbed install surface. Quick is the default and
                           what 95% of users want; Persistent is for users
@@ -665,8 +668,11 @@ export function SetupWizard({
                         selectedKey={installTab}
                         onSelectionChange={(key) => setInstallTab(key as typeof installTab)}
                       >
-                        <TabsListContainer className="border-b">
-                          <TabsList aria-label="Install method" className="gap-1">
+                        <TabsListContainer className="py-1">
+                          <TabsList
+                            aria-label="Install method"
+                            className="gap-1 rounded-xl border border-border bg-[var(--surface-secondary)] p-1"
+                          >
                             {[
                               { id: "quick" as const, label: "Quick (recommended)" },
                               { id: "persistent" as const, label: "Persistent" },
@@ -678,10 +684,10 @@ export function SetupWizard({
                                   key={t.id}
                                   id={t.id}
                                   className={cn(
-                                    "h-8 rounded-none border-b-2 px-2.5 text-xs",
+                                    "h-8 rounded-[8px] border border-transparent px-2.5 text-xs transition-colors",
                                     active
-                                      ? "border-cyan-600 text-cyan-700 dark:border-cyan-400 dark:text-cyan-400"
-                                      : "border-transparent text-muted-foreground hover:text-foreground",
+                                      ? "border-accent/25 bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] shadow-xs"
+                                      : "text-muted-foreground hover:bg-[var(--surface-tertiary)] hover:text-foreground",
                                   )}
                                 >
                                   {t.label}
@@ -712,7 +718,8 @@ export function SetupWizard({
                       )}
 
                       {installTab === "desktop" && (
-                        <div className="rounded border border-dashed bg-card p-3 text-xs">
+                        <Card render={<section />} className="border-border/70 bg-[var(--surface-secondary)] !shadow-none">
+                          <CardPanel className="p-3 text-xs">
                           <p className="font-medium">Desktop app</p>
                           <p className="mt-1 text-muted-foreground">
                             Open Raltic Desktop on this computer, sign in, then click
@@ -720,28 +727,35 @@ export function SetupWizard({
                             The app creates a workspace-scoped key and keeps the bridge
                             running from the menu bar.
                           </p>
-                        </div>
+                          </CardPanel>
+                        </Card>
                       )}
 
                       {/* What success looks like — fake terminal preview
                           so the user has a visual to match against their
                           REAL terminal output. Without this they don&apos;t
                           know when to consider "it worked". */}
-                      <div className="rounded border bg-zinc-950 p-2.5 font-mono text-[10.5px] leading-relaxed text-zinc-300">
-                        <p className="text-zinc-500">$ {installTab === "persistent" ? "raltic-bridge setup ck_…" : quickCmd || "npx -y @raltic/bridge setup ck_…"}</p>
-                        <p className="text-zinc-400">[bridge] starting</p>
-                        <p className="text-zinc-400">[bridge]   server-url={API_URL}</p>
-                        <p className="text-zinc-400">[bridge] runtime {runtime} ready</p>
-                        <p className="text-zinc-400">[bridge] connected as user=… server=…</p>
-                        <p className="text-emerald-400">[bridge] ready — waiting for messages</p>
-                      </div>
+                      <Card
+                        data-raltic-terminal-preview
+                        render={<div />}
+                        className="overflow-hidden border-zinc-800 bg-zinc-950 text-zinc-100 shadow-overlay"
+                      >
+                        <CardPanel className="space-y-0.5 p-2.5 font-mono text-[10.5px] leading-relaxed">
+                          <p className="text-zinc-300">$ {installTab === "persistent" ? "raltic-bridge setup ck_…" : quickCmd || "npx -y @raltic/bridge setup ck_…"}</p>
+                          <p className="text-zinc-300">[bridge] starting</p>
+                          <p className="text-zinc-300">[bridge]   server-url={API_URL}</p>
+                          <p className="text-zinc-300">[bridge] runtime {runtime} ready</p>
+                          <p className="text-zinc-300">[bridge] connected as user=… server=…</p>
+                          <p className="text-[var(--success-soft-foreground)]">[bridge] ready — waiting for messages</p>
+                        </CardPanel>
+                      </Card>
                     </>
                   )}
                   <p className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Terminal className="h-3 w-3" />
                     Waiting for the bridge to connect…
                     <Chip size="sm" variant="soft" color="warning" className="ml-auto gap-1 text-[10px] uppercase tracking-wider">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" aria-hidden="true" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--warning)]" aria-hidden="true" />
                       polling
                     </Chip>
                   </p>
@@ -750,27 +764,29 @@ export function SetupWizard({
                   </p>
 
                   {pollTimedOut && (
-                    <div className="rounded border border-amber-500/40 bg-amber-50 p-3 text-xs dark:bg-amber-950/20">
-                      <p className="flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+                    <Alert variant="warning" className="text-xs">
+                      <AlertTitle className="flex items-center gap-1.5">
                         <AlertTriangle className="h-3.5 w-3.5" />
                         Still waiting after 4 minutes — something&apos;s likely off.
-                      </p>
-                      <p className="mt-1 text-muted-foreground">
+                      </AlertTitle>
+                      <AlertDescription>
                         We&apos;re still listening if it comes online. Check your terminal for any error output.
-                      </p>
-                    </div>
+                      </AlertDescription>
+                    </Alert>
                   )}
 
                   <Button type="button"
                     onClick={() => setShowHelp(v => !v)}
                     variant="ghost"
                     size="sm"
+                    aria-controls={helpPanelId}
+                    aria-expanded={showHelp}
                     className="w-full justify-start gap-1 text-left text-xs text-muted-foreground">
                     {showHelp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                     Having trouble?
                   </Button>
                   {showHelp && (
-                    <ul className="space-y-2 rounded border bg-card p-3 text-xs text-muted-foreground">
+                    <Card id={helpPanelId} render={<ul />} className="space-y-2 bg-background p-3 text-xs text-muted-foreground !shadow-none">
                       <li>
                         <strong className="text-foreground">Node ≥ 20 not installed?</strong>{" "}
                         Run <code className="rounded bg-muted px-1">node -v</code>. If missing, install from{" "}
@@ -795,7 +811,7 @@ export function SetupWizard({
                           (start over from step 2)
                         </Button>.
                       </li>
-                    </ul>
+                    </Card>
                   )}
                 </div>
               )}
@@ -803,7 +819,7 @@ export function SetupWizard({
               {step === 4 && (
                 <div className="space-y-3 text-sm">
                   <p className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <CheckCircle2 className="h-4 w-4 text-[var(--success-soft-foreground)]" />
                     Your bridge is connected. The Onboarding Assistant is online.
                   </p>
 
@@ -824,7 +840,7 @@ export function SetupWizard({
                   )}
 
                   {firstReplySeen ? (
-                    <p className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                    <p className="flex items-center gap-2 text-[var(--success-soft-foreground)]">
                       <CheckCircle2 className="h-4 w-4" />
                       Your agent just replied — end-to-end is working.
                     </p>
@@ -843,7 +859,8 @@ export function SetupWizard({
                   </Button>
                 </div>
               )}
-            </div>
+              </CardPanel>
+            </Card>
           </CardPanel>
           <CardFooter className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:justify-between">
             <span>Stuck? See <a className="underline" href="https://github.com/Digidai/raltic#self-hosting" target="_blank" rel="noreferrer">docs</a>.</span>
@@ -857,41 +874,13 @@ export function SetupWizard({
 }
 
 function CopyableCommand({ cmd }: { cmd: string }) {
-  const [copied, setCopied] = useState(false);
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(cmd);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch { /* ignore */ }
-  }
-  return (
-    <div className="rounded border bg-zinc-900 text-zinc-100">
-      <div className="flex items-center justify-between border-b border-zinc-800 px-3 py-1.5">
-        <span className="text-[10px] uppercase tracking-wider text-zinc-500">terminal</span>
-        <Button
-          type="button"
-          onClick={handleCopy}
-          variant="ghost"
-          size="xs"
-          className={"h-6 text-[11px] transition-colors " +
-            (copied ? "bg-emerald-600/20 text-emerald-400" : "text-zinc-400 hover:bg-zinc-800 hover:text-white")}
-        >
-          <Copy className="h-3 w-3" />
-          {copied ? "Copied!" : "Copy"}
-        </Button>
-      </div>
-      <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all p-3 font-mono text-xs leading-relaxed">
-        {cmd}
-      </pre>
-    </div>
-  );
+  return <KeyCommandBlock cmd={cmd} />;
 }
 
 function Step({ n, active, done, title }: { n: number; active: boolean; done: boolean; title: string }) {
   return (
     <li className={"flex items-center gap-2 " + (active ? "font-medium" : done ? "text-muted-foreground" : "text-muted-foreground/60")}>
-      {done ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> :
+      {done ? <CheckCircle2 className="h-4 w-4 text-[var(--success-soft-foreground)]" /> :
         active ? <Circle className="h-4 w-4 text-foreground" /> :
         <Circle className="h-4 w-4" />}
       <span>Step {n}: {title}</span>
@@ -903,44 +892,26 @@ function Step({ n, active, done, title }: { n: number; active: boolean; done: bo
  *  Card-style instead of a tight radio so the body copy + chip explain
  *  the trade-off inline rather than burying it in a tooltip. */
 function RuntimePick({
-  id, checked, title, chip, chipTone, body, installHref,
+  id, title, chip, chipTone, body, installHref,
 }: {
   id: string;
-  checked: boolean;
   title: string;
   chip: string;
-  chipTone: "cyan" | "amber" | "violet" | "rose";
+  chipTone: RuntimeChipTone;
   body: string;
   installHref: string;
 }) {
-  // Per-runtime accent; matches the sidebar runtime-dot palette so
-  // the same color identifies the same runtime everywhere.
-  const chipColor = {
-    cyan:   "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
-    amber:  "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-    violet: "bg-violet-500/10 text-violet-700 dark:text-violet-400",
-    rose:   "bg-rose-500/10 text-rose-700 dark:text-rose-400",
-  }[chipTone];
   return (
     <Radio
       value={id}
-      controlClassName="sr-only"
-      className={
-        "h-auto flex-col items-stretch gap-1 p-3 text-left " +
-        (checked ? "border-cyan-500/60 bg-cyan-500/5" : "hover:border-foreground/20")
-      }
+      controlClassName="mt-0.5"
+      className="h-auto p-3 text-left hover:border-foreground/20"
     >
-      <div className="flex items-center gap-2">
-        <span className={cn(
-          "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border",
-          checked ? "border-cyan-500" : "border-border",
-        )}>
-          {checked && <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" />}
-        </span>
+      <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{title}</span>
-        <span className={`rounded-full px-1.5 py-px text-[9px] font-medium uppercase tracking-wider ${chipColor}`}>
+        <Chip size="sm" variant="soft" color={chipTone} className="text-[9px] font-medium uppercase tracking-wider">
           {chip}
-        </span>
+        </Chip>
       </div>
       <p className="text-[11px] text-muted-foreground">{body}</p>
       <a

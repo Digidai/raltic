@@ -24,18 +24,20 @@ export interface MarketingFaqListProps {
 
 const THEME = {
   dark: {
-    container: "bg-zinc-900 border-zinc-900 text-zinc-400",
-    item: "text-zinc-300 border-zinc-900",
-    title: "text-white",
-    open: "bg-zinc-950",
-    border: "border-zinc-900",
+    container: "border-[color-mix(in_srgb,var(--white)_10%,transparent)] bg-[color-mix(in_srgb,var(--eclipse)_94%,var(--accent)_6%)] text-[color-mix(in_srgb,var(--snow)_68%,transparent)] shadow-[0_18px_60px_color-mix(in_srgb,var(--accent)_10%,transparent)]",
+    item: "border-[color-mix(in_srgb,var(--white)_10%,transparent)] text-[color-mix(in_srgb,var(--snow)_78%,transparent)]",
+    title: "text-[var(--snow)]",
+    open: "bg-[color-mix(in_srgb,var(--white)_5%,transparent)]",
+    border: "border-[color-mix(in_srgb,var(--white)_10%,transparent)]",
+    indicator: "text-[color-mix(in_srgb,var(--snow)_62%,transparent)]",
   },
   light: {
-    container: "bg-zinc-50 border-zinc-200 text-zinc-500",
-    item: "text-zinc-800 border-zinc-200",
-    title: "text-zinc-900",
-    open: "bg-zinc-100",
-    border: "border-zinc-200",
+    container: "border-border bg-[var(--surface-secondary)] text-muted-foreground shadow-[var(--surface-shadow)]",
+    item: "border-border text-foreground",
+    title: "text-foreground",
+    open: "bg-[var(--surface-tertiary)]",
+    border: "border-border",
+    indicator: "text-muted-foreground",
   },
 } satisfies Record<FaqTheme, {
   container: string;
@@ -43,6 +45,7 @@ const THEME = {
   title: string;
   open: string;
   border: string;
+  indicator: string;
 }>;
 
 export function MarketingFaqList({ items, idPrefix, theme = "dark" }: MarketingFaqListProps) {
@@ -63,7 +66,7 @@ export function MarketingFaqList({ items, idPrefix, theme = "dark" }: MarketingF
         const next = Array.from(keys ?? [])[0];
         handleToggle(next ? Number(String(next).replace(`${idPrefix}-faq-`, "")) : null);
       }}
-      className={cn("mt-10 rounded-2xl border", palette.container)}
+      className={cn("mt-10 overflow-hidden rounded-lg border", palette.container)}
     >
       {items.map((item, index) => {
         const itemId = `${idPrefix}-faq-${index}`;
@@ -74,8 +77,9 @@ export function MarketingFaqList({ items, idPrefix, theme = "dark" }: MarketingF
             id={itemId}
             key={itemId}
             className={cn(
-              "group border-b border-current/20 last:border-b-0",
+              "group border-b last:border-b-0",
               palette.item,
+              palette.border,
               isOpen && palette.open,
               "transition-colors duration-150",
             )}
@@ -85,12 +89,12 @@ export function MarketingFaqList({ items, idPrefix, theme = "dark" }: MarketingF
                 <span className={cn("block text-sm font-medium leading-tight text-balance sm:text-base", palette.title)}>
                   {item.q}
                 </span>
-                <AccordionIndicator className="text-muted-foreground mt-1 shrink-0 transition-transform duration-200 data-[expanded]:rotate-180" />
+                <AccordionIndicator className={cn("mt-1 shrink-0 transition-transform duration-200 data-[expanded]:rotate-180", palette.indicator)} />
               </AccordionTrigger>
             </AccordionHeading>
             <AccordionPanel>
               <AccordionBody>
-                <p className={cn("border-t border-current/10 px-6 pb-5 pt-2 text-sm leading-relaxed", palette.item)}>
+                <p className={cn("border-t px-6 pb-5 pt-2 text-sm leading-relaxed", palette.item, palette.border)}>
                   {item.a}
                 </p>
               </AccordionBody>

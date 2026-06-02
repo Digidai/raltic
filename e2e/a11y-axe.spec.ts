@@ -69,7 +69,7 @@ async function expectSingleH1(page: Page, path: string): Promise<void> {
   ).toHaveCount(1);
 }
 
-async function expectLoginFormControlsHaveLabels(page: Page): Promise<void> {
+async function expectFormControlsHaveLabels(page: Page, path: string): Promise<void> {
   const unlabeled = await page.locator("form").evaluateAll((forms) => {
     function selectorFor(element: Element): string {
       const tag = element.tagName.toLowerCase();
@@ -105,7 +105,7 @@ async function expectLoginFormControlsHaveLabels(page: Page): Promise<void> {
     );
   });
 
-  expect(unlabeled, `Unlabeled /login controls: ${JSON.stringify(unlabeled)}`).toEqual([]);
+  expect(unlabeled, `Unlabeled ${path} controls: ${JSON.stringify(unlabeled)}`).toEqual([]);
 }
 
 async function expectVisibleInteractiveElementsKeyboardFocusable(page: Page): Promise<void> {
@@ -195,8 +195,33 @@ test("/login", async ({ page }) => {
 
   await runAxe(page, "/login");
   await expectSingleH1(page, "/login");
-  await expectLoginFormControlsHaveLabels(page);
+  await expectFormControlsHaveLabels(page, "/login");
 });
+
+for (const path of [
+  "/signup",
+  "/forgot-password",
+  "/reset-password?token=test-token",
+  "/verify-email?error=TOKEN_EXPIRED&email=dai%40live.cn",
+]) {
+  test(`${path} exposes one h1 and labelled form controls`, async ({ page }) => {
+    await page.goto(path);
+
+    await runAxe(page, path);
+    await expectSingleH1(page, path);
+    await expectFormControlsHaveLabels(page, path);
+  });
+}
+
+for (const path of ["/runtimes", "/connectors", "/indie", "/teams", "/security", "/desktop"]) {
+  test(`${path} marketing page has no serious axe issues and one h1`, async ({ page }) => {
+    await page.goto(path);
+
+    await runAxe(page, path);
+    await expectSingleH1(page, path);
+    await expectVisibleInteractiveElementsKeyboardFocusable(page);
+  });
+}
 
 test("/desktop/welcome", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });

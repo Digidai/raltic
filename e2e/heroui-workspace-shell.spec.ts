@@ -7,6 +7,7 @@ import {
   json,
   onboardingChannel,
   openMockChannel,
+  openMockDm,
   researchChannel,
   server,
   setupMockWorkspace,
@@ -346,6 +347,8 @@ test("sidebar destination pages fill the workspace main column and keep navigati
           height: box.height,
           borderRadius: getComputedStyle(el).borderRadius,
           backgroundColor: getComputedStyle(el).backgroundColor,
+          borderLeftWidth: getComputedStyle(el).borderLeftWidth,
+          borderRightWidth: getComputedStyle(el).borderRightWidth,
         };
       };
       return {
@@ -355,6 +358,15 @@ test("sidebar destination pages fill the workspace main column and keep navigati
         active: rect(active),
         activeContent: rect(activeContent),
         topDestinationGaps: topDestinationLinks.slice(1).map((row, index) => row.top - topDestinationLinks[index].bottom),
+        legacyWorkspaceToneClassCount: Array.from(main?.querySelectorAll<HTMLElement>("*") ?? [])
+          .filter((el) => {
+            const className = typeof el.className === "string" ? el.className : "";
+            return className.includes("bg-cyan-500/10")
+              || className.includes("text-cyan-700")
+              || className.includes("dark:text-cyan")
+              || className.includes("bg-amber-500/10")
+              || className.includes("text-amber-700");
+          }).length,
         mainListRowShadows: Array.from(main?.querySelectorAll<HTMLElement>("li") ?? [])
           .map((el) => getComputedStyle(el).boxShadow)
           .filter((shadow) => {
@@ -371,10 +383,13 @@ test("sidebar destination pages fill the workspace main column and keep navigati
     expect(pageMetrics.root?.width, `${destination.path} root should fill main`).toBeCloseTo(pageMetrics.main!.width, 1);
     expect(pageMetrics.header?.left, `${destination.path} header starts at main edge`).toBeCloseTo(pageMetrics.main!.left, 1);
     expect(pageMetrics.header?.right, `${destination.path} header reaches main edge`).toBeCloseTo(pageMetrics.main!.right, 1);
+    expect(pageMetrics.legacyWorkspaceToneClassCount, `${destination.path} should use token-driven WorkspacePage surfaces`).toBe(0);
     expect(pageMetrics.topDestinationGaps, `${destination.path} top-level sidebar rows should stay compact`).toEqual([6, 6, 6, 6]);
     expect(pageMetrics.mainListRowShadows, `${destination.path} repeated list rows should not add nested card shadows`).toEqual([]);
     expect(pageMetrics.active?.height, `${destination.nav} active row height`).toBeCloseTo(32, 1);
     expect(pageMetrics.active?.borderRadius, `${destination.nav} active row should not render as a square slab`).not.toBe("0px");
+    expect(pageMetrics.active?.borderLeftWidth, `${destination.nav} active row should not use a legacy left rail`).not.toBe("2px");
+    expect(pageMetrics.active?.borderLeftWidth, `${destination.nav} active row should be a balanced pill`).toBe(pageMetrics.active?.borderRightWidth);
     expect(pageMetrics.active?.backgroundColor, `${destination.nav} active row should not use the old solid green fill`).not.toBe("rgb(84, 167, 131)");
     expect(pageMetrics.active?.backgroundColor, `${destination.nav} active row should render one visible layer`).not.toBe("rgba(0, 0, 0, 0)");
     expect(pageMetrics.activeContent?.backgroundColor, `${destination.nav} HeroUI wrapper should not add a second active layer`).toBe("rgba(0, 0, 0, 0)");
@@ -417,6 +432,8 @@ test("settings sections expose every destination and keep the active state in on
           height: box.height,
           borderRadius: getComputedStyle(el).borderRadius,
           backgroundColor: getComputedStyle(el).backgroundColor,
+          borderLeftWidth: getComputedStyle(el).borderLeftWidth,
+          borderRightWidth: getComputedStyle(el).borderRightWidth,
         };
       };
       return {
@@ -429,9 +446,375 @@ test("settings sections expose every destination and keep the active state in on
     expect(navMetrics.allLinks).toEqual(["Workspace", "Members & invites", "Channels & agents", "Runtimes", "Connectors", "Account"]);
     expect(navMetrics.active?.height, `${section.nav} active row height`).toBeCloseTo(32, 1);
     expect(navMetrics.active?.borderRadius, `${section.nav} active row radius`).not.toBe("0px");
+    expect(navMetrics.active?.borderLeftWidth, `${section.nav} active row should not use a legacy left rail`).not.toBe("2px");
+    expect(navMetrics.active?.borderLeftWidth, `${section.nav} active row should be a balanced pill`).toBe(navMetrics.active?.borderRightWidth);
     expect(navMetrics.active?.backgroundColor, `${section.nav} active row should render one visible layer`).not.toBe("rgba(0, 0, 0, 0)");
     expect(navMetrics.activeContent?.backgroundColor, `${section.nav} wrapper should be the active layer`).toBe(navMetrics.active?.backgroundColor);
   }
+});
+
+test("members invite success state uses HeroUI alert and terminal command surfaces", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+  await page.route("**/api/v1/invites", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    return route.fulfill(json({
+      id: "invite-hero",
+      url: "https://raltic.com/invite/invite-hero",
+    }));
+  });
+
+  await page.goto("/s/demo/settings/members", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: /Open link/ }).click();
+
+  const alert = page.getByRole("alert").filter({ hasText: "Link copied" });
+  await expect(alert).toBeVisible();
+  await expect(alert).toContainText("Share it with whoever should join:");
+  await expect(alert.locator("[data-raltic-terminal-command]")).toContainText("https://raltic.com/invite/invite-hero");
+
+  const inviteMetrics = await alert.evaluate((el) => {
+    const command = el.querySelector<HTMLElement>("[data-raltic-terminal-command]");
+    const alertStyle = getComputedStyle(el as HTMLElement);
+    const commandStyle = command ? getComputedStyle(command) : null;
+    return {
+      alertBackground: alertStyle.backgroundColor,
+      commandSlot: command?.getAttribute("data-slot") ?? null,
+      commandBackground: commandStyle?.backgroundColor ?? "",
+      commandBorder: commandStyle?.borderColor ?? "",
+      commandShadow: commandStyle?.boxShadow ?? "",
+      hasLegacyEmerald: Array.from(el.querySelectorAll<HTMLElement>("[class]"))
+        .some((node) => (node.getAttribute("class") ?? "").includes("emerald")),
+      overflowX: document.body.scrollWidth > window.innerWidth + 1
+        || document.documentElement.scrollWidth > window.innerWidth + 1,
+    };
+  });
+
+  expect(inviteMetrics.alertBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(inviteMetrics.commandSlot).toBe("card");
+  expect(inviteMetrics.commandBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(inviteMetrics.commandBorder).not.toBe("rgba(0, 0, 0, 0)");
+  expect(inviteMetrics.commandShadow).not.toBe("none");
+  expect(inviteMetrics.hasLegacyEmerald).toBe(false);
+  expect(inviteMetrics.overflowX).toBe(false);
+});
+
+test("tasks move actions use unambiguous destination labels", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  const patches: unknown[] = [];
+  await page.route("**/api/v1/tasks**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    if (url.pathname === "/api/v1/tasks" && method === "GET") {
+      return route.fulfill(json({
+        tasks: [{
+          id: "task-hero-ui",
+          channelId: "ch-onboarding",
+          messageId: "msg-task",
+          taskNumber: 42,
+          title: "Ship HeroUI Pro task buttons",
+          status: "todo",
+          assigneeId: null,
+          assigneeType: null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }],
+      }));
+    }
+    if (url.pathname === "/api/v1/tasks/task-hero-ui" && method === "PATCH") {
+      patches.push(JSON.parse(route.request().postData() ?? "{}"));
+      return route.fulfill(json({ ok: true }));
+    }
+    return route.fallback();
+  });
+
+  await page.goto("/s/demo/tasks", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Tasks" })).toBeVisible();
+
+  const taskCard = page.getByTestId("task-card").filter({ hasText: "Ship HeroUI Pro task buttons" });
+  await expect(taskCard).toBeVisible();
+  await expect(taskCard.getByRole("button", { name: "In progress" })).toBeVisible();
+  await expect(taskCard.getByRole("button", { name: "In review" })).toBeVisible();
+  await expect(taskCard.getByRole("button", { name: "Done" })).toBeVisible();
+  await expect(taskCard.getByRole("button", { name: "In", exact: true })).toHaveCount(0);
+
+  await taskCard.getByRole("button", { name: "In review" }).click();
+  await expect.poll(() => patches.length).toBe(1);
+  expect(patches[0]).toMatchObject({ status: "in_review" });
+});
+
+test("account settings change password validates locally and posts the revocation choice", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  const passwordBodies: unknown[] = [];
+  await page.route("**/api/auth/change-password", async (route) => {
+    passwordBodies.push(JSON.parse(route.request().postData() ?? "{}"));
+    return route.fulfill(json({
+      token: "new-session-token",
+      user: {
+        id: "u1",
+        name: "Gene",
+        email: "dai@live.cn",
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  });
+
+  await page.goto("/s/demo/settings/account", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Change the password used for email sign-in. Workspace bridge keys are not affected.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Send a reset email" })).toHaveAttribute("href", "/forgot-password?email=dai%40live.cn");
+
+  const currentPassword = page.getByLabel("Current password");
+  const newPassword = page.getByLabel("New password", { exact: true });
+  const confirmPassword = page.getByLabel("Confirm new password");
+  await expect(currentPassword).toHaveAttribute("name", "current-password");
+  await expect(newPassword).toHaveAttribute("name", "new-password");
+  await expect(confirmPassword).toHaveAttribute("name", "confirm-new-password");
+
+  await currentPassword.fill("old-password");
+  await newPassword.fill("old-password");
+  await confirmPassword.fill("old-password");
+  await page.getByRole("button", { name: "Update password" }).click();
+  await expect(page.getByText("New password must be different from your current password.")).toBeVisible();
+  await expect(newPassword).toBeFocused();
+  await expect(newPassword).toHaveAttribute("aria-invalid", "true");
+  expect(passwordBodies, "reusing the current password should not call the auth endpoint").toEqual([]);
+
+  await newPassword.fill("new-password-123");
+  await confirmPassword.fill("new-password-321");
+  await expect(page.getByLabel("Sign out other sessions")).toBeChecked();
+
+  await page.getByRole("button", { name: "Update password" }).click();
+  await expect(page.getByText("New passwords don't match.")).toBeVisible();
+  await expect(confirmPassword).toBeFocused();
+  await expect(confirmPassword).toHaveAttribute("aria-invalid", "true");
+  expect(passwordBodies, "mismatched confirmation should not call the auth endpoint").toEqual([]);
+
+  await confirmPassword.fill("new-password-123");
+  await page.getByRole("button", { name: "Update password" }).click();
+
+  await expect.poll(() => passwordBodies.length).toBe(1);
+  expect(passwordBodies[0]).toMatchObject({
+    currentPassword: "old-password",
+    newPassword: "new-password-123",
+    revokeOtherSessions: true,
+  });
+  await expect(page.getByText("Password updated. Other sessions were signed out.")).toBeVisible();
+  await expect(currentPassword).toHaveValue("");
+  await expect(newPassword).toHaveValue("");
+  await expect(confirmPassword).toHaveValue("");
+});
+
+test("account settings maps auth password errors and can keep other sessions active", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  const passwordBodies: unknown[] = [];
+  await page.route("**/api/auth/change-password", async (route) => {
+    passwordBodies.push(JSON.parse(route.request().postData() ?? "{}"));
+    if (passwordBodies.length === 1) {
+      return route.fulfill(json({
+        code: "INVALID_PASSWORD",
+        message: "Invalid password",
+      }, 400));
+    }
+    return route.fulfill(json({
+      token: null,
+      user: {
+        id: "u1",
+        name: "Gene",
+        email: "dai@live.cn",
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  });
+
+  await page.goto("/s/demo/settings/account", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+
+  await page.getByLabel("Current password").fill("wrong-password");
+  await page.getByLabel("New password", { exact: true }).fill("new-password-123");
+  await page.getByLabel("Confirm new password").fill("new-password-123");
+
+  const revokeOtherSessions = page.getByLabel("Sign out other sessions");
+  await expect(revokeOtherSessions).toBeChecked();
+  await page.locator("[data-slot='checkbox']").filter({ hasText: "Sign out other sessions" }).click();
+  await expect(revokeOtherSessions).not.toBeChecked();
+
+  await page.getByRole("button", { name: "Update password" }).click();
+  await expect(page.getByText("Current password is incorrect.")).toBeVisible();
+  await expect(page.getByLabel("Current password")).toBeFocused();
+  await expect(page.getByLabel("Current password")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Current password")).toHaveValue("wrong-password");
+  await expect(page.getByLabel("New password", { exact: true })).toHaveValue("new-password-123");
+  expect(passwordBodies[0]).toMatchObject({
+    currentPassword: "wrong-password",
+    newPassword: "new-password-123",
+    revokeOtherSessions: false,
+  });
+
+  await page.getByLabel("Current password").fill("correct-password");
+  await page.getByRole("button", { name: "Update password" }).click();
+
+  await expect.poll(() => passwordBodies.length).toBe(2);
+  expect(passwordBodies[1]).toMatchObject({
+    currentPassword: "correct-password",
+    newPassword: "new-password-123",
+    revokeOtherSessions: false,
+  });
+  await expect(page.getByText("Password updated. Other sessions stayed active.")).toBeVisible();
+  await expect(page.getByLabel("Current password")).toHaveValue("");
+  await expect(page.getByLabel("New password", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Confirm new password")).toHaveValue("");
+});
+
+test("account settings sends passwordless users to the reset fallback", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  const passwordBodies: unknown[] = [];
+  await page.route("**/api/auth/change-password", async (route) => {
+    passwordBodies.push(JSON.parse(route.request().postData() ?? "{}"));
+    return route.fulfill(json({
+      code: "CREDENTIAL_ACCOUNT_NOT_FOUND",
+      message: "Credential account not found",
+    }, 400));
+  });
+
+  await page.goto("/s/demo/settings/account", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("account-password-card")).toBeVisible();
+
+  await page.getByLabel("Current password").fill("oauth-password");
+  await page.getByLabel("New password", { exact: true }).fill("new-password-123");
+  await page.getByLabel("Confirm new password").fill("new-password-123");
+  await page.getByRole("button", { name: "Update password" }).click();
+
+  await expect.poll(() => passwordBodies.length).toBe(1);
+  expect(passwordBodies[0]).toMatchObject({
+    currentPassword: "oauth-password",
+    newPassword: "new-password-123",
+    revokeOtherSessions: true,
+  });
+  await expect(page.getByText("This account does not have a password yet. Send a reset email to create one.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Send a reset email" })).toHaveAttribute("href", "/forgot-password?email=dai%40live.cn");
+  await expect(page.getByLabel("Current password")).toHaveValue("oauth-password");
+  await expect(page.getByLabel("New password", { exact: true })).toHaveValue("new-password-123");
+  await expect(page.getByLabel("Confirm new password")).toHaveValue("new-password-123");
+});
+
+test("account settings explains stale sensitive sessions without clearing entered passwords", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  const passwordBodies: unknown[] = [];
+  await page.route("**/api/auth/change-password", async (route) => {
+    passwordBodies.push(JSON.parse(route.request().postData() ?? "{}"));
+    return route.fulfill(json({
+      code: "SESSION_NOT_FRESH",
+      message: "Session is not fresh",
+    }, 403));
+  });
+
+  await page.goto("/s/demo/settings/account", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+
+  await page.getByLabel("Current password").fill("old-password");
+  await page.getByLabel("New password", { exact: true }).fill("new-password-123");
+  await page.getByLabel("Confirm new password").fill("new-password-123");
+  await page.getByRole("button", { name: "Update password" }).click();
+
+  await expect.poll(() => passwordBodies.length).toBe(1);
+  await expect(page.getByText("For security, confirm your sign-in before changing your password.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in again" })).toHaveAttribute("href", "/login?next=%2Fs%2Fdemo%2Fsettings%2Faccount");
+  await expect(page.getByLabel("Current password")).toHaveValue("old-password");
+  await expect(page.getByLabel("New password", { exact: true })).toHaveValue("new-password-123");
+  await expect(page.getByLabel("Confirm new password")).toHaveValue("new-password-123");
+});
+
+test("account default workspace radio uses one HeroUI selected surface", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  await page.goto("/s/demo/settings/account", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+
+  const radio = page.getByRole("radio", { name: /Gene's Workspace/ });
+  await expect(radio).toBeChecked();
+
+  const metrics = await radio.evaluate((el) => {
+    const root = el.closest<HTMLElement>('[data-slot="radio"]');
+    if (!root) return null;
+    const style = getComputedStyle(root);
+    const className = typeof root.className === "string" ? root.className : "";
+    const surfaceChildren = Array.from(root.children).filter((child) => {
+      const childStyle = getComputedStyle(child);
+      return childStyle.backgroundColor !== "rgba(0, 0, 0, 0)" && childStyle.backgroundColor !== "transparent";
+    });
+    return {
+      background: style.backgroundColor,
+      borderColor: style.borderColor,
+      className,
+      surfaceChildCount: surfaceChildren.length,
+    };
+  });
+
+  expect(metrics).not.toBeNull();
+  expect(metrics!.className).not.toContain("border-cyan");
+  expect(metrics!.className).not.toContain("bg-cyan");
+  expect(metrics!.background, "selected radio root should own the visible selected surface").not.toBe("rgba(0, 0, 0, 0)");
+  expect(metrics!.borderColor, "selected radio root should own the selected border").not.toBe("rgba(0, 0, 0, 0)");
+  expect(metrics!.surfaceChildCount, "selected radio should not nest a second selected surface").toBeLessThanOrEqual(1);
+});
+
+test("mobile account password controls stay readable without horizontal drift", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setupMockWorkspace(page, context);
+
+  await page.goto("/s/demo/settings/account", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Change the password used for email sign-in. Workspace bridge keys are not affected.")).toBeVisible();
+  await expect(page.getByLabel("Current password")).toBeVisible();
+  await expect(page.getByLabel("New password", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Confirm new password")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Update password" })).toBeVisible();
+
+  const metrics = await shellMetrics(page);
+  assertNoDocumentOverflow(metrics);
+
+  const formMetrics = await page.evaluate(() => {
+    const rect = (el: Element | null) => {
+      if (!el) return null;
+      const box = el.getBoundingClientRect();
+      return { left: box.left, right: box.right, width: box.width };
+    };
+    const inputs = [
+      "account-current-password",
+      "account-new-password",
+      "account-confirm-password",
+    ].map((id) => rect(document.getElementById(id)));
+    const button = rect(Array.from(document.querySelectorAll("button")).find((el) => el.textContent?.includes("Update password")) ?? null);
+    return { viewportWidth: window.innerWidth, inputs, button };
+  });
+
+  for (const [index, input] of formMetrics.inputs.entries()) {
+    expect(input, `password input ${index + 1} should render`).not.toBeNull();
+    expect(input!.left, `password input ${index + 1} left edge`).toBeGreaterThanOrEqual(0);
+    expect(input!.right, `password input ${index + 1} right edge`).toBeLessThanOrEqual(formMetrics.viewportWidth);
+    expect(input!.width, `password input ${index + 1} mobile width`).toBeGreaterThan(240);
+  }
+  expect(formMetrics.button, "password submit button should render").not.toBeNull();
+  expect(formMetrics.button!.left, "password submit button left edge").toBeGreaterThanOrEqual(0);
+  expect(formMetrics.button!.right, "password submit button right edge").toBeLessThanOrEqual(formMetrics.viewportWidth);
 });
 
 test("workspace URL field keeps the prefix readable and aligned with the form", async ({ page, context }) => {
@@ -559,6 +942,11 @@ test("agent detail page stays in the workspace shell on desktop and mobile", asy
           text: tab.textContent?.trim() ?? "",
           left: box.left,
           right: box.right,
+          className: tab.getAttribute("class") ?? "",
+          backgroundColor: getComputedStyle(tab).backgroundColor,
+          borderBottomWidth: getComputedStyle(tab).borderBottomWidth,
+          borderTopWidth: getComputedStyle(tab).borderTopWidth,
+          selected: tab.getAttribute("aria-selected") === "true",
           viewport,
         };
       });
@@ -566,6 +954,13 @@ test("agent detail page stays in the workspace shell on desktop and mobile", asy
     for (const tab of tabMetrics) {
       expect(tab.left, `${tab.text} tab left edge`).toBeGreaterThanOrEqual(0);
       expect(tab.right, `${tab.text} tab right edge`).toBeLessThanOrEqual(tab.viewport.width);
+      expect(tab.className, `${tab.text} tab should not use legacy cyan border`).not.toContain("border-cyan");
+      expect(tab.className, `${tab.text} tab should not use legacy cyan text`).not.toContain("text-cyan");
+      expect(tab.className, `${tab.text} tab should not use underline tabs`).not.toContain("border-b-2");
+      if (tab.selected) {
+        expect(tab.backgroundColor, `${tab.text} selected tab should own a visible soft surface`).not.toBe("rgba(0, 0, 0, 0)");
+        expect(tab.borderBottomWidth, `${tab.text} selected tab should not rely on a thicker underline`).toBe(tab.borderTopWidth);
+      }
     }
 
     const metrics = await shellMetrics(page);
@@ -622,6 +1017,21 @@ test("workspace controls live in the settings menu instead of the sidebar brand 
   await expect(menu.getByText("Switch workspace", { exact: true })).toBeVisible();
   await expect(menu.getByText("No other workspaces.", { exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
+
+  const currentWorkspaceMetrics = await menu.getByText("Gene's Workspace", { exact: true }).evaluate((el) => {
+    const row = el.closest<HTMLElement>("[role='menuitem']");
+    if (!row) return null;
+    const style = getComputedStyle(row);
+    return {
+      background: style.backgroundColor,
+      color: style.color,
+      className: row.getAttribute("class") ?? "",
+    };
+  });
+  expect(currentWorkspaceMetrics, "current workspace menu row should exist").not.toBeNull();
+  expect(currentWorkspaceMetrics!.background, "current workspace should render a visible token surface").not.toBe("rgba(0, 0, 0, 0)");
+  expect(currentWorkspaceMetrics!.className, "workspace switcher should not use page-level cyan active background").not.toContain("bg-cyan");
+  expect(currentWorkspaceMetrics!.className, "workspace switcher should not use page-level cyan text").not.toContain("text-cyan");
   await expect(page.getByRole("heading", { name: "Something went wrong" })).toHaveCount(0);
   expect(pageErrors, "opening the settings workspace controls should not raise client runtime errors").toEqual([]);
 });
@@ -668,6 +1078,63 @@ test("mobile drawer closes after channel and DM navigation without covering the 
   await expect(page.getByRole("button", { name: "Send message" })).toBeVisible();
 });
 
+test("cloud agent workspace pane uses HeroUI Pro side panel surfaces", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+  await openMockDm(page);
+
+  const pane = page.getByTestId("workspace-pane");
+  await expect(pane).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cloud Test Agent" })).toBeVisible();
+  await expect(pane.getByRole("tab", { name: "Files" })).toHaveAttribute("aria-selected", "true");
+  await expect(pane.getByRole("tab", { name: "Memory" })).toBeVisible();
+  await expect(pane.getByRole("button", { name: "File README.md" })).toBeVisible();
+
+  const paneMetrics = await pane.evaluate((el) => {
+    const selectedTab = el.querySelector<HTMLElement>("[role='tab'][aria-selected='true']");
+    const headerIcon = el.querySelector<HTMLElement>("header span");
+    const selectedStyle = selectedTab ? getComputedStyle(selectedTab) : null;
+    const iconStyle = headerIcon ? getComputedStyle(headerIcon) : null;
+    return {
+      className: el.getAttribute("class") ?? "",
+      background: getComputedStyle(el).backgroundColor,
+      selectedTabBackground: selectedStyle?.backgroundColor ?? "",
+      headerIconBackground: iconStyle?.backgroundColor ?? "",
+      hasLegacyTimesClose: el.textContent?.includes("×") ?? false,
+      overflowX: document.body.scrollWidth > window.innerWidth + 1
+        || document.documentElement.scrollWidth > window.innerWidth + 1,
+    };
+  });
+
+  expect(paneMetrics.className).not.toContain("bg-muted/20");
+  expect(paneMetrics.background).not.toBe("rgba(0, 0, 0, 0)");
+  expect(paneMetrics.selectedTabBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(paneMetrics.headerIconBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(paneMetrics.hasLegacyTimesClose).toBe(false);
+  expect(paneMetrics.overflowX).toBe(false);
+
+  await pane.getByRole("button", { name: "File README.md" }).click();
+  const closePreview = pane.getByRole("button", { name: "Close file preview" });
+  await expect(closePreview).toBeVisible();
+  await expect(closePreview.locator("svg")).toBeVisible();
+  await expect(pane.locator("pre", { hasText: "Cloud workspace" })).toBeVisible();
+  const terminalPreview = pane.locator("[data-raltic-terminal-preview]");
+  await expect(terminalPreview).toContainText("ready");
+  const terminalMetrics = await terminalPreview.evaluate((el) => {
+    const styles = getComputedStyle(el as HTMLElement);
+    return {
+      slot: (el as HTMLElement).getAttribute("data-slot"),
+      backgroundColor: styles.backgroundColor,
+      borderColor: styles.borderColor,
+      boxShadow: styles.boxShadow,
+    };
+  });
+  expect(terminalMetrics.slot).toBe("card");
+  expect(terminalMetrics.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+  expect(terminalMetrics.borderColor).not.toBe("rgba(0, 0, 0, 0)");
+  expect(terminalMetrics.boxShadow).not.toBe("none");
+});
+
 for (const width of [768, 769]) {
   test(`breakpoint ${width}px renders exactly one navigation mode and no duplicate chat header`, async ({ page, context }) => {
     await page.setViewportSize({ width, height: 844 });
@@ -703,7 +1170,7 @@ test("active channel, unread count, online status, and runtime badge do not shif
   const onboarding = page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: /onboarding/i }).first();
   const research = page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: /research/i }).first();
   const userPill = page.getByTestId("user-pill-trigger");
-  const onlineBadge = userPill.locator("div").filter({ hasText: /^Online$/ }).first();
+  const onlineBadge = userPill.getByText("Online", { exact: true });
   await expect(onboarding).toHaveAttribute("aria-current", "page");
   await expect(research.getByText("3", { exact: true }), "seeded unread badge should render").toBeVisible();
   await expect(onlineBadge, "user online badge should render").toBeVisible();

@@ -21,10 +21,10 @@ export const metadata: Metadata = {
 };
 
 const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
-  cyan: "bg-cyan-500/10  border-cyan-500/30  text-cyan-300",
-  amber: "bg-amber-500/10 border-amber-500/30 text-amber-300",
-  violet: "bg-violet-500/10 border-violet-500/30 text-violet-300",
-  rose: "bg-rose-500/10  border-rose-500/30  text-rose-300",
+  cyan: "border-accent/30 bg-[var(--accent-soft)] text-[var(--accent)]",
+  amber: "border-warning/30 bg-[var(--warning-soft)] text-[var(--warning)]",
+  violet: "border-border bg-[var(--default-soft)] text-[var(--default-soft-foreground)]",
+  rose: "border-[color:var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]",
 };
 
 export default function RuntimesHub() {
@@ -39,12 +39,12 @@ export default function RuntimesHub() {
       <Card render={<section className="border-b border-zinc-900 bg-black pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl px-6 text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" aria-hidden="true" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />
             Runtimes
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl">
             Four agent runtimes.<br />
-            <span className="text-cyan-400">One chat surface.</span>
+            <span className="text-[var(--accent)]">One chat surface.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-400">
             Each agent picks its own runtime. Mix Claude and Codex in the same workspace. Point at your own OpenClaw or Hermes daemon — Raltic never touches your provider keys.
@@ -71,12 +71,12 @@ export default function RuntimesHub() {
                           </Chip>
                         )}
                       </div>
-                      <p className="mt-0.5 text-[12px] text-zinc-500">{doc.longName}</p>
+                      <p className="mt-0.5 text-[12px] text-zinc-400">{doc.longName}</p>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-zinc-500 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
+                    <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5 group-hover:text-white" />
                   </div>
                   <p className="mt-4 text-sm leading-relaxed text-zinc-300">{doc.tagline}</p>
-                  <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4 text-[11px] text-zinc-500">
+                  <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4 text-[11px] text-zinc-400">
                     <Chip size="sm" variant="soft" color="default">
                       {doc.lifecycle === "external_daemon" ? "External daemon" : "Per-turn spawn"}
                     </Chip>
@@ -90,9 +90,9 @@ export default function RuntimesHub() {
 
           <Card className="md:col-span-2 border-dashed border-zinc-700 bg-zinc-950">
             <CardPanel>
-              <p className="text-sm leading-relaxed text-zinc-500">
+              <p className="text-sm leading-relaxed text-zinc-400">
                 New runtime you want supported? Email
-                <a href="mailto:hello@raltic.com" className="text-zinc-300 hover:text-white"> hello@raltic.com</a>.
+                <a href="mailto:hello@raltic.com" className="text-zinc-300 underline underline-offset-4 hover:text-white"> hello@raltic.com</a>.
               </p>
             </CardPanel>
           </Card>

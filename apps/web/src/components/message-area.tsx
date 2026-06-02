@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useParams } from "next/navigation";
 import { Chip } from "@/components/heroui-pro/chip";
+import { Card } from "@/components/heroui-pro/card";
 import { ScrollShadow } from "@/components/heroui-pro/scroll-shadow";
 import { Navbar } from "@heroui-pro/react/navbar";
 import { Button } from "@/components/heroui-pro/button";
@@ -722,7 +723,8 @@ export function MessageArea({ channelId }: MessageAreaProps) {
           <Navbar.Brand className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
             <span
               aria-hidden
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700 shadow-[0_0_0_4px_rgba(6,182,212,0.08)] sm:h-9 sm:w-9"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] sm:h-9 sm:w-9"
+              style={{ boxShadow: "0 0 0 4px var(--accent-soft)" }}
             >
               {channel?.type === "dm" ? (
                 <AtSign className="h-4 w-4" />
@@ -941,6 +943,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
               </div>
               <Input
                 ref={fileInputRef}
+                aria-label="Attach file or image"
                 type="file"
                 multiple
                 accept="image/*,application/pdf,application/zip,text/plain,text/markdown"
@@ -1108,6 +1111,7 @@ function MessageRowView({ m, label, currentUserId, editing, draft, onStartEdit, 
   const messageBody = editing ? (
     <div className="flex w-full flex-col gap-2">
       <Textarea
+        aria-label="Edit message"
         value={draft}
         onChange={(e) => onDraftChange((e.target as HTMLTextAreaElement).value)}
         onKeyDown={(e) => {
@@ -1166,9 +1170,10 @@ function MessageRowView({ m, label, currentUserId, editing, draft, onStartEdit, 
             className={cn(
               "h-7 rounded-full px-2 text-xs transition-colors",
               mineReacted
-                ? "border-cyan-400 bg-cyan-50 text-cyan-700"
+                ? "border-accent/40 bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]"
                 : "border-border bg-background hover:bg-default",
             )}
+            style={mineReacted ? { background: "var(--accent-soft)" } : undefined}
           >
             <span>{r.emoji}</span> <span className="text-[10px] text-muted-foreground">{ids.length}</span>
           </Button>
@@ -1204,9 +1209,9 @@ function MessageRowView({ m, label, currentUserId, editing, draft, onStartEdit, 
     <div className="group relative flex flex-col items-start gap-2 py-2 pl-0 pr-10 sm:pl-1 sm:pr-12">
       <div className="flex items-center gap-2">
         <GeneratedAvatar id={m.senderId} name={label} size="sm" />
-        <span className={cn("text-sm font-semibold leading-tight", isAgent && "text-primary")}>{label}</span>
+        <span className="text-sm font-semibold leading-tight">{label}</span>
         {isAgent && (
-          <Chip size="sm" variant="soft" color="accent" className="bg-primary/10 text-primary ring-1 ring-primary/15">
+          <Chip size="sm" variant="soft" color="accent" className="text-[10px] uppercase tracking-wider">
             AI
           </Chip>
         )}
@@ -1236,7 +1241,10 @@ function QuickReactionPicker({
   onClose: () => void;
 }) {
   return (
-    <div className="flex w-fit gap-1 rounded-xl border border-border bg-background p-1 shadow-sm">
+    <Card
+      render={<div role="toolbar" aria-label="Quick reactions" />}
+      className="flex w-fit gap-1 bg-background p-1 shadow-overlay"
+    >
       {QUICK_REACTIONS.map((emoji) => (
         <Button
           key={emoji}
@@ -1250,7 +1258,7 @@ function QuickReactionPicker({
           {emoji}
         </Button>
       ))}
-    </div>
+    </Card>
   );
 }
 

@@ -31,9 +31,9 @@ export default function PrivacyPage() {
     <>
       <Card render={<article className="prose-doc max-w-3xl" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto px-6 pt-32 pb-24 text-zinc-200 sm:pt-40">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Legal</p>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">Legal</p>
           <h1 className="mt-3 text-4xl font-medium tracking-[-0.02em] text-white">Privacy Policy</h1>
-          <p className="mt-3 text-sm text-zinc-500">Last updated: {LAST_UPDATED}</p>
+          <p className="mt-3 text-sm text-zinc-400">Last updated: {LAST_UPDATED}</p>
 
           <PrivacyNote>
             Working draft pending external legal review. Reflects what Raltic actually does today (private beta). We will revise as the product evolves and post version history at the bottom of this page.

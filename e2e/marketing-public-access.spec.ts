@@ -48,6 +48,12 @@ const marketingRoutes: MarketingRoute[] = [
     heading: /Give your agents access|Connectors/i,
   },
   {
+    path: "/desktop",
+    heading: /Raltic Desktop beta/i,
+    headingSelector: "h1",
+    robots: "noindex,nofollow",
+  },
+  {
     path: "/security",
     heading: /What we see|What we don't|Security/i,
   },
@@ -82,6 +88,159 @@ test.describe("marketing public access", () => {
         const robots = await page.locator("meta[name='robots']").getAttribute("content");
         expect(robots?.replace(/\s+/g, "")).toBe(route.robots);
       }
+    });
+  }
+
+  test("/security keeps full-bleed sections and avoids mobile horizontal overflow", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const response = await page.goto("/security", { waitUntil: "domcontentloaded" });
+
+    expect(response?.status()).toBe(200);
+    await expect(page.locator("main > section").first()).toBeVisible();
+
+    const metrics = await page.evaluate(() => {
+      const firstSection = document.querySelector("main > section");
+      const box = firstSection?.getBoundingClientRect();
+      return {
+        viewportWidth: window.innerWidth,
+        bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
+        documentOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
+        firstSection: box
+          ? { left: box.left, right: box.right, width: box.width }
+          : null,
+      };
+    });
+
+    expect(metrics.bodyOverflowX).toBe(false);
+    expect(metrics.documentOverflowX).toBe(false);
+    expect(metrics.firstSection).not.toBeNull();
+    expect(metrics.firstSection!.left).toBeCloseTo(0, 1);
+    expect(metrics.firstSection!.right).toBeCloseTo(metrics.viewportWidth, 1);
+  });
+
+  test("/404 uses the token brand monogram and avoids mobile horizontal overflow", async ({ page }) => {
+    const response = await page.goto("/connectors/missing-heroui-brand-check", { waitUntil: "domcontentloaded" });
+
+    expect(response?.status()).toBe(404);
+    await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Raltic/ })).toBeVisible();
+
+    const brandMetrics = await page.getByRole("link", { name: /Raltic/ }).evaluate((brand) => {
+      const mark = brand.querySelector<HTMLElement>("[aria-hidden='true']");
+      const style = mark ? getComputedStyle(mark) : null;
+      return {
+        className: mark?.getAttribute("class") ?? "",
+        backgroundImage: style?.backgroundImage ?? "",
+        color: style?.color ?? "",
+      };
+    });
+
+    expect(brandMetrics.className).not.toMatch(/(?:cyan|amber)-\d{2,3}/);
+    expect(brandMetrics.backgroundImage).toContain("linear-gradient");
+    expect(brandMetrics.color, "monogram text should not rely on low-contrast white over accent").not.toBe("rgb(255, 255, 255)");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/connectors/missing-heroui-brand-check-mobile", { waitUntil: "domcontentloaded" });
+    const mobileMetrics = await page.evaluate(() => ({
+      bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
+      documentOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
+      headingVisible: Boolean(document.querySelector("h1")?.textContent?.includes("Page not found")),
+    }));
+
+    expect(mobileMetrics.headingVisible).toBe(true);
+    expect(mobileMetrics.bodyOverflowX).toBe(false);
+    expect(mobileMetrics.documentOverflowX).toBe(false);
+  });
+
+  test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 844 });
+    await page.route("**/api/v1/marketing/newsletter", (route) => route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { message: "Newsletter service unavailable" } }),
+    }));
+
+    await page.goto("/indie", { waitUntil: "domcontentloaded" });
+    await page.getByLabel("Your email address").fill("gene@example.com");
+    await page.getByRole("button", { name: /Keep me in the loop/ }).click();
+
+    const alert = page.getByText("Newsletter service unavailable");
+    await expect(alert).toBeVisible();
+
+    const metrics = await page.evaluate(() => {
+      const button = Array.from(document.querySelectorAll("button"))
+        .find((candidate) => candidate.textContent?.includes("Keep me in the loop") || candidate.textContent?.includes("Sending"));
+      const alert = Array.from(document.querySelectorAll<HTMLElement>("[role='alert']"))
+        .find((candidate) => candidate.textContent?.includes("Newsletter service unavailable"));
+      const buttonBox = button?.getBoundingClientRect();
+      const alertBox = alert?.getBoundingClientRect();
+      return {
+        bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
+        documentOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
+        buttonBottom: buttonBox?.bottom ?? null,
+        alertTop: alertBox?.top ?? null,
+        alertWidth: alertBox?.width ?? null,
+        viewportWidth: window.innerWidth,
+      };
+    });
+
+    expect(metrics.bodyOverflowX).toBe(false);
+    expect(metrics.documentOverflowX).toBe(false);
+    expect(metrics.buttonBottom).not.toBeNull();
+    expect(metrics.alertTop).not.toBeNull();
+    expect(metrics.alertTop!, "newsletter error should render below the form controls").toBeGreaterThanOrEqual(metrics.buttonBottom! - 1);
+    expect(metrics.alertWidth!, "newsletter error should fit inside the viewport").toBeLessThanOrEqual(metrics.viewportWidth);
+  });
+
+  test("/teams waitlist error stays in normal flow on desktop widths", async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 844 });
+    await page.route("**/api/v1/marketing/waitlist", (route) => route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { message: "Waitlist service unavailable" } }),
+    }));
+
+    await page.goto("/teams", { waitUntil: "domcontentloaded" });
+    await page.getByLabel("Your name").fill("Gene");
+    await page.getByLabel("Work email").fill("gene@example.com");
+    await page.getByRole("button", { name: /Request access/ }).click();
+
+    const alert = page.getByText("Waitlist service unavailable");
+    await expect(alert).toBeVisible();
+
+    const metrics = await page.evaluate(() => {
+      const button = Array.from(document.querySelectorAll("button"))
+        .find((candidate) => candidate.textContent?.includes("Request access") || candidate.textContent?.includes("Sending"));
+      const alert = Array.from(document.querySelectorAll<HTMLElement>("[role='alert']"))
+        .find((candidate) => candidate.textContent?.includes("Waitlist service unavailable"));
+      const buttonBox = button?.getBoundingClientRect();
+      const alertBox = alert?.getBoundingClientRect();
+      return {
+        bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
+        documentOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
+        buttonTop: buttonBox?.top ?? null,
+        alertBottom: alertBox?.bottom ?? null,
+        alertWidth: alertBox?.width ?? null,
+        viewportWidth: window.innerWidth,
+      };
+    });
+
+    expect(metrics.bodyOverflowX).toBe(false);
+    expect(metrics.documentOverflowX).toBe(false);
+    expect(metrics.buttonTop).not.toBeNull();
+    expect(metrics.alertBottom).not.toBeNull();
+    expect(metrics.alertBottom!, "waitlist error should render above the submit row").toBeLessThanOrEqual(metrics.buttonTop! + 1);
+    expect(metrics.alertWidth!, "waitlist error should fit inside the viewport").toBeLessThanOrEqual(metrics.viewportWidth);
+  });
+
+  for (const path of ["/privacy", "/terms"]) {
+    test(`${path} legal metadata keeps readable contrast tokens`, async ({ page }) => {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      const legal = page.getByText("Legal", { exact: true });
+      const updated = page.getByText(/Last updated:/);
+
+      await expect(legal).toHaveClass(/text-zinc-400/);
+      await expect(updated).toHaveClass(/text-zinc-400/);
     });
   }
 });

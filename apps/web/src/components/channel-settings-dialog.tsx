@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
+import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
 import { ConfirmDialog } from "@/components/heroui-pro/confirm-dialog";
 import { api, ApiError, type Channel } from "@/lib/api";
 import { notifySuccess, notifyThrown } from "@/lib/notify";
@@ -142,6 +143,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                 <FieldLabel htmlFor="cs-name">Name</FieldLabel>
                 <Input
                   id="cs-name"
+                  aria-label="Channel name"
                   value={name}
                   pattern="[a-z0-9_-]+"
                   maxLength={64}
@@ -153,6 +155,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                 <FieldLabel htmlFor="cs-desc">Description</FieldLabel>
                 <Input
                   id="cs-desc"
+                  aria-label="Channel description"
                   value={description}
                   maxLength={2000}
                   disabled={!canManage}
@@ -165,6 +168,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                 <FieldLabel htmlFor="cs-topic">Current topic</FieldLabel>
                 <Input
                   id="cs-topic"
+                  aria-label="Current topic"
                   value={topic}
                   maxLength={250}
                   disabled={!canManage}
@@ -176,29 +180,30 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
               {channel.type !== "dm" && canManage && (
                 <Field>
                   <FieldLabel id="channel-settings-visibility-label">Visibility</FieldLabel>
-                  <div role="group" aria-labelledby="channel-settings-visibility-label" className="flex flex-col gap-2 sm:flex-row">
+                  <RadioGroup
+                    aria-labelledby="channel-settings-visibility-label"
+                    value={channel.type}
+                    onValueChange={(next) => {
+                      if ((next === "public" || next === "private") && channel.type !== next) {
+                        setVisibilityTarget(next);
+                      }
+                    }}
+                    className="grid gap-2 sm:grid-cols-2"
+                  >
                     {(["public", "private"] as const).map((t) => (
-                      <Button
+                      <Radio
                         key={t}
-                        type="button"
-                        disabled={convertingVisibility || visibilityTarget !== null || channel.type === t}
-                        onClick={() => {
-                          if (channel.type !== t) setVisibilityTarget(t);
-                        }}
-                        aria-pressed={channel.type === t}
-                        variant="outline"
-                        size="sm"
-                        className={`flex-1 rounded-md border px-3 py-1.5 text-left text-xs transition-colors ${
-                          channel.type === t ? "border-cyan-500 bg-cyan-500/10 text-foreground" : "border-border hover:bg-accent/40"
-                        }`}
+                        value={t}
+                        isDisabled={convertingVisibility || visibilityTarget !== null}
+                        controlClassName="mt-0.5"
                       >
                         <span className="flex items-center gap-1.5 font-medium">
                           {t === "public" ? <Hash className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
                           {t === "public" ? "Public" : "Private"}
                         </span>
-                      </Button>
+                      </Radio>
                     ))}
-                  </div>
+                  </RadioGroup>
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     Existing members keep access on convert. For a fresh start, create a new private channel instead.
                   </p>
@@ -293,6 +298,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                             </FieldLabel>
                             <Input
                               id="cs-del"
+                              aria-label="Delete confirmation"
                               value={deleteText}
                               onChange={(e) => setDeleteText((e.target as HTMLInputElement).value)}
                               placeholder={channel.name}

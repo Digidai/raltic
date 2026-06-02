@@ -7,10 +7,13 @@ import {
 } from "@/components/heroui-pro/dialog";
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
+import { Select } from "@/components/heroui-pro/select";
 import { Textarea } from "@/components/heroui-pro/textarea";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
+import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
+import { Chip } from "@/components/heroui-pro/chip";
+import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
 import { api, ApiError, CLOUD_MODELS, RUNTIME_LABEL, RUNTIME_MODELS, type RuntimeId, type MachineRuntimeRow } from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 interface Props {
   serverId: string;
@@ -38,9 +41,6 @@ const RUNTIME_INSTALL_CMD: Record<RuntimeId, string> = {
   openclaw: "npm i -g openclaw && openclaw onboard --install-daemon",
   hermes:   "curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash",
 };
-
-const optionButtonClass =
-  "!h-auto !w-full min-w-0 !items-stretch !justify-start !whitespace-normal rounded-xl px-3 py-2 text-left text-sm text-foreground transition-colors";
 
 export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: Props) {
   const [name, setName] = useState("");
@@ -167,70 +167,57 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
                     using their own API quota. */}
                 <Field>
                   <FieldLabel id="create-agent-mode-label">Where does this agent live?</FieldLabel>
-                  <div role="group" aria-labelledby="create-agent-mode-label" className="flex flex-col gap-2 sm:flex-row">
-                    <Button
-                      type="button"
-                      onClick={() => pickRuntimeMode("raltic")}
-                      aria-pressed={runtimeMode === "raltic"}
-                      variant="outline"
-                      className={cn(
-                        optionButtonClass,
-                        "flex-1 flex-col",
-                        runtimeMode === "raltic"
-                          ? "border-cyan-500 bg-cyan-500/10"
-                          : "border-border hover:border-foreground/20",
-                      )}
+                  <RadioGroup
+                    aria-labelledby="create-agent-mode-label"
+                    value={runtimeMode}
+                    onValueChange={(next) => pickRuntimeMode(next === "bridge" ? "bridge" : "raltic")}
+                    className="grid gap-2 sm:grid-cols-2"
+                  >
+                    <Radio
+                      value="raltic"
+                      controlClassName="mt-1"
                     >
                       <div className="flex min-w-0 items-center justify-between gap-2">
                         <span className="min-w-0 font-medium">Cloud (Raltic)</span>
-                        <span className="shrink-0 rounded-full bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-medium text-cyan-700 dark:text-cyan-300">recommended</span>
+                        <Chip size="sm" variant="soft" color="success" className="shrink-0 text-[10px]">
+                          recommended
+                        </Chip>
                       </div>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
                         Zero install. Runs in our cloud sandbox — files, bash, git all work. Mobile-friendly.
                       </p>
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => pickRuntimeMode("bridge")}
-                      aria-pressed={runtimeMode === "bridge"}
-                      variant="outline"
-                      className={cn(
-                        optionButtonClass,
-                        "flex-1 flex-col",
-                        runtimeMode === "bridge"
-                          ? "border-cyan-500 bg-cyan-500/10"
-                          : "border-border hover:border-foreground/20",
-                      )}
+                    </Radio>
+                    <Radio
+                      value="bridge"
+                      controlClassName="mt-1"
                     >
                       <div className="flex min-w-0 items-center justify-between gap-2">
                         <span className="min-w-0 font-medium">My machine (Bridge)</span>
-                        <span className="shrink-0 rounded-full bg-[var(--default)] px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">advanced</span>
+                        <Chip size="sm" variant="soft" color="default" className="shrink-0 text-[10px]">
+                          advanced
+                        </Chip>
                       </div>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
                         Spawns on your local bridge. Use your own API key + repo on disk.
                       </p>
-                    </Button>
-                  </div>
+                    </Radio>
+                  </RadioGroup>
                 </Field>
 
                 {runtimeMode === "bridge" && (
                 <Field>
                   <FieldLabel id="create-agent-runtime-label">Runtime</FieldLabel>
-                  <div role="group" aria-labelledby="create-agent-runtime-label" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <RadioGroup
+                    aria-labelledby="create-agent-runtime-label"
+                    value={runtime}
+                    onValueChange={(next) => pickRuntime(next as RuntimeId)}
+                    className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+                  >
                     {(["claude", "codex", "openclaw", "hermes"] as RuntimeId[]).map((r) => (
-                      <Button
+                      <Radio
                         key={r}
-                        type="button"
-                        onClick={() => pickRuntime(r)}
-                        aria-pressed={runtime === r}
-                        variant="outline"
-                        className={cn(
-                          optionButtonClass,
-                          "flex-col",
-                          runtime === r
-                            ? "border-cyan-500 bg-cyan-500/10"
-                            : "border-border hover:border-foreground/20",
-                        )}
+                        value={r}
+                        controlClassName="mt-1"
                       >
                         <div className="flex min-w-0 items-center justify-between gap-2">
                           <span className="min-w-0 font-medium">{RUNTIME_LABEL[r]}</span>
@@ -240,55 +227,55 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
                           {RUNTIME_SHORT_DESC[r]}
                         </p>
                         {runtimeAvail[r] === "not_installed" && (
-                          <p className="mt-1 text-[11px] text-amber-700">
+                          <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
                             Not installed on any of your bridges. Run on your laptop:
-                            <code className="ml-1 break-all rounded bg-muted px-1">
+                            <code className="ml-1 break-all rounded bg-[var(--surface-tertiary)] px-1 text-foreground">
                               {RUNTIME_INSTALL_CMD[r]}
                             </code>
                           </p>
                         )}
                         {runtimeAvail[r] === "needs_login" && (
-                          <p className="mt-1 text-[11px] text-amber-700">
+                          <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
                             {/* external_daemon runtimes (openclaw, hermes)
                                 aren't a `login` command — they're a daemon
                                 that's not running. */}
                             {r === "openclaw" || r === "hermes"
                               ? `Installed but daemon not running. Start: ${r === "openclaw" ? "openclaw onboard --install-daemon" : "hermes start"}`
-                              : <>Installed but not signed in. Run: <code className="rounded bg-muted px-1">{r} login</code></>}
+                              : <>Installed but not signed in. Run: <code className="rounded bg-[var(--surface-tertiary)] px-1 text-foreground">{r} login</code></>}
                           </p>
                         )}
-                      </Button>
+                      </Radio>
                     ))}
-                  </div>
+                  </RadioGroup>
                 </Field>
                 )}
 
                 <Field>
                   <FieldLabel htmlFor="create-agent-identifier">Identifier</FieldLabel>
-                  <Input id="create-agent-identifier" value={name} required pattern="[a-z0-9_-]+" maxLength={64}
+                  <Input id="create-agent-identifier" aria-label="Agent identifier" value={name} required pattern="[a-z0-9_-]+" maxLength={64}
                     onChange={(e) => setName((e.target as HTMLInputElement).value.toLowerCase())}
                     placeholder="researcher" />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="create-agent-display-name">Display name</FieldLabel>
-                  <Input id="create-agent-display-name" value={displayName} required maxLength={120}
+                  <Input id="create-agent-display-name" aria-label="Agent display name" value={displayName} required maxLength={120}
                     onChange={(e) => setDisplayName((e.target as HTMLInputElement).value)}
                     placeholder="Research Agent" />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="create-agent-description">Description</FieldLabel>
-                  <Input id="create-agent-description" value={description}
+                  <Input id="create-agent-description" aria-label="Agent description" value={description}
                     onChange={(e) => setDescription((e.target as HTMLInputElement).value)}
                     placeholder="What does this agent do?" />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="create-agent-system-prompt">System prompt</FieldLabel>
-                  <Textarea id="create-agent-system-prompt" value={systemPrompt} rows={6}
+                  <Textarea id="create-agent-system-prompt" aria-label="Agent system prompt" value={systemPrompt} rows={6}
                     onChange={(e) => setSystemPrompt((e.target as HTMLTextAreaElement).value)}
                     placeholder="You are an expert in…" />
                 </Field>
                 <Field>
-                  <FieldLabel id="create-agent-model-label">
+                  <FieldLabel htmlFor="create-agent-model">
                     Model
                     {runtimeMode === "raltic" && (
                       <span className="ml-2 text-[11px] font-normal text-muted-foreground">
@@ -296,25 +283,24 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
                       </span>
                     )}
                   </FieldLabel>
-                  <div role="group" aria-labelledby="create-agent-model-label" className="flex flex-wrap gap-2">
-                    {/* Cloud mode: any modern model from any provider, since
-                        easyrouter handles routing. Bridge mode: only the
-                        models the selected runtime's CLI knows about. */}
-                    {(runtimeMode === "raltic" ? CLOUD_MODELS : RUNTIME_MODELS[runtime]).map((m) => (
-                      <Button key={m} type="button" onClick={() => setModel(m)}
-                        aria-pressed={model === m}
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "!h-auto !whitespace-normal break-all text-sm transition-colors",
-                          model === m ? "border-cyan-500 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300" : "border-border",
-                        )}>
-                        {m}
-                      </Button>
-                    ))}
-                  </div>
+                  <Select
+                    id="create-agent-model"
+                    aria-label="Agent model"
+                    value={model}
+                    onValueChange={setModel}
+                    options={(runtimeMode === "raltic" ? CLOUD_MODELS : RUNTIME_MODELS[runtime]).map((m) => ({
+                      value: m,
+                      label: m,
+                    }))}
+                    triggerClassName="w-full"
+                    className="w-full"
+                  />
                 </Field>
-                {error && <p className="text-sm text-danger-text">{error}</p>}
+                {error && (
+                  <Alert variant="error">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
               </div>
             </DialogPanel>
             <DialogFooter className="flex justify-end gap-2">
@@ -330,13 +316,13 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
 
 function RuntimeAvailabilityChip({ state }: { state: "ready" | "needs_login" | "not_installed" | "unknown" }) {
   if (state === "ready") {
-    return <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">ready</span>;
+    return <Chip size="sm" variant="soft" color="success" className="text-[10px]">ready</Chip>;
   }
   if (state === "needs_login") {
-    return <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">sign-in</span>;
+    return <Chip size="sm" variant="soft" color="warning" className="text-[10px]">sign-in</Chip>;
   }
   if (state === "not_installed") {
-    return <span className="rounded-full bg-[var(--default)] px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">not installed</span>;
+    return <Chip size="sm" variant="soft" color="default" className="text-[10px]">not installed</Chip>;
   }
   return null;
 }

@@ -58,7 +58,7 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
     // Create PRIVATE so the leave step at the end actually removes
     // the channel from the sidebar. Public channels stay visible
     // even after leave (by design — discovery via /channels page).
-    await dialog.getByRole("button", { name: /private/i }).click();
+    await dialog.locator('[data-slot="radio"]').filter({ hasText: /Private/i }).click();
     // Skip member picker — pure self-create exercises the new
     // initialMemberIds=undefined path (the simplest backend codepath).
     await dialog.getByRole("button", { name: /create channel/i }).click();

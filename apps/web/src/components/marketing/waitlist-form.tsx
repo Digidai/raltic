@@ -9,6 +9,7 @@ import { Select } from "@/components/heroui-pro/select";
 import { Textarea } from "@/components/heroui-pro/textarea";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/heroui-pro/alert";
+import { getApiOrigin } from "@/lib/auth-client";
 
 const TEAM_SIZES = ["1-4", "5-20", "21-100", "100+"] as const;
 type TeamSize = (typeof TEAM_SIZES)[number];
@@ -50,7 +51,8 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
     const utm = readUtmCookie();
 
     try {
-      const res = await fetch(`${apiOrigin}/api/v1/marketing/waitlist`, {
+      const requestOrigin = getApiOrigin(apiOrigin === "https://api.raltic.com" ? undefined : apiOrigin);
+      const res = await fetch(`${requestOrigin}/api/v1/marketing/waitlist`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -84,11 +86,11 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
         variant="success"
         className="text-center"
       >
-        <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" aria-hidden="true" />
+        <CheckCircle2 className="mx-auto h-10 w-10 text-[var(--success)]" aria-hidden="true" />
         <AlertTitle className="mt-4 text-xl">You're on the list</AlertTitle>
         <AlertDescription className="mt-3">
           We'll reply within 1–2 business days. If it's urgent, write us at{" "}
-          <a className="text-foreground underline-offset-4 hover:underline" href="mailto:hello@raltic.com">hello@raltic.com</a>.
+          <a className="text-foreground underline underline-offset-4" href="mailto:hello@raltic.com">hello@raltic.com</a>.
         </AlertDescription>
       </Alert>
     );
@@ -103,10 +105,11 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="waitlist-name" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-400">
-            Your name <span className="ml-1 text-rose-400">*</span>
+            Your name <span className="ml-1 text-[var(--danger)]">*</span>
           </FieldLabel>
           <Input
             id="waitlist-name"
+            aria-label="Your name"
             type="text"
             required
             autoComplete="name"
@@ -118,10 +121,11 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
         </Field>
         <Field>
           <FieldLabel htmlFor="waitlist-email" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-400">
-            Work email <span className="ml-1 text-rose-400">*</span>
+            Work email <span className="ml-1 text-[var(--danger)]">*</span>
           </FieldLabel>
           <Input
             id="waitlist-email"
+            aria-label="Work email"
             type="email"
             required
             autoComplete="email"
@@ -140,6 +144,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
           </FieldLabel>
           <Input
             id="waitlist-company"
+            aria-label="Company"
             type="text"
             autoComplete="organization"
             value={company}
@@ -154,6 +159,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
           </FieldLabel>
           <Select
             id="waitlist-team-size"
+            aria-label="Team size"
             value={teamSize}
             onChange={e => setTeamSize(e.target.value as TeamSize | "")}
             disabled={state === "submitting"}
@@ -170,6 +176,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
         </FieldLabel>
         <Textarea
           id="waitlist-use-case"
+          aria-label="What would you use Raltic for?"
           rows={4}
           value={useCase}
           onChange={e => setUseCase((e.target as HTMLTextAreaElement).value)}
@@ -187,8 +194,8 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
       )}
 
       <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
-        <p className="text-[11px] text-zinc-500">
-          We'll only email you about your waitlist status. No marketing blasts. Privacy: <a href="/privacy" className="underline-offset-4 hover:underline">privacy policy</a>.
+        <p className="text-[11px] text-zinc-400">
+          We'll only email you about your waitlist status. No marketing blasts. Privacy: <a href="/privacy" className="underline underline-offset-4 hover:text-white">privacy policy</a>.
         </p>
         <Button
           type="submit"

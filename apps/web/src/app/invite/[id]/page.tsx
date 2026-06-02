@@ -7,6 +7,7 @@ import { api, ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { Card, CardHeader, CardTitle, CardDescription, CardPanel, CardFooter } from "@/components/heroui-pro/card";
 import { Button } from "@/components/heroui-pro/button";
+import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
 
 interface Preview {
   server: { id: string; name: string; slug: string; description: string | null };
@@ -19,7 +20,8 @@ export default function InvitePage() {
   const inviteId = params.id as string;
   const session = authClient.useSession();
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
 
@@ -30,7 +32,7 @@ export default function InvitePage() {
         const data = await api.previewInvite(inviteId);
         if (!cancelled) setPreview(data);
       } catch (e) {
-        if (!cancelled) setError(e instanceof ApiError ? e.message : String(e));
+        if (!cancelled) setLoadError(e instanceof ApiError ? e.message : String(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -39,7 +41,7 @@ export default function InvitePage() {
   }, [inviteId]);
 
   async function handleAccept() {
-    setAccepting(true); setError(null);
+    setAccepting(true); setAcceptError(null);
     try {
       const res = await api.acceptInvite(inviteId);
       // `?welcome=joined` triggers a one-time toast on landing pointing
@@ -48,28 +50,36 @@ export default function InvitePage() {
       // their own agents are "missing" from this workspace's sidebar.
       router.push(`/s/${res.serverSlug}?welcome=joined`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : String(e));
+      setAcceptError(e instanceof ApiError ? e.message : String(e));
       setAccepting(false);
     }
   }
 
-  if (loading) {
+  if (loading || session.isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-8">
         <Card className="w-full max-w-sm border-dashed text-center shadow-none">
-          <CardPanel className="text-sm text-muted-foreground">Loading…</CardPanel>
+          <CardPanel className="space-y-1 text-sm">
+            <p className="font-medium text-foreground">
+              {loading ? "Loading invite" : "Checking your account"}
+            </p>
+            <p className="text-muted-foreground">
+              {loading ? "Confirming this invite is still available." : "Checking whether you're already signed in."}
+            </p>
+          </CardPanel>
         </Card>
       </div>
     );
   }
 
-  if (error || !preview) {
+  if (loadError || !preview) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-8">
         <Card className="w-full max-w-sm text-center">
           <CardHeader>
+            <h1 className="sr-only">Invite unavailable</h1>
             <CardTitle>Invite unavailable</CardTitle>
-            <CardDescription>{error ?? "This invite can no longer be used."}</CardDescription>
+            <CardDescription>{loadError ?? "This invite can no longer be used."}</CardDescription>
           </CardHeader>
           <CardFooter className="justify-center">
             <Button render={<Link href="/" />} variant="outline" size="sm">Go home</Button>
@@ -85,6 +95,7 @@ export default function InvitePage() {
         <div className="w-full max-w-sm mx-4">
           <Card>
             <CardHeader className="text-center">
+              <h1 className="sr-only">Join {preview.server.name}</h1>
               <CardTitle>Join {preview.server.name}</CardTitle>
               <CardDescription>{preview.server.description ?? "You've been invited."}</CardDescription>
             </CardHeader>
@@ -119,6 +130,7 @@ export default function InvitePage() {
       <div className="w-full max-w-sm mx-4">
         <Card>
           <CardHeader className="text-center">
+            <h1 className="sr-only">Join {preview.server.name}</h1>
             <CardTitle>Join {preview.server.name}</CardTitle>
             <CardDescription>
               {preview.server.description ?? `You've been invited to /${preview.server.slug}.`}
@@ -128,7 +140,11 @@ export default function InvitePage() {
             <p className="text-center text-sm text-muted-foreground">
               You'll join as <strong>{preview.role}</strong>.
             </p>
-            {error && <p className="mt-2 text-center text-sm text-danger-text">{error}</p>}
+            {acceptError && (
+              <Alert variant="error" className="mt-3">
+                <AlertDescription>{acceptError}</AlertDescription>
+              </Alert>
+            )}
           </CardPanel>
           <CardFooter className="flex-col gap-2">
             <Button onClick={handleAccept} loading={accepting} className="w-full">Accept invite</Button>

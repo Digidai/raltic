@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Card, CardHeader, CardTitle, CardDescription, CardPanel, CardFooter } from "@/components/heroui-pro/card";
 import { Button } from "@/components/heroui-pro/button";
@@ -12,7 +13,17 @@ import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
 const RESEND_COOLDOWN_MS = 30_000;
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">Loading…</div>}>
+      <ForgotPasswordInner />
+    </Suspense>
+  );
+}
+
+function ForgotPasswordInner() {
+  const sp = useSearchParams();
+  const emailFromQuery = sp.get("email") ?? "";
+  const [email, setEmail] = useState(emailFromQuery);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +31,10 @@ export default function ForgotPasswordPage() {
   // (whose setTimeout is throttled) doesn't artificially extend the wait.
   const [resendReadyAt, setResendReadyAt] = useState<number>(0);
   const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    if (emailFromQuery) setEmail(emailFromQuery);
+  }, [emailFromQuery]);
 
   // Tick `now` while a cooldown is active. Effect re-runs only when
   // `resendReadyAt` changes (a new send), NOT on every tick — otherwise
@@ -41,7 +56,7 @@ export default function ForgotPasswordPage() {
     setLoading(true); setError(null);
     try {
       const { error } = await authClient.requestPasswordReset({
-        email,
+        email: email.trim(),
         redirectTo: `${location.origin}/reset-password`,
       });
       if (error) {
@@ -63,6 +78,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm mx-4">
         <Card>
           <CardHeader className="text-center">
+            <h1 className="sr-only">Reset your password</h1>
             <CardTitle className="text-2xl">Reset your password</CardTitle>
             <CardDescription>We&apos;ll email you a link to set a new one.</CardDescription>
           </CardHeader>
@@ -71,7 +87,7 @@ export default function ForgotPasswordPage() {
               <div className="space-y-4">
                 <Field>
                   <FieldLabel htmlFor="forgot-password-email">Email</FieldLabel>
-                  <Input id="forgot-password-email" type="email" required autoComplete="email" value={email}
+                  <Input id="forgot-password-email" aria-label="Email" type="email" required autoComplete="email" value={email}
                     onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
                     placeholder="you@example.com" />
                 </Field>

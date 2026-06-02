@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Check, Search, UserMinus, UserPlus } from "lucide-react";
+import { Search, UserMinus, UserPlus } from "lucide-react";
 import { useWorkspacePresence } from "@/hooks/use-agent-activity";
 import {
   Dialog, DialogPortal, DialogBackdrop, DialogPopup,
@@ -11,6 +11,8 @@ import {
 } from "@/components/heroui-pro/dialog";
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
+import { Checkbox } from "@/components/heroui-pro/checkbox";
+import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
 import { api, ApiError, type Agent, type Channel, type ChannelMember } from "@/lib/api";
 import { notifySuccess, notifyThrown } from "@/lib/notify";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -189,7 +191,9 @@ export function ChannelMembersDialog({
                     picker branch, so a roster-only viewer would never
                     see why their list is empty. */}
                 {error && !pickerOpen && (
-                  <p role="alert" className="text-sm text-danger-text">{error}</p>
+                  <Alert variant="error">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
                 <div className="max-h-80 overflow-y-auto rounded-xl border border-border bg-[var(--surface-secondary)]">
                   {humanMembers.length === 0 && agentMembers.length === 0 ? (
@@ -213,7 +217,7 @@ export function ChannelMembersDialog({
                                 avatar={p?.image ? (
                                   <img src={p.image} alt="" className="h-6 w-6 rounded-full" referrerPolicy="no-referrer" />
                                 ) : (
-                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/10 text-[10px] font-semibold text-cyan-700 dark:text-cyan-300">
+                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[10px] font-semibold text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">
                                     {label.slice(0, 1).toUpperCase()}
                                   </div>
                                 )}
@@ -240,7 +244,7 @@ export function ChannelMembersDialog({
                                 key={`am:${m.memberId}`}
                                 href={a ? `/s/${serverSlug}/agents/${a.id}` : undefined}
                                 avatar={
-                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/10 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[10px] font-semibold text-[var(--warning-soft-foreground)] ring-1 ring-warning/15">
                                     {label.slice(0, 1).toUpperCase()}
                                   </div>
                                 }
@@ -295,7 +299,7 @@ export function ChannelMembersDialog({
                               avatar={m.image ? (
                                 <img src={m.image} alt="" className="h-6 w-6 rounded-full" referrerPolicy="no-referrer" />
                               ) : (
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/10 text-[10px] font-semibold text-cyan-700 dark:text-cyan-300">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[10px] font-semibold text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">
                                   {m.name.slice(0, 1).toUpperCase()}
                                 </div>
                               )}
@@ -320,7 +324,7 @@ export function ChannelMembersDialog({
                                 });
                               }}
                               avatar={
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/10 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--warning-soft)] text-[10px] font-semibold text-[var(--warning-soft-foreground)] ring-1 ring-warning/15">
                                   {a.displayName.slice(0, 1).toUpperCase()}
                                 </div>
                               }
@@ -334,7 +338,9 @@ export function ChannelMembersDialog({
                   )}
                 </div>
                 {error && (
-                  <p role="alert" className="text-sm text-danger-text">{error}</p>
+                  <Alert variant="error">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
                 <div className="flex justify-end gap-2">
                   <Button
@@ -451,15 +457,14 @@ function PickerRow({ checked, onToggle, avatar, primary, secondary }: {
   primary: string; secondary?: string;
 }) {
   return (
-    <Button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={checked}
-      variant="ghost"
-      size="sm"
-      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
-        checked ? "bg-cyan-500/10 text-foreground" : "hover:bg-accent/40"
-      } text-foreground`}
+    <Checkbox
+      checked={checked}
+      onCheckedChange={() => onToggle()}
+      aria-label={secondary ? `${primary}, ${secondary}` : primary}
+      surface="list"
+      className="w-full rounded-none border-0 px-3 py-2 text-sm"
+      controlClassName="mt-1"
+      contentClassName="flex min-w-0 flex-1 items-center gap-2.5"
     >
       {avatar}
       <div className="min-w-0 flex-1">
@@ -468,14 +473,6 @@ function PickerRow({ checked, onToggle, avatar, primary, secondary }: {
           <div className="truncate text-[10.5px] text-foreground">{secondary}</div>
         )}
       </div>
-      <span
-        aria-hidden="true"
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
-          checked ? "border-foreground bg-foreground text-background" : "border-border"
-        }`}
-      >
-        {checked && <Check className="h-3 w-3" />}
-      </span>
-    </Button>
+    </Checkbox>
   );
 }

@@ -31,15 +31,15 @@ const variants: Record<MarketingButtonVariant, string> = {
 
 const visualVariants: Record<MarketingButtonVariant, string> = {
   primary:
-    "!border-white !bg-white !text-zinc-950 shadow-[0_0_28px_rgba(103,232,249,0.18)] hover:!border-zinc-200 hover:!bg-zinc-200 focus-visible:!ring-cyan-300",
+    "!border-[var(--white)] !bg-[var(--white)] !text-[var(--eclipse)] shadow-[0_0_28px_color-mix(in_srgb,var(--accent)_22%,transparent)] hover:!border-[color-mix(in_srgb,var(--white)_82%,var(--eclipse))] hover:!bg-[color-mix(in_srgb,var(--white)_88%,var(--eclipse))] focus-visible:!ring-accent",
   secondary:
-    "!border-zinc-700 !bg-transparent !text-zinc-100 hover:!border-zinc-500 hover:!bg-zinc-950 focus-visible:!ring-cyan-300",
+    "!border-[color-mix(in_srgb,var(--white)_22%,transparent)] !bg-transparent !text-[var(--snow)] hover:!border-[color-mix(in_srgb,var(--white)_38%,transparent)] hover:!bg-[color-mix(in_srgb,var(--white)_6%,transparent)] focus-visible:!ring-accent",
   "nav-primary":
-    "!border-white !bg-white !text-zinc-950 hover:!border-zinc-200 hover:!bg-zinc-200 focus-visible:!ring-cyan-300",
+    "!border-[var(--white)] !bg-[var(--white)] !text-[var(--eclipse)] hover:!border-[color-mix(in_srgb,var(--white)_82%,var(--eclipse))] hover:!bg-[color-mix(in_srgb,var(--white)_88%,var(--eclipse))] focus-visible:!ring-accent",
   "desktop-primary":
-    "!border-zinc-950 !bg-zinc-950 !text-white hover:!border-zinc-800 hover:!bg-zinc-800 focus-visible:!ring-cyan-300",
+    "!border-[var(--eclipse)] !bg-[var(--eclipse)] !text-[var(--snow)] hover:!border-[color-mix(in_srgb,var(--eclipse)_88%,var(--snow))] hover:!bg-[color-mix(in_srgb,var(--eclipse)_88%,var(--snow))] focus-visible:!ring-accent",
   "desktop-secondary":
-    "!border-zinc-300 !bg-white !text-zinc-950 hover:!border-zinc-400 hover:!bg-zinc-50 focus-visible:!ring-cyan-300",
+    "!border-[color-mix(in_srgb,var(--eclipse)_20%,transparent)] !bg-[var(--white)] !text-[var(--eclipse)] hover:!border-[color-mix(in_srgb,var(--eclipse)_32%,transparent)] hover:!bg-[color-mix(in_srgb,var(--white)_94%,var(--eclipse))] focus-visible:!ring-accent",
 };
 
 const buttonVariants: Record<MarketingButtonVariant, ComponentProps<typeof Button>["variant"]> = {

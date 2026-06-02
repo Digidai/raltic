@@ -161,10 +161,19 @@ export const DropdownMenuGroup = ({
   children,
 }: { children: React.ReactNode }) => <>{children}</>;
 
-export const DropdownMenuLabel = ({ className, children }: { className?: string; children: React.ReactNode }) => (
+export const DropdownMenuLabel = ({
+  className,
+  children,
+  style,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}) => (
   <Dropdown.Item
     isDisabled
     textValue={deriveTextValue(children) ?? "menu label"}
+    style={style}
     className={cn(
       "min-h-0 cursor-default rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground opacity-100",
       className,

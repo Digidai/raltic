@@ -66,7 +66,7 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
                   </div>
                   <div>
                     <p className="font-medium text-white">Current status</p>
-                    <p className="text-sm text-zinc-500">Manual beta install</p>
+                    <p className="text-sm text-zinc-400">Manual beta install</p>
                   </div>
                 </div>
               </CardHeader>
@@ -152,7 +152,6 @@ function DesktopReturnBar() {
       render={<div className="border-b border-cyan-400/20 bg-black/90 px-6 py-3 backdrop-blur-xl" />}
       className="w-full rounded-none border-0 bg-transparent"
     >
-    
       <CardPanel className="px-0">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Link
@@ -162,7 +161,7 @@ function DesktopReturnBar() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to desktop setup
           </Link>
-          <p className="text-xs text-zinc-500">Install notes opened inside Raltic Desktop</p>
+          <p className="text-xs text-zinc-400">Install notes opened inside Raltic Desktop</p>
         </div>
       </CardPanel>
     </Card>
@@ -171,12 +170,10 @@ function DesktopReturnBar() {
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="bg-zinc-950/70 px-0">
-      <CardPanel className="grid grid-cols-2 gap-3 py-3">
-        <dt className="text-zinc-500">{label}</dt>
-        <dd className="text-right text-zinc-200">{value}</dd>
-      </CardPanel>
-    </Card>
+    <div className="grid grid-cols-2 gap-3 rounded-lg border border-zinc-900 bg-zinc-950/70 px-4 py-3">
+      <span className="text-zinc-400">{label}</span>
+      <span className="text-right text-zinc-200">{value}</span>
+    </div>
   );
 }
 

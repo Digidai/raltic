@@ -4,14 +4,27 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 
-type WorkspacePageTone = "cyan" | "amber" | "emerald" | "violet" | "default";
+type WorkspacePageTone =
+  | "accent"
+  | "warning"
+  | "success"
+  | "default"
+  // Back-compat aliases for older page call sites. They intentionally map
+  // to token-driven HeroUI surfaces instead of raw Tailwind color families.
+  | "cyan"
+  | "amber"
+  | "emerald"
+  | "violet";
 
 const toneClass: Record<WorkspacePageTone, string> = {
-  cyan: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
-  amber: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-  emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  violet: "bg-violet-500/10 text-violet-700 dark:text-violet-400",
-  default: "bg-default text-muted-foreground",
+  accent: "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15",
+  warning: "bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)] ring-1 ring-warning/15",
+  success: "bg-[var(--success-soft)] text-[var(--success-soft-foreground)] ring-1 ring-success/15",
+  default: "bg-[var(--default-soft)] text-[var(--default-soft-foreground)] ring-1 ring-border/60",
+  cyan: "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15",
+  amber: "bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)] ring-1 ring-warning/15",
+  emerald: "bg-[var(--success-soft)] text-[var(--success-soft-foreground)] ring-1 ring-success/15",
+  violet: "bg-[var(--default-soft)] text-[var(--default-soft-foreground)] ring-1 ring-border/60",
 };
 
 export function WorkspacePage({

@@ -21,11 +21,13 @@
  *     would need a picker — defer to P1+.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Folder, FileText, ChevronRight, ChevronDown, Loader2, FolderTree, Terminal, RefreshCw, Brain } from "lucide-react";
+import { Folder, FileText, ChevronRight, ChevronDown, Loader2, FolderTree, Terminal, RefreshCw, Brain, X } from "lucide-react";
 import { api, type Agent } from "@/lib/api";
 import { notifyThrown } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/heroui-pro/button";
+import { Card, CardPanel } from "@/components/heroui-pro/card";
+import { Tabs, TabsList, TabsListContainer, TabsTrigger } from "@/components/heroui-pro/tabs";
 
 interface Props {
   /** Agent whose workspace to show. Cloud-mode only — null/empty pane
@@ -226,35 +228,50 @@ export function WorkspacePane({ agent }: Props) {
 
   if (!isCloud) {
     return (
-      <aside className="hidden w-80 shrink-0 flex-col border-l bg-muted/20 lg:flex">
-        <header className="flex items-center gap-2 border-b px-4 py-3">
-          <FolderTree className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workspace</h3>
+      <aside
+        data-testid="workspace-pane"
+        className="hidden w-80 shrink-0 flex-col border-l border-border/70 bg-[var(--surface-secondary)] text-foreground lg:flex"
+      >
+        <header className="flex items-center gap-2 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]">
+            <FolderTree className="h-3.5 w-3.5" aria-hidden="true" />
+          </span>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">Workspace</h3>
         </header>
         <div className="flex flex-1 items-center justify-center p-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            {agent
-              ? "This agent runs on your local bridge — its workspace lives on your machine."
-              : "Pick a cloud agent to see its workspace."}
-          </p>
+          <Card render={<div />} className="w-full border-border/60 bg-background/85 !shadow-none">
+            <div className="px-4 py-5">
+              <FolderTree className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden="true" />
+              <p className="mt-2 text-xs text-muted-foreground">
+                {agent
+                  ? "This agent runs on your local bridge — its workspace lives on your machine."
+                  : "Pick a cloud agent to see its workspace."}
+              </p>
+            </div>
+          </Card>
         </div>
       </aside>
     );
   }
 
   return (
-    <aside className="hidden w-80 shrink-0 flex-col border-l bg-muted/20 lg:flex">
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+    <aside
+      data-testid="workspace-pane"
+      className="hidden w-80 shrink-0 flex-col border-l border-border/70 bg-[var(--surface-secondary)] text-foreground lg:flex"
+    >
+      <header className="flex items-center justify-between gap-2 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur">
         <div className="flex items-center gap-2">
-          <FolderTree className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workspace</h3>
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-[8px] bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]">
+            <FolderTree className="h-3.5 w-3.5" aria-hidden="true" />
+          </span>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">Workspace</h3>
         </div>
         <Button
           type="button"
           onClick={() => setRefreshKey(k => k + 1)}
           variant="ghost"
           size="icon-xs"
-          className="text-muted-foreground"
+          className="text-muted-foreground hover:text-foreground"
           title="Refresh"
           aria-label="Refresh workspace"
         >
@@ -262,54 +279,52 @@ export function WorkspacePane({ agent }: Props) {
         </Button>
       </header>
 
-      <div role="tablist" aria-label="Workspace view" className="flex border-b text-[11px]">
-        <Button
-          role="tab"
-          type="button"
-          aria-selected={view === "files"}
-          onClick={() => setView("files")}
-          variant="ghost"
-          size="xs"
-          className={cn(
-            "h-8 rounded-none border-b-2 px-3 text-[11px] transition-colors",
-            view === "files"
-              ? "border-foreground font-medium text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <FolderTree className="h-3 w-3" /> Files
-        </Button>
-        <Button
-          role="tab"
-          type="button"
-          aria-selected={view === "memory"}
-          onClick={() => setView("memory")}
-          variant="ghost"
-          size="xs"
-          className={cn(
-            "h-8 rounded-none border-b-2 px-3 text-[11px] transition-colors",
-            view === "memory"
-              ? "border-foreground font-medium text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <Brain className="h-3 w-3" /> Memory
-        </Button>
-      </div>
+      <Tabs
+        selectedKey={view}
+        onSelectionChange={(key) => setView(key as "files" | "memory")}
+        className="m-2 rounded-[9px] border border-border/70 bg-background p-1 text-[11px] shadow-xs"
+      >
+        <TabsListContainer>
+          <TabsList aria-label="Workspace view" className="flex w-full min-w-0 gap-1">
+            <TabsTrigger
+              id="files"
+              className={cn(
+                "h-7 min-w-0 flex-1 justify-center gap-1 rounded-[7px] px-2 text-[11px] transition-colors",
+                view === "files"
+                  ? "bg-[var(--accent-soft)] font-medium text-[var(--accent-soft-foreground)] shadow-xs"
+                  : "text-muted-foreground hover:bg-[var(--surface-secondary)] hover:text-foreground",
+              )}
+            >
+              <FolderTree className="h-3 w-3" aria-hidden="true" /> Files
+            </TabsTrigger>
+            <TabsTrigger
+              id="memory"
+              className={cn(
+                "h-7 min-w-0 flex-1 justify-center gap-1 rounded-[7px] px-2 text-[11px] transition-colors",
+                view === "memory"
+                  ? "bg-[var(--accent-soft)] font-medium text-[var(--accent-soft-foreground)] shadow-xs"
+                  : "text-muted-foreground hover:bg-[var(--surface-secondary)] hover:text-foreground",
+              )}
+            >
+              <Brain className="h-3 w-3" aria-hidden="true" /> Memory
+            </TabsTrigger>
+          </TabsList>
+        </TabsListContainer>
+      </Tabs>
 
       <div className="flex-1 overflow-hidden">
         <div className="flex h-full flex-col">
-          <div className="max-h-1/2 flex-1 overflow-auto px-2 py-2">
+          <div className="max-h-1/2 flex-1 overflow-auto px-2 pb-2">
             {view === "memory" ? (
               memoryEntries === null && !memoryError ? (
-                <p className="px-2 py-1 text-xs text-muted-foreground">Loading…</p>
+                <p className="rounded-lg border border-border/60 bg-background px-3 py-2 text-xs text-muted-foreground">Loading…</p>
               ) : memoryError ? (
-                <div className="space-y-2 px-2 py-2 text-xs">
+                <div className="space-y-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs">
                   <p className="text-danger-text">Couldn&apos;t load memory.</p>
                   <p className="break-words text-muted-foreground">{memoryError.message}</p>
                 </div>
               ) : memoryEntries && memoryEntries.length === 0 ? (
-                <p className="px-2 py-2 text-xs text-muted-foreground">
+                <p className="rounded-lg border border-border/60 bg-background px-3 py-2 text-xs text-muted-foreground">
                   This agent hasn&apos;t written any long-term memory yet. As you chat, it&apos;ll
                   start recording durable facts here automatically (or via its <code>memory_remember</code> tool).
                 </p>
@@ -323,7 +338,7 @@ export function WorkspacePane({ agent }: Props) {
             ) : tree ? (
               <TreeRow node={tree} depth={0} expanded={expanded} onToggle={toggle} onOpenFile={openFile} />
             ) : treeError ? (
-              <div className="space-y-2 px-2 py-2 text-xs">
+              <div className="space-y-2 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs">
                 <p className="text-danger-text">Couldn&apos;t load workspace.</p>
                 <p className="break-words text-muted-foreground">{treeError.message}</p>
                 <Button
@@ -337,50 +352,57 @@ export function WorkspacePane({ agent }: Props) {
                 </Button>
               </div>
             ) : (
-              <p className="px-2 py-1 text-xs text-muted-foreground">Loading…</p>
+              <p className="rounded-lg border border-border/60 bg-background px-3 py-2 text-xs text-muted-foreground">Loading…</p>
             )}
           </div>
 
           {activeFile && (
-            <div className="border-t bg-card">
-              <div className="flex items-center justify-between px-3 py-2 text-[11px]">
+            <Card render={<div />} className="mx-2 mb-2 rounded-lg border-border/70 bg-background !shadow-none">
+              <div className="flex items-center justify-between border-b border-border/70 px-3 py-2 text-[11px]">
                 <span className="truncate font-mono text-muted-foreground">{activeFile.path}</span>
                 <Button
                   type="button"
                   onClick={() => setActiveFile(null)}
                   variant="ghost"
                   size="icon-xs"
-                  className="text-muted-foreground"
+                  className="text-muted-foreground hover:text-foreground"
                   aria-label="Close file preview"
                 >
-                  ×
+                  <X className="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
-              <pre className="max-h-64 overflow-auto px-3 pb-2 text-[11px] font-mono leading-relaxed">
+              <pre className="max-h-64 overflow-auto bg-[var(--surface-secondary)] px-3 py-2 text-[11px] font-mono leading-relaxed text-foreground">
                 {loadingFile ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
                   <>
                     {activeFile.content}
                     {activeFile.truncated && (
-                      <span className="block pt-2 text-amber-600">{"[truncated — file > 5 MiB]"}</span>
+                      <span className="block pt-2 text-[var(--warning-soft-foreground)]">{"[truncated — file > 5 MiB]"}</span>
                     )}
                   </>
                 )}
               </pre>
-            </div>
+            </Card>
           )}
 
           {terminalTail && (
-            <div className="border-t bg-card">
+            <Card
+              data-raltic-terminal-preview
+              render={<div />}
+              className="mx-2 mb-2 overflow-hidden border-zinc-800 bg-zinc-950 text-zinc-100 shadow-overlay"
+            >
               <div className="flex items-center gap-1.5 border-b px-3 py-2 text-[11px] text-muted-foreground">
                 <Terminal className="h-3 w-3" />
                 <span className="font-mono">Recent terminal output</span>
               </div>
-              <pre className="max-h-40 overflow-auto bg-black px-3 py-2 text-[10.5px] font-mono leading-snug text-zinc-200">
+              <CardPanel
+                render={<pre />}
+                className="max-h-40 overflow-auto p-3 text-[10.5px] font-mono leading-snug text-zinc-200"
+              >
                 {terminalTail}
-              </pre>
-            </div>
+              </CardPanel>
+            </Card>
           )}
         </div>
       </div>
@@ -467,7 +489,7 @@ function TreeRow({ node, depth, expanded, onToggle, onOpenFile }: {
           <span className="w-3" aria-hidden="true" />
         )}
         {node.kind === "dir" ? (
-          <Folder className="h-3 w-3 shrink-0 text-amber-600" />
+          <Folder className="h-3 w-3 shrink-0 text-[var(--warning-soft-foreground)]" />
         ) : (
           <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
         )}

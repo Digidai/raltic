@@ -7,13 +7,15 @@ import {
 } from "@/components/heroui-pro/dialog";
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
+import { Select } from "@/components/heroui-pro/select";
 import { Textarea } from "@/components/heroui-pro/textarea";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
+import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
+import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
 import { api, ApiError, CLOUD_MODELS, RUNTIME_LABEL, RUNTIME_MODELS, type Agent, type RuntimeId } from "@/lib/api";
 import { GeneratedAvatar } from "./generated-avatar";
 import { randomAvatarSeed } from "@/lib/avatar";
 import { Shuffle } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface Props {
   agent: Agent | null;
@@ -21,9 +23,6 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
 }
-
-const optionButtonClass =
-  "!h-auto !w-full min-w-0 !items-stretch !justify-start !whitespace-normal rounded-xl px-3 py-2 text-left text-sm text-foreground transition-colors";
 
 export function EditAgentDialog({ agent, open, onOpenChange, onSaved }: Props) {
   const [displayName, setDisplayName] = useState("");
@@ -125,79 +124,81 @@ export function EditAgentDialog({ agent, open, onOpenChange, onSaved }: Props) {
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="edit-agent-identifier">Identifier</FieldLabel>
-                  <Input id="edit-agent-identifier" value={agent.name} disabled
+                  <Input id="edit-agent-identifier" aria-label="Agent identifier" value={agent.name} disabled
                     title="Identifier is immutable. Delete + recreate the agent if you need a different one." />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="edit-agent-display-name">Display name</FieldLabel>
-                  <Input id="edit-agent-display-name" value={displayName} required maxLength={120}
+                  <Input id="edit-agent-display-name" aria-label="Agent display name" value={displayName} required maxLength={120}
                     onChange={(e) => setDisplayName((e.target as HTMLInputElement).value)} />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="edit-agent-description">Description</FieldLabel>
-                  <Input id="edit-agent-description" value={description}
+                  <Input id="edit-agent-description" aria-label="Agent description" value={description}
                     onChange={(e) => setDescription((e.target as HTMLInputElement).value)}
                     placeholder="What does this agent do?" />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="edit-agent-system-prompt">System prompt</FieldLabel>
-                  <Textarea id="edit-agent-system-prompt" value={systemPrompt} rows={8}
+                  <Textarea id="edit-agent-system-prompt" aria-label="Agent system prompt" value={systemPrompt} rows={8}
                     onChange={(e) => setSystemPrompt((e.target as HTMLTextAreaElement).value)}
                     placeholder="You are an expert in…" />
                 </Field>
                 {!isCloud && (
                   <Field>
                     <FieldLabel id="edit-agent-runtime-label">Runtime</FieldLabel>
-                    <div role="group" aria-labelledby="edit-agent-runtime-label" className="flex flex-col gap-2 sm:flex-row">
+                    <RadioGroup
+                      aria-labelledby="edit-agent-runtime-label"
+                      value={runtime}
+                      onValueChange={(next) => pickRuntime(next as RuntimeId)}
+                      className="grid gap-2 sm:grid-cols-2"
+                    >
                       {(["claude", "codex", "openclaw", "hermes"] as RuntimeId[]).map((r) => (
-                        <Button
+                        <Radio
                           key={r}
-                          type="button"
-                          onClick={() => pickRuntime(r)}
-                          aria-pressed={runtime === r}
-                          variant="outline"
-                          className={cn(
-                            optionButtonClass,
-                            "flex-1 flex-col",
-                            runtime === r ? "border-cyan-500 bg-cyan-500/10" : "border-border hover:border-foreground/20",
-                          )}
+                          value={r}
+                          controlClassName="mt-1"
                         >
                           <div className="font-medium">{RUNTIME_LABEL[r]}</div>
                           <p className="mt-0.5 text-[11px] text-muted-foreground">
                             {RUNTIME_MODELS[r].join(" / ")}
                           </p>
-                        </Button>
+                        </Radio>
                       ))}
-                    </div>
+                    </RadioGroup>
                   </Field>
                 )}
                 {!isCloud && runtime !== agent.runtime && (
-                  <p className="rounded border border-amber-500/40 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-                    Switching runtime starts a fresh session — past context won&apos;t carry over. DM history is preserved.
-                  </p>
+                  <Alert variant="warning" className="text-[11px]">
+                    <AlertDescription>
+                      Switching runtime starts a fresh session — past context won&apos;t carry over. DM history is preserved.
+                    </AlertDescription>
+                  </Alert>
                 )}
                 <Field>
-                  <FieldLabel id="edit-agent-model-label">Model</FieldLabel>
-                  <div role="group" aria-labelledby="edit-agent-model-label" className="flex flex-wrap gap-2">
-                    {(isCloud ? CLOUD_MODELS : RUNTIME_MODELS[runtime]).map((m) => (
-                      <Button key={m} type="button" onClick={() => setModel(m)}
-                        aria-pressed={model === m}
-                        variant="outline"
-                        size="sm"
-                        className={cn(
-                          "!h-auto !whitespace-normal break-all text-sm transition-colors",
-                          model === m ? "border-cyan-500 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300" : "border-border",
-                        )}>
-                        {m}
-                      </Button>
-                    ))}
-                  </div>
+                  <FieldLabel htmlFor="edit-agent-model">Model</FieldLabel>
+                  <Select
+                    id="edit-agent-model"
+                    aria-label="Agent model"
+                    value={model}
+                    onValueChange={setModel}
+                    options={(isCloud ? CLOUD_MODELS : RUNTIME_MODELS[runtime]).map((m) => ({
+                      value: m,
+                      label: m,
+                    }))}
+                    triggerClassName="w-full"
+                    className="w-full"
+                  />
                 </Field>
                 <p className="text-xs text-muted-foreground">
                   Changes to system prompt take effect on the next message —
                   the bridge restarts the agent process to apply them.
                 </p>
-                {error && <p className="text-sm text-danger-text">{error}</p>}
+                {error && (
+                  <Alert variant="error">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
               </div>
             </DialogPanel>
             <DialogFooter className="flex justify-end gap-2">

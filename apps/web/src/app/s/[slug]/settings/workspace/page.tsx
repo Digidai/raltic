@@ -195,7 +195,7 @@ export default function WorkspaceSettingsPage() {
                   loading="lazy"
                 />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-500/10 text-2xl font-semibold text-cyan-700">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-2xl font-semibold text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">
                   {server.name.slice(0, 1).toUpperCase()}
                 </div>
               )}
@@ -216,6 +216,7 @@ export default function WorkspaceSettingsPage() {
                 </Button>
                 <Input
                   ref={fileRef}
+                  aria-label="Workspace icon"
                   type="file"
                   accept="image/png,image/jpeg,image/gif,image/webp"
                   className="hidden"
@@ -235,6 +236,7 @@ export default function WorkspaceSettingsPage() {
                 <FieldLabel htmlFor="workspace-name">Workspace name</FieldLabel>
                 <Input
                   id="workspace-name"
+                  aria-label="Workspace name"
                   value={name}
                   onChange={(e) => setName((e.target as HTMLInputElement).value)}
                   maxLength={120}
@@ -258,11 +260,12 @@ export default function WorkspaceSettingsPage() {
                     "focus-within:ring-[color-mix(in_srgb,var(--accent)_14%,transparent)]",
                   ].join(" ")}
                 >
-                  <span className="flex min-h-9 shrink-0 items-center border-r border-[var(--field-border)] bg-[var(--surface-secondary)] px-3 font-mono text-sm font-medium text-muted-foreground select-none">
+                  <span className="flex min-h-9 shrink-0 items-center border-r border-accent/20 bg-[var(--accent-soft)] px-3 font-mono text-sm font-semibold text-foreground select-none">
                     /s/
                   </span>
                   <Input
                     id="workspace-slug"
+                    aria-label="Workspace URL slug"
                     type="text"
                     value={slug}
                     onChange={(e) => {
