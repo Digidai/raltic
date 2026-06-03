@@ -563,39 +563,39 @@ export function SetupWizard({
                     <CardPanel className="p-3 text-xs">
                     <p className="font-medium">You&apos;ll need on this laptop:</p>
                     <ul className="mt-1 space-y-0.5 text-muted-foreground">
-                      <li>• <strong>Node ≥ 20</strong> — check with <code className="rounded bg-muted px-1">node -v</code></li>
+                      <li>• <strong>Node ≥ 20</strong> — check with <code className="raltic-inline-token">node -v</code></li>
                       {runtime === "claude" && (
                         <li>
-                          • The <a className="underline" href="https://docs.claude.com/en/docs/claude-code/setup" target="_blank" rel="noreferrer"><code>claude</code> CLI</a>{" "}
-                          (logged in via <code className="rounded bg-muted px-1">claude</code>)
+                          • The <a className="underline" href="https://docs.claude.com/en/docs/claude-code/setup" target="_blank" rel="noreferrer"><code className="raltic-inline-token">claude</code> CLI</a>{" "}
+                          (logged in via <code className="raltic-inline-token">claude</code>)
                         </li>
                       )}
                       {runtime === "codex" && (
                         <li>
-                          • The <a className="underline" href="https://platform.openai.com/docs/codex/cli" target="_blank" rel="noreferrer"><code>codex</code> CLI</a>{" "}
-                          (logged in via <code className="rounded bg-muted px-1">codex login</code>)
+                          • The <a className="underline" href="https://platform.openai.com/docs/codex/cli" target="_blank" rel="noreferrer"><code className="raltic-inline-token">codex</code> CLI</a>{" "}
+                          (logged in via <code className="raltic-inline-token">codex login</code>)
                         </li>
                       )}
                       {runtime === "openclaw" && (
                         <>
                           <li>
-                            • The <a className="underline" href="https://github.com/openclaw/openclaw" target="_blank" rel="noreferrer"><code>openclaw</code> CLI</a>{" "}
-                            installed via <code className="rounded bg-muted px-1">npm i -g openclaw</code>
+                            • The <a className="underline" href="https://github.com/openclaw/openclaw" target="_blank" rel="noreferrer"><code className="raltic-inline-token">openclaw</code> CLI</a>{" "}
+                            installed via <code className="raltic-inline-token">npm i -g openclaw</code>
                           </li>
                           <li>
                             • Daemon running — start with{" "}
-                            <code className="rounded bg-muted px-1">openclaw onboard --install-daemon</code>
+                            <code className="raltic-inline-token">openclaw onboard --install-daemon</code>
                           </li>
                         </>
                       )}
                       {runtime === "hermes" && (
                         <>
                           <li>
-                            • The <a className="underline" href="https://hermes-agent.nousresearch.com/" target="_blank" rel="noreferrer"><code>hermes</code> CLI</a>{" "}
+                            • The <a className="underline" href="https://hermes-agent.nousresearch.com/" target="_blank" rel="noreferrer"><code className="raltic-inline-token">hermes</code> CLI</a>{" "}
                             installed via the one-line curl on the site above
                           </li>
                           <li>
-                            • Daemon running — start with <code className="rounded bg-muted px-1">hermes start</code>, verify with <code className="rounded bg-muted px-1">hermes status</code>
+                            • Daemon running — start with <code className="raltic-inline-token">hermes start</code>, verify with <code className="raltic-inline-token">hermes status</code>
                           </li>
                         </>
                       )}
@@ -632,7 +632,7 @@ export function SetupWizard({
                       <AlertTitle>Resumed from a previous session</AlertTitle>
                       <AlertDescription>
                         We&apos;re watching for the bridge from key{" "}
-                        <code className="rounded bg-muted px-1">{keyName}</code>.
+                        <code className="raltic-inline-token">{keyName}</code>.
                         Already pasted the command in your terminal? Just keep it running and we&apos;ll detect the connection.
                       </AlertDescription>
                       <AlertDescription className="mt-1">
@@ -652,7 +652,7 @@ export function SetupWizard({
                         <AlertTitle>What this command does:</AlertTitle>
                         <AlertDescription>
                           <ul className="mt-1 space-y-0.5">
-                            <li>1. Downloads <code className="rounded bg-muted px-1">@raltic/bridge</code> via npx (no global install)</li>
+                            <li>1. Downloads <code className="raltic-inline-token">@raltic/bridge</code> via npx (no global install)</li>
                             <li>2. Registers this laptop with your workspace using the API key below</li>
                             <li>3. Stays running in this terminal — watches for messages from your agents</li>
                           </ul>
@@ -760,7 +760,7 @@ export function SetupWizard({
                     </Chip>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Once it prints <code>[bridge] ready</code> the wizard will advance automatically.
+                    Once it prints <code className="raltic-inline-token">[bridge] ready</code> the wizard will advance automatically.
                   </p>
 
                   {pollTimedOut && (
@@ -789,19 +789,19 @@ export function SetupWizard({
                     <Card id={helpPanelId} render={<ul />} className="space-y-2 bg-background p-3 text-xs text-muted-foreground !shadow-none">
                       <li>
                         <strong className="text-foreground">Node ≥ 20 not installed?</strong>{" "}
-                        Run <code className="rounded bg-muted px-1">node -v</code>. If missing, install from{" "}
+                        Run <code className="raltic-inline-token">node -v</code>. If missing, install from{" "}
                         <a className="underline" href="https://nodejs.org" target="_blank" rel="noreferrer">nodejs.org</a>{" "}
-                        or via Homebrew (<code>brew install node</code>).
+                        or via Homebrew (<code className="raltic-inline-token">brew install node</code>).
                       </li>
                       <li>
                         <strong className="text-foreground">Claude CLI missing?</strong>{" "}
-                        Run <code className="rounded bg-muted px-1">claude --version</code>. If missing,{" "}
-                        <code className="rounded bg-muted px-1">npm install -g @anthropic-ai/claude-code</code>{" "}
-                        then <code className="rounded bg-muted px-1">claude</code> once to log in.
+                        Run <code className="raltic-inline-token">claude --version</code>. If missing,{" "}
+                        <code className="raltic-inline-token">npm install -g @anthropic-ai/claude-code</code>{" "}
+                        then <code className="raltic-inline-token">claude</code> once to log in.
                       </li>
                       <li>
                         <strong className="text-foreground">Stale npx cache?</strong>{" "}
-                        Try <code className="rounded bg-muted px-1">rm -rf ~/.npm/_npx</code> and re-run the command above.
+                        Try <code className="raltic-inline-token">rm -rf ~/.npm/_npx</code> and re-run the command above.
                       </li>
                       <li>
                         <strong className="text-foreground">Key got pasted with extra characters?</strong>{" "}

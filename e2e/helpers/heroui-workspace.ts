@@ -131,7 +131,7 @@ export function noContent(status = 204) {
   return { status, headers: corsHeaders(), body: "" };
 }
 
-function parseRgb(value: string | null) {
+export function parseRgb(value: string | null) {
   if (!value) return null;
 
   let match = value.match(/^rgba?\(([^)]+)\)$/);
@@ -179,6 +179,53 @@ export function contrast(foreground: readonly number[], background: readonly num
   const fg = 0.2126 * luminanceChannel(foreground[0]) + 0.7152 * luminanceChannel(foreground[1]) + 0.0722 * luminanceChannel(foreground[2]);
   const bg = 0.2126 * luminanceChannel(background[0]) + 0.7152 * luminanceChannel(background[1]) + 0.0722 * luminanceChannel(background[2]);
   return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+}
+
+type InlineTokenScope = {
+  locator: (selector: string) => Locator;
+};
+
+export async function assertReadableInlineTokens(
+  scope: InlineTokenScope,
+  label: string,
+  selector = "code:not(pre code)",
+) {
+  const samples = await scope.locator(selector).evaluateAll((nodes) =>
+    nodes
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .filter((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return rect.width > 0
+          && rect.height > 0
+          && style.display !== "none"
+          && style.visibility !== "hidden"
+          && Boolean(node.textContent?.trim());
+      })
+      .map((node) => {
+        const style = getComputedStyle(node);
+        return {
+          text: node.textContent?.replace(/\s+/g, " ").trim() ?? "",
+          color: style.color,
+          background: style.backgroundColor,
+          borderColor: style.borderColor,
+          className: node.getAttribute("class") ?? "",
+        };
+      }),
+  );
+
+  expect(samples.length, `${label} should render inline token samples`).toBeGreaterThan(0);
+  for (const sample of samples) {
+    const foreground = parseRgb(sample.color);
+    const background = parseRgb(sample.background);
+    expect(sample.background, `${label}: ${sample.text} should own a visible token background`).not.toBe("rgba(0, 0, 0, 0)");
+    expect(sample.background, `${label}: ${sample.text} should not use legacy muted block`).not.toBe("rgb(108, 116, 112)");
+    expect(sample.borderColor, `${label}: ${sample.text} should keep a visible token border`).not.toBe("rgba(0, 0, 0, 0)");
+    expect(
+      foreground && background ? contrast(foreground, background) : 0,
+      `${label}: ${sample.text} contrast ${JSON.stringify(sample)}`,
+    ).toBeGreaterThanOrEqual(4.5);
+  }
 }
 
 export async function assertSelectedRadioOwnsSingleSurface(radio: Locator, label: string) {

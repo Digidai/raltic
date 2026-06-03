@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
   agents,
+  assertReadableInlineTokens,
   contrast,
   dmChannel,
   json,
@@ -585,6 +586,46 @@ test("workspace entity icon frames use semantic token surfaces with readable con
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1 || document.body.scrollWidth > window.innerWidth + 1);
       expect(overflow, `${label} horizontal overflow`).toBe(false);
     }
+  }
+});
+
+test("agent markdown inline tokens stay readable in chat messages", async ({ page, context }) => {
+  await setupMockWorkspace(page, context);
+  await page.route("**/api/v1/channels/dm-agent/messages**", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    return route.fulfill(json({
+      messages: [{
+        id: "msg-agent-inline-token",
+        channelId: "dm-agent",
+        senderId: "agent-cloud",
+        senderType: "agent",
+        content: "我注意到你提到了 `@cloud-test`，也可以运行 `node -v` 检查环境。\n\n```bash\nnpm test\n```",
+        seq: 1,
+        threadParentId: null,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }],
+    }));
+  });
+
+  for (const scenario of [
+    { label: "light desktop", width: 1024, height: 768, dark: false },
+    { label: "dark mobile", width: 390, height: 844, dark: true },
+  ]) {
+    await page.setViewportSize({ width: scenario.width, height: scenario.height });
+    await openMockDm(page);
+    if (scenario.dark) {
+      await page.evaluate(() => document.documentElement.classList.add("dark"));
+    } else {
+      await page.evaluate(() => document.documentElement.classList.remove("dark"));
+    }
+
+    await expect(page.getByText(/我注意到你提到了/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(".prose-message pre code")).toContainText("npm test");
+    await assertReadableInlineTokens(page.locator(".prose-message"), `chat markdown inline tokens ${scenario.label}`);
+
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1 || document.body.scrollWidth > window.innerWidth + 1);
+    expect(overflow, `chat markdown inline tokens ${scenario.label} horizontal overflow`).toBe(false);
   }
 });
 

@@ -45,6 +45,9 @@
   --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
   --accent-soft-foreground: #437861;
   --accent-soft-hover: color-mix(in srgb, var(--accent) 20%, transparent);
+  --inline-token-bg: color-mix(in srgb, var(--surface-secondary) 78%, var(--accent) 22%);
+  --inline-token-foreground: color-mix(in srgb, var(--accent-soft-foreground) 75%, var(--foreground) 25%);
+  --inline-token-border: color-mix(in srgb, var(--accent) 24%, var(--surface-secondary) 76%);
   --danger: #DE365C;
   --danger-foreground: #FCFCFC;
   --danger-text: var(--danger-soft-foreground);
@@ -343,6 +346,9 @@
   --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
   --accent-soft-foreground: #85BEA3;
   --accent-soft-hover: color-mix(in srgb, var(--accent) 16%, transparent);
+  --inline-token-bg: color-mix(in srgb, var(--surface-secondary) 84%, var(--accent) 16%);
+  --inline-token-foreground: color-mix(in srgb, var(--accent-soft-foreground) 75%, var(--foreground) 25%);
+  --inline-token-border: color-mix(in srgb, var(--accent) 32%, var(--surface-secondary) 68%);
   --danger: #DE365C;
   --danger-foreground: #FCFCFC;
   --danger-text: var(--danger-soft-foreground);
@@ -885,12 +891,18 @@ textarea:-webkit-autofill {
   display: none;
 }
 
-.prose-message code {
+.raltic-inline-token,
+.raltic-workspace-layout code:not(pre code),
+.prose-message :not(pre) > code {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.857em;
-  background: var(--muted);
+  background: var(--inline-token-bg);
+  color: var(--inline-token-foreground);
+  border: 1px solid var(--inline-token-border);
   padding: 0.2em 0.4em;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-weight: 600;
+  -webkit-text-fill-color: var(--inline-token-foreground);
 }
 .prose-message pre {
   margin: 0.5em 0;

@@ -229,7 +229,7 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
                         {runtimeAvail[r] === "not_installed" && (
                           <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
                             Not installed on any of your bridges. Run on your laptop:
-                            <code className="ml-1 break-all rounded bg-[var(--surface-tertiary)] px-1 text-foreground">
+                            <code className="raltic-inline-token ml-1 break-all">
                               {RUNTIME_INSTALL_CMD[r]}
                             </code>
                           </p>
@@ -241,7 +241,7 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
                                 that's not running. */}
                             {r === "openclaw" || r === "hermes"
                               ? `Installed but daemon not running. Start: ${r === "openclaw" ? "openclaw onboard --install-daemon" : "hermes start"}`
-                              : <>Installed but not signed in. Run: <code className="rounded bg-[var(--surface-tertiary)] px-1 text-foreground">{r} login</code></>}
+                              : <>Installed but not signed in. Run: <code className="raltic-inline-token">{r} login</code></>}
                           </p>
                         )}
                       </Radio>

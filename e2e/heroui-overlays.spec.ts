@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   assertOverlayMetrics,
+  assertReadableInlineTokens,
   assertSelectedRadioOwnsSingleSurface,
   clickVisible,
   json,
@@ -257,6 +258,7 @@ test("setup wizard uses HeroUI surfaces through the bridge command step", async 
   await expect(dialog).toBeVisible({ timeout: 15_000 });
   await expect(dialog.getByText("You already have a bridge connected.")).toBeVisible();
   await expect(dialog.getByText("You'll need on this laptop:")).toBeVisible();
+  await assertReadableInlineTokens(dialog, "setup wizard requirements");
 
   const stageMetrics = await dialog.evaluate((el) => {
     const legacyPanels = Array.from(el.querySelectorAll<HTMLElement>("[class]"))
@@ -280,6 +282,7 @@ test("setup wizard uses HeroUI surfaces through the bridge command step", async 
   await expect(dialog.getByText("What this command does:")).toBeVisible();
   await expect(dialog.locator("[data-raltic-terminal-command]")).toBeVisible();
   await expect(dialog.locator("[data-raltic-terminal-preview]")).toBeVisible();
+  await assertReadableInlineTokens(dialog, "setup wizard command step");
 
   const selectedInstallTabMetrics = await dialog.getByRole("tab", { name: "Quick (recommended)" }).evaluate((el) => {
     const styles = getComputedStyle(el);

@@ -88,7 +88,7 @@ export function ConfirmDialog({
                   onChange={(e) => setTyped((e.target as HTMLInputElement).value)}
                 />
                 <p className="mt-1.5 text-[11px]">
-                  Type <code className="rounded bg-default px-1 font-mono text-[10px]">{requireText}</code> to continue.
+                  Type <code className="raltic-inline-token text-[10px]">{requireText}</code> to continue.
                 </p>
               </div>
             )}
