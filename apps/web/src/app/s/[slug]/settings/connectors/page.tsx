@@ -22,6 +22,7 @@ import { Input } from "@/components/heroui-pro/input";
 import { Select } from "@/components/heroui-pro/select";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { ConfirmDialog } from "@/components/heroui-pro/confirm-dialog";
+import { WorkspaceIconFrame } from "@/components/workspace-page";
 import { SettingsSection } from "../layout";
 
 type ConnectorKind = "github" | "linear" | "notion";
@@ -38,6 +39,7 @@ interface ConnectorRow {
 const KIND_META: Record<ConnectorKind, {
   label: string;
   Icon: typeof GitBranch;
+  tone: "accent" | "warning" | "default";
   helpUrl: string;
   scopesDefault: string[];
   description: string;
@@ -45,6 +47,7 @@ const KIND_META: Record<ConnectorKind, {
   github: {
     label: "GitHub",
     Icon: GitBranch,
+    tone: "default",
     helpUrl: "https://github.com/settings/tokens?type=beta",
     scopesDefault: ["repo", "issues"],
     description: "Personal Access Token (classic or fine-grained). Grant `repo` for private repos + `issues` for issue/PR tools.",
@@ -52,6 +55,7 @@ const KIND_META: Record<ConnectorKind, {
   linear: {
     label: "Linear",
     Icon: Briefcase,
+    tone: "warning",
     helpUrl: "https://linear.app/settings/api",
     scopesDefault: [],
     description: "Personal API Key from Linear's Settings → API → Personal API keys.",
@@ -59,6 +63,7 @@ const KIND_META: Record<ConnectorKind, {
   notion: {
     label: "Notion",
     Icon: BookOpen,
+    tone: "accent",
     helpUrl: "https://www.notion.so/my-integrations",
     scopesDefault: [],
     description: "Internal Integration Token from notion.so/my-integrations. Grant access to specific pages/databases inside Notion.",
@@ -180,7 +185,9 @@ export default function ConnectorsPage() {
                 return (
                   <Card render={<li />} key={c.id} className="border-transparent bg-[var(--surface-secondary)] !shadow-none">
                     <CardPanel className="flex flex-wrap items-center gap-3 p-3">
-                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <WorkspaceIconFrame tone={meta.tone} size="sm">
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    </WorkspaceIconFrame>
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         <div className="truncate text-sm font-medium">{c.label}</div>

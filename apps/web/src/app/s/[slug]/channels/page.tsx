@@ -9,7 +9,7 @@ import { notifyThrown, notifySuccess } from "@/lib/notify";
 import { Button } from "@/components/heroui-pro/button";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
-import { WorkspaceEmptyState, WorkspacePage } from "@/components/workspace-page";
+import { WorkspaceEmptyState, WorkspaceIconFrame, WorkspacePage } from "@/components/workspace-page";
 
 /**
  * Browse + join public channels in this workspace.
@@ -79,6 +79,7 @@ export default function ChannelsBrowsePage() {
           {rows !== null && rows.length === 0 && (
             <WorkspaceEmptyState
               icon={<Hash className="h-8 w-8" />}
+              tone="accent"
               title="No public channels yet."
               description={
                 <>
@@ -92,9 +93,9 @@ export default function ChannelsBrowsePage() {
               {rows.map((r) => (
                 <Card render={<li />} key={r.id} className="border-border/60 bg-surface/80 !shadow-none transition-colors hover:border-accent/25">
                   <CardPanel className="flex flex-wrap items-center gap-3 p-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15">
+                  <WorkspaceIconFrame tone="accent" size="sm">
                     <Hash className="h-4 w-4" aria-hidden="true" />
-                  </div>
+                  </WorkspaceIconFrame>
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/s/${slug}/channel/${r.id}`}

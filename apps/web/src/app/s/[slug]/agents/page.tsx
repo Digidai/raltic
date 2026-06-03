@@ -103,6 +103,7 @@ export default function AgentsIndexPage() {
           {agents !== null && agents.length === 0 && (
             <WorkspaceEmptyState
               icon={<Cpu className="h-8 w-8" />}
+              tone="success"
               title="No agents yet."
               description="Create your first AI teammate to start collaborating in channels."
               action={serverId && (

@@ -151,6 +151,9 @@ test("workspace fallbacks and overlays do not regress to legacy raw shells", () 
     ["legacy workspace page cyan tone", /bg-cyan-500\/10 text-cyan-700/],
     ["legacy workspace page amber tone", /bg-amber-500\/10 text-amber-700/],
     ["legacy workspace tone prop color name", /tone=["'](?:cyan|amber|emerald|violet)["']/],
+    ["legacy muted entity icon surface", /h-[89] w-[89][^"]*bg-muted text-muted-foreground/],
+    ["legacy settings connector bare muted icon", /<Icon className=["']h-4 w-4 shrink-0 text-muted-foreground["']/],
+    ["legacy empty-state bare muted icon", /mx-auto flex h-8 w-8 items-center justify-center text-muted-foreground\/60/],
   ];
   const violations: string[] = [];
 

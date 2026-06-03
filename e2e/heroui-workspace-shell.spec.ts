@@ -151,6 +151,89 @@ async function assertVisibleDangerTextReadable(page: Page, label: string) {
   }
 }
 
+async function workspaceIconFrameSamples(page: Page) {
+  return page.evaluate(() => {
+    type Rgba = [number, number, number, number];
+
+    function parseColor(value: string | null): Rgba | null {
+      if (!value || value === "transparent") return null;
+
+      let match = value.match(/^rgba?\(([^)]+)\)$/);
+      if (match) {
+        const parts = match[1].replace(/\//g, " ").split(/[\s,]+/).filter(Boolean);
+        const [r, g, b] = parts.slice(0, 3).map((token) => Number(token.endsWith("%") ? Number(token.slice(0, -1)) * 2.55 : Number(token)));
+        const alpha = parts[3] == null ? 1 : Number(parts[3].endsWith("%") ? Number(parts[3].slice(0, -1)) / 100 : parts[3]);
+        if ([r, g, b, alpha].some((component) => Number.isNaN(component))) return null;
+        return [Math.round(r), Math.round(g), Math.round(b), Math.min(1, Math.max(0, alpha))];
+      }
+
+      match = value.match(/^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\)$/);
+      if (match) {
+        const [r, g, b] = match.slice(1, 4).map((token) => Math.round(Number(token) * 255));
+        const alpha = match[4] == null ? 1 : Number(match[4]);
+        if ([r, g, b, alpha].some((component) => Number.isNaN(component))) return null;
+        return [Math.min(255, Math.max(0, r)), Math.min(255, Math.max(0, g)), Math.min(255, Math.max(0, b)), Math.min(1, Math.max(0, alpha))];
+      }
+
+      return null;
+    }
+
+    function luminanceChannel(value: number) {
+      const v = value / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    }
+
+    function contrastRatio(foreground: readonly number[], background: readonly number[]) {
+      const fg = 0.2126 * luminanceChannel(foreground[0]) + 0.7152 * luminanceChannel(foreground[1]) + 0.0722 * luminanceChannel(foreground[2]);
+      const bg = 0.2126 * luminanceChannel(background[0]) + 0.7152 * luminanceChannel(background[1]) + 0.0722 * luminanceChannel(background[2]);
+      return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+    }
+
+    function blend(layer: Rgba, base: Rgba): Rgba {
+      const alpha = layer[3] + base[3] * (1 - layer[3]);
+      if (alpha === 0) return [0, 0, 0, 0];
+      return [
+        Math.round((layer[0] * layer[3] + base[0] * base[3] * (1 - layer[3])) / alpha),
+        Math.round((layer[1] * layer[3] + base[1] * base[3] * (1 - layer[3])) / alpha),
+        Math.round((layer[2] * layer[3] + base[2] * base[3] * (1 - layer[3])) / alpha),
+        alpha,
+      ];
+    }
+
+    function effectiveBackground(node: HTMLElement) {
+      const chain: HTMLElement[] = [];
+      let current: HTMLElement | null = node;
+      while (current) {
+        chain.push(current);
+        current = current.parentElement;
+      }
+
+      let background: Rgba = [255, 255, 255, 1];
+      for (const element of chain.reverse()) {
+        const layer = parseColor(getComputedStyle(element).backgroundColor);
+        if (layer && layer[3] > 0) background = blend(layer, background);
+      }
+      return background.slice(0, 3);
+    }
+
+    return Array.from(document.querySelectorAll<HTMLElement>('[data-slot="workspace-icon-frame"]'))
+      .map((node, index) => {
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        const fg = parseColor(style.color);
+        const bg = effectiveBackground(node);
+        return {
+          label: node.textContent?.trim() || node.querySelector("svg")?.tagName || `icon-${index}`,
+          visible: rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden",
+          color: style.color,
+          background: style.backgroundColor,
+          effectiveBackground: `rgb(${bg.join(", ")})`,
+          contrast: fg ? contrastRatio(fg.slice(0, 3), bg) : 0,
+        };
+      });
+  });
+}
+
 async function setupWorkspaceWithUnread(page: Page, context: Parameters<typeof setupMockWorkspace>[1]) {
   await setupMockWorkspace(page, context);
   await page.route("**/api/v1/servers/by-slug/demo", (route) => route.fulfill(json({
@@ -450,6 +533,55 @@ test("settings sections expose every destination and keep the active state in on
     expect(navMetrics.active?.borderLeftWidth, `${section.nav} active row should be a balanced pill`).toBe(navMetrics.active?.borderRightWidth);
     expect(navMetrics.active?.backgroundColor, `${section.nav} active row should render one visible layer`).not.toBe("rgba(0, 0, 0, 0)");
     expect(navMetrics.activeContent?.backgroundColor, `${section.nav} wrapper should be the active layer`).toBe(navMetrics.active?.backgroundColor);
+  }
+});
+
+test("workspace entity icon frames use semantic token surfaces with readable contrast", async ({ page, context }) => {
+  await setupMockWorkspace(page, context);
+  await page.route("**/api/v1/connectors", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    return route.fulfill(json({
+      connectors: [
+        {
+          id: "conn-github",
+          kind: "github",
+          label: "personal-gh",
+          scopes: ["repo", "issues"],
+          createdAt: new Date().toISOString(),
+          lastUsedAt: null,
+        },
+      ],
+    }));
+  });
+
+  const routes = [
+    { path: "/s/demo/settings/agents", marker: "onboarding" },
+    { path: "/s/demo/settings/connectors", marker: "personal-gh" },
+    { path: "/s/demo/channels", marker: "onboarding" },
+  ];
+
+  for (const viewport of [{ width: 1024, height: 768 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    for (const route of routes) {
+      await page.goto(route.path, { waitUntil: "domcontentloaded" });
+      await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText(route.marker).first()).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator('[data-slot="workspace-icon-frame"]').first()).toBeVisible({ timeout: 10_000 });
+
+      const label = `${route.path} ${viewport.width}px`;
+      const samples = await workspaceIconFrameSamples(page);
+      expect(samples.length, `${label} icon frames`).toBeGreaterThan(0);
+      for (const sample of samples) {
+        expect(sample.visible, `${label}: ${sample.label} should be visible`).toBe(true);
+        expect(sample.background, `${label}: ${sample.label} should own a visible icon surface`).not.toBe("rgba(0, 0, 0, 0)");
+        expect(sample.background, `${label}: ${sample.label} should not use legacy muted block`).not.toBe("rgb(108, 116, 112)");
+        expect(sample.color, `${label}: ${sample.label} should not use legacy muted foreground`).not.toBe("rgb(88, 97, 93)");
+        expect(sample.contrast, `${label}: ${sample.label} icon contrast`).toBeGreaterThanOrEqual(3);
+      }
+
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1 || document.body.scrollWidth > window.innerWidth + 1);
+      expect(overflow, `${label} horizontal overflow`).toBe(false);
+    }
   }
 });
 

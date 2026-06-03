@@ -96,6 +96,7 @@ export default function PeoplePage() {
           {members !== null && !sessionPending && members.length === 0 && (
             <WorkspaceEmptyState
               icon={<Users className="h-8 w-8" />}
+              tone="default"
               title="You're the only person here."
               description={
                 <>

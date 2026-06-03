@@ -14,6 +14,7 @@ import { CreateChannelDialog } from "@/components/create-channel-dialog";
 import { CreateAgentDialog } from "@/components/create-agent-dialog";
 import { EditAgentDialog } from "@/components/edit-agent-dialog";
 import { ConfirmDialog } from "@/components/heroui-pro/confirm-dialog";
+import { WorkspaceIconFrame } from "@/components/workspace-page";
 import { useSettings, SettingsSection } from "../layout";
 
 // Design contract for this tab:
@@ -191,9 +192,9 @@ function ChannelRow({ channel, slug }: { channel: Channel; slug: string }) {
   return (
     <Card render={<li />} className="border-transparent bg-[var(--surface-secondary)] !shadow-none transition-colors hover:border-accent/25">
       <CardPanel className="flex flex-wrap items-center gap-3 p-3 text-sm">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <WorkspaceIconFrame tone={channel.type === "private" ? "warning" : "accent"} size="sm">
           <Icon className="h-4 w-4" aria-hidden="true" />
-        </div>
+        </WorkspaceIconFrame>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate font-medium">{channel.name}</span>
