@@ -28,11 +28,11 @@ export function SectionHeader({
             {eyebrow}
           </p>
         )}
-        <h2 className={`mt-4 text-balance text-4xl font-medium leading-[1.1] tracking-[-0.02em] sm:text-5xl ${dark ? "text-[var(--snow)]" : "text-foreground"}`}>
+        <h2 className={`mt-4 text-balance text-4xl font-medium leading-[1.1] tracking-[-0.02em] sm:text-5xl ${dark ? "text-[var(--snow)]" : "text-zinc-950"}`}>
           {title}
         </h2>
         {description && (
-          <p className={`mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed sm:text-lg ${dark ? "text-[color-mix(in_srgb,var(--snow)_68%,transparent)]" : "text-muted-foreground"}`}>
+          <p className={`mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed sm:text-lg ${dark ? "text-[color-mix(in_srgb,var(--snow)_68%,transparent)]" : "text-zinc-700"}`}>
             {description}
           </p>
         )}

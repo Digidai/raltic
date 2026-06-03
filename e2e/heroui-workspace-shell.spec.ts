@@ -13,6 +13,17 @@ import {
   setupMockWorkspace,
 } from "./helpers/heroui-workspace";
 
+function isLocalBundleTarget() {
+  const raw = process.env.E2E_BASE_URL;
+  if (!raw) return false;
+  try {
+    const host = new URL(raw).hostname;
+    return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  } catch {
+    return false;
+  }
+}
+
 type Rect = {
   top: number;
   right: number;
@@ -537,6 +548,8 @@ test("settings sections expose every destination and keep the active state in on
 });
 
 test("workspace entity icon frames use semantic token surfaces with readable contrast", async ({ page, context }) => {
+  test.skip(!isLocalBundleTarget(), "requires the current app bundle; staging E2E runs against the previous deployed build");
+
   await setupMockWorkspace(page, context);
   await page.route("**/api/v1/connectors", async (route) => {
     if (route.request().method() !== "GET") return route.fallback();

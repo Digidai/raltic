@@ -30,11 +30,34 @@ function corsHeaders(baseURL: string | undefined): Record<string, string> {
 
 async function addFakeSession(page: Page, baseURL: string | undefined) {
   if (!baseURL) throw new Error("baseURL is required for desktop auth tests");
-  await page.context().addCookies([{
-    name: "better-auth.session_token",
-    value: "desktop-e2e-session",
-    url: baseURL,
-  }]);
+  const secure = new URL(baseURL).protocol === "https:";
+  await page.context().addCookies([
+    {
+      name: "better-auth.session_token",
+      value: "desktop-e2e-session",
+      url: baseURL,
+      secure,
+      sameSite: "Lax",
+    },
+    ...(secure
+      ? [
+          {
+            name: "__Secure-better-auth.session_token",
+            value: "desktop-e2e-session",
+            url: baseURL,
+            secure: true,
+            sameSite: "Lax" as const,
+          },
+          {
+            name: "__Host-better-auth.session_token",
+            value: "desktop-e2e-session",
+            url: baseURL,
+            secure: true,
+            sameSite: "Lax" as const,
+          },
+        ]
+      : []),
+  ]);
 }
 
 async function mockAuthAndMe(page: Page, baseURL: string | undefined, opts?: {
@@ -75,6 +98,37 @@ async function mockAuthAndMe(page: Page, baseURL: string | undefined, opts?: {
         defaultServerId: defaultServer.id,
         defaultServerSlug: defaultServer.slug,
         hasConnectedBridge: false,
+      }),
+    });
+  });
+  await page.route(apiUrl("/api/v1/servers/by-slug/**"), async (route) => {
+    const slug = new URL(route.request().url()).pathname.split("/").pop();
+    const found = servers.find((s) => s.slug === slug);
+    if (!found) {
+      await route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        headers: corsHeaders(baseURL),
+        body: JSON.stringify({ error: { code: "NOT_FOUND", message: "Workspace not found" } }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: corsHeaders(baseURL),
+      body: JSON.stringify({
+        server: {
+          id: found.id,
+          slug: found.slug,
+          name: found.name,
+          description: null,
+          iconUrl: null,
+          role: "owner",
+          joinedAt: Date.now(),
+        },
+        channels: [],
+        agents: [],
       }),
     });
   });
