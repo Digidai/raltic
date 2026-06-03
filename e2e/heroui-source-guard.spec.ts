@@ -228,6 +228,23 @@ test("marketing shared surfaces use Raltic tokens instead of legacy hue atom cla
   expect(violations).toEqual([]);
 });
 
+test("marketing chrome shared surfaces avoid fixed dark palette atoms", () => {
+  const files = [
+    "components/marketing/shell.tsx",
+    "components/marketing-nav.tsx",
+    "components/marketing/footer.tsx",
+  ].map((rel) => path.join(WEB_SRC, rel));
+  const forbidden = /(?:bg|text|border|ring|from|via|to)-(?:zinc|slate|neutral|stone|gray|cyan|amber|emerald|violet|rose|blue|red)-\d{2,3}(?:\/\d+)?|\b(?:bg|text|border|ring)-(?:black|white)(?:\/\d+)?\b|rgba\((?:0,\s*0,\s*0|255,\s*255,\s*255|6,\s*182,\s*212|245,\s*158,\s*11|34,\s*211,\s*238|103,\s*232,\s*249)/;
+  const violations: string[] = [];
+
+  for (const file of files) {
+    const source = stripComments(fs.readFileSync(file, "utf8"));
+    if (forbidden.test(source)) violations.push(toRel(file));
+  }
+
+  expect(violations).toEqual([]);
+});
+
 test("marketing FAQ accordion avoids fixed palette atoms", () => {
   const files = [
     "components/marketing/faq-list.tsx",

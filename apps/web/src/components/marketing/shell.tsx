@@ -25,7 +25,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
   // their workspace. (Reported feedback: previously kicked signed-in
   // users out of every marketing click — confusing UX.)
   return (
-    <div className="dark bg-black text-white">
+    <div className="dark bg-[var(--eclipse)] text-[var(--snow)]">
       <MarketingTracking />
       <MarketingNav />
       {children}

@@ -60,28 +60,28 @@ export function MarketingNav() {
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         scrolled
-          ? "border-b border-zinc-900/80 bg-black/70 backdrop-blur-xl supports-[backdrop-filter]:bg-black/55"
+          ? "border-b border-[color-mix(in_srgb,var(--snow)_10%,transparent)] bg-[color-mix(in_srgb,var(--eclipse)_72%,transparent)] backdrop-blur-xl supports-[backdrop-filter]:bg-[color-mix(in_srgb,var(--eclipse)_58%,transparent)]"
           : "bg-transparent",
       )}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link
           href="/"
-          className="flex items-center gap-2 font-medium tracking-tight text-white"
+          className="flex items-center gap-2 font-medium tracking-tight text-[var(--snow)]"
         >
-          <RalticLogo size={32} idSuffix="nav" />
+          <RalticLogo size={32} idSuffix="nav" onDark />
           <span>Raltic</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
-          <Link href="/runtimes" className="hover:text-white">Runtimes</Link>
-          <Link href="/connectors" className="hover:text-white">Connectors</Link>
-          <Link href="/desktop" className="hover:text-white">Desktop beta</Link>
-          <Link href="/security" className="hover:text-white">Security</Link>
+        <nav className="hidden items-center gap-6 text-sm text-[color-mix(in_srgb,var(--snow)_64%,transparent)] md:flex">
+          <Link href="/runtimes" className="hover:text-[var(--snow)]">Runtimes</Link>
+          <Link href="/connectors" className="hover:text-[var(--snow)]">Connectors</Link>
+          <Link href="/desktop" className="hover:text-[var(--snow)]">Desktop beta</Link>
+          <Link href="/security" className="hover:text-[var(--snow)]">Security</Link>
           {/* Audience dropdown — surfaces /indie + /teams without
               crowding the top nav. */}
           <ForDropdown />
-          <Link href="/login" className="hover:text-white">Sign in</Link>
+          <Link href="/login" className="hover:text-[var(--snow)]">Sign in</Link>
           <MarketingButton href="/signup" variant="nav-primary">
             Get started <ArrowRight className="h-3.5 w-3.5" />
           </MarketingButton>
@@ -107,14 +107,14 @@ function MobileNavDropdown() {
         aria-label="Open marketing navigation"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-zinc-100 transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--snow)_12%,transparent)] bg-[color-mix(in_srgb,var(--snow)_5%,transparent)] text-[var(--snow)] transition-colors hover:bg-[color-mix(in_srgb,var(--snow)_9%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <MenuIcon className="h-4 w-4" aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-64 !border-zinc-800 !bg-zinc-950 !text-zinc-100 !shadow-[0_18px_45px_rgba(0,0,0,0.45)]"
+        className="w-64 !border-[color-mix(in_srgb,var(--snow)_10%,transparent)] !bg-[var(--overlay)] !text-[var(--overlay-foreground)] !shadow-overlay"
       >
         <MobileNavItem href="/runtimes" label="Runtimes" />
         <MobileNavItem href="/connectors" label="Connectors" />
@@ -158,14 +158,14 @@ function MobileNavItem({
     <DropdownMenuItem
       href={href}
       textValue={label}
-      className="!px-3 !py-2.5 !text-zinc-100 hover:!bg-white/[0.06] focus-visible:!bg-white/[0.08]"
+      className="!px-3 !py-2.5 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--snow)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--snow)_8%,transparent)]"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-zinc-100">{label}</span>
+          <span className="font-medium text-[var(--overlay-foreground)]">{label}</span>
           {suffix}
         </div>
-        {description && <div className="mt-0.5 text-[11.5px] text-zinc-400">{description}</div>}
+        {description && <div className="mt-0.5 text-[11.5px] text-muted-foreground">{description}</div>}
       </div>
     </DropdownMenuItem>
   );
@@ -184,7 +184,7 @@ function ForDropdown() {
   return (
     <DropdownMenu onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[color-mix(in_srgb,var(--snow)_64%,transparent)] transition-colors hover:bg-[color-mix(in_srgb,var(--snow)_6%,transparent)] hover:text-[var(--snow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -193,24 +193,24 @@ function ForDropdown() {
       <DropdownMenuContent
         align="start"
         sideOffset={6}
-        className="w-56 !border-zinc-800 !bg-zinc-950 !text-zinc-100 !shadow-[0_18px_45px_rgba(0,0,0,0.45)]"
+        className="w-56 !border-[color-mix(in_srgb,var(--snow)_10%,transparent)] !bg-[var(--overlay)] !text-[var(--overlay-foreground)] !shadow-overlay"
       >
         <DropdownMenuItem
           href="/indie"
-          className="!px-3 !py-2 !text-zinc-100 hover:!bg-white/[0.06] focus-visible:!bg-white/[0.08]"
+          className="!px-3 !py-2 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--snow)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--snow)_8%,transparent)]"
         >
           <div>
-            <div className="font-medium text-zinc-100">Indie devs</div>
-            <div className="mt-0.5 text-[11.5px] text-zinc-400">Solo dev / AI tinkerer</div>
+            <div className="font-medium text-[var(--overlay-foreground)]">Indie devs</div>
+            <div className="mt-0.5 text-[11.5px] text-muted-foreground">Solo dev / AI tinkerer</div>
           </div>
         </DropdownMenuItem>
         <DropdownMenuItem
           href="/teams"
-          className="!px-3 !py-2 !text-zinc-100 hover:!bg-white/[0.06] focus-visible:!bg-white/[0.08]"
+          className="!px-3 !py-2 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--snow)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--snow)_8%,transparent)]"
         >
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-zinc-100">Teams</span>
+              <span className="text-[var(--overlay-foreground)]">Teams</span>
               <Chip
                 size="sm"
                 variant="soft"
@@ -220,7 +220,7 @@ function ForDropdown() {
                 Waitlist
               </Chip>
             </div>
-            <div className="mt-0.5 text-[11.5px] text-zinc-400">Mid-market eng orgs</div>
+            <div className="mt-0.5 text-[11.5px] text-muted-foreground">Mid-market eng orgs</div>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>

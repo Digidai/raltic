@@ -12,13 +12,13 @@ import { RalticLogo } from "@/components/raltic-logo";
 export function MarketingFooter() {
   return (
     <Card
-      render={<footer className="bg-black text-zinc-400" />}
-      className="w-full rounded-none border-0 border-t border-zinc-900 bg-black shadow-none"
+      render={<footer className="bg-[var(--eclipse)] text-[color-mix(in_srgb,var(--snow)_66%,transparent)]" />}
+      className="w-full rounded-none border-0 border-t border-[color-mix(in_srgb,var(--snow)_10%,transparent)] bg-[var(--eclipse)] shadow-none"
     >
       <CardPanel className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <div className="flex items-center gap-2 text-white">
-            <RalticLogo size={24} idSuffix="footer-shared" />
+          <div className="flex items-center gap-2 text-[var(--snow)]">
+            <RalticLogo size={24} idSuffix="footer-shared" onDark />
             <span className="font-medium">Raltic</span>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed">
@@ -43,10 +43,10 @@ export function MarketingFooter() {
           { label: "Terms of service", href: "/terms" },
         ]} />
       </CardPanel>
-      <CardPanel className="border-t border-zinc-900">
+      <CardPanel className="border-t border-[color-mix(in_srgb,var(--snow)_10%,transparent)]">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs sm:flex-row">
           <span>© {new Date().getFullYear()} Raltic</span>
-          <span>Reach out: <a className="hover:text-white" href="mailto:hello@raltic.com">hello@raltic.com</a></span>
+          <span>Reach out: <a className="hover:text-[var(--snow)]" href="mailto:hello@raltic.com">hello@raltic.com</a></span>
         </div>
       </CardPanel>
     </Card>
@@ -57,11 +57,11 @@ function FooterCol({ label, links }: { label: string; links: { label: string; hr
   return (
     <Card render={<div />} className="border-0 bg-transparent shadow-none">
       <CardPanel className="space-y-2.5 p-0">
-        <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+        <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-[color-mix(in_srgb,var(--snow)_58%,transparent)]">{label}</p>
         <ul className="space-y-2.5 text-sm">
           {links.map((l) => (
             <li key={l.href + l.label}>
-              <Link href={l.href} className="text-zinc-400 hover:text-white">{l.label}</Link>
+              <Link href={l.href} className="text-[color-mix(in_srgb,var(--snow)_66%,transparent)] hover:text-[var(--snow)]">{l.label}</Link>
             </li>
           ))}
         </ul>
