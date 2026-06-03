@@ -13,7 +13,7 @@ import {
   server,
   setupMockWorkspace,
 } from "./helpers/heroui-workspace";
-import { isLocalWebTarget } from "./helpers/env";
+import { isLocalWebTarget, isPreDeployProductionTarget } from "./helpers/env";
 
 type Rect = {
   top: number;
@@ -590,6 +590,11 @@ test("workspace entity icon frames use semantic token surfaces with readable con
 });
 
 test("agent markdown inline tokens stay readable in chat messages", async ({ page, context }) => {
+  test.skip(
+    isPreDeployProductionTarget(),
+    "Inline token visual regression checks require the current bundle, not the pre-deploy production bundle.",
+  );
+
   await setupMockWorkspace(page, context);
   await page.route("**/api/v1/channels/dm-agent/messages**", async (route) => {
     if (route.request().method() !== "GET") return route.fallback();

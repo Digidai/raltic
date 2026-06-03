@@ -120,7 +120,9 @@ test.describe("console, network, and browser hygiene", () => {
       await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => undefined);
       await page.waitForTimeout(500);
 
-      const ownOriginFailures = failedRequests.filter((request) => isOwnOrigin(request.url, ownOrigins));
+      const ownOriginFailures = failedRequests.filter(
+        (request) => isOwnOrigin(request.url, ownOrigins) && !isCancelledNextRscFetch(request),
+      );
       const thirdPartyFailures = failedRequests.filter((request) => !isOwnOrigin(request.url, ownOrigins));
       const secretMatches = await scanResponsesForSecrets(responses, ownOrigins);
       const missingSecurityHeaders = missingHeadersFor(route.label, mainResponse);
@@ -271,6 +273,21 @@ function mixedContentFor(page: Page, requests: Request[]): string[] {
 function isOwnOrigin(url: string, ownOrigins: Set<string>): boolean {
   try {
     return ownOrigins.has(new URL(url).origin);
+  } catch {
+    return false;
+  }
+}
+
+function isCancelledNextRscFetch(request: FailedRequest): boolean {
+  if (request.status !== null || request.resourceType !== "fetch") {
+    return false;
+  }
+  if (!request.failureText?.includes("net::ERR_ABORTED")) {
+    return false;
+  }
+
+  try {
+    return new URL(request.url).searchParams.has("_rsc");
   } catch {
     return false;
   }
