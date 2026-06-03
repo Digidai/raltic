@@ -121,6 +121,7 @@ jobs:
     env:
       E2E_BASE_URL: ${{ vars.E2E_BASE_URL }}
       E2E_API_URL: ${{ vars.E2E_API_URL }}
+      E2E_PREDEPLOY_PRODUCTION: "1"
       E2E_RUN_WORKSPACE: ${{ vars.E2E_RUN_WORKSPACE }}
       RALTIC_E2E_EMAIL: ${{ secrets.RALTIC_E2E_EMAIL }}
       RALTIC_E2E_PASSWORD: ${{ secrets.RALTIC_E2E_PASSWORD }}

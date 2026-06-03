@@ -1,5 +1,16 @@
 const PROD_WEB_HOSTS = new Set(["raltic.com", "www.raltic.com"]);
 
+export function isLocalWebTarget(): boolean {
+  const raw = process.env.E2E_BASE_URL;
+  if (!raw) return false;
+  try {
+    const hostname = new URL(raw).hostname.toLowerCase();
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 export function isProductionWebTarget(): boolean {
   const raw = process.env.E2E_BASE_URL;
   if (!raw) return false;
@@ -8,6 +19,10 @@ export function isProductionWebTarget(): boolean {
   } catch {
     return false;
   }
+}
+
+export function isPreDeployProductionTarget(): boolean {
+  return process.env.E2E_PREDEPLOY_PRODUCTION === "1" && isProductionWebTarget();
 }
 
 export function mutatingTargetSkipReason(): string | null {

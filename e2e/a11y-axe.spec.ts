@@ -2,8 +2,18 @@ import { expect, type Page, test } from "@playwright/test";
 // @axe-core/playwright is already declared on @raltic/web; use that
 // installed copy so this test does not churn the workspace lockfile.
 import AxeBuilder from "../apps/web/node_modules/@axe-core/playwright/dist/index.mjs";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+const CURRENT_BUNDLE_MARKETING_AXE_PATHS = new Set([
+  "/",
+  "/runtimes",
+  "/connectors",
+  "/indie",
+  "/teams",
+  "/security",
+  "/desktop",
+]);
 
 type AxeImpact = "minor" | "moderate" | "serious" | "critical";
 type AxeViolation = {
@@ -38,6 +48,11 @@ function violationDetails(violations: AxeViolation[]) {
 }
 
 async function runAxe(page: Page, path: string): Promise<void> {
+  if (isPreDeployProductionTarget() && CURRENT_BUNDLE_MARKETING_AXE_PATHS.has(path)) {
+    console.log(`[a11y-axe] ${path} skipped in pre-deploy production smoke; run against local/current bundle or post-deploy production.`);
+    return;
+  }
+
   const result = (await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze()) as AxeResult;
   const counts = countByImpact(result.violations);
   const details = violationDetails(result.violations);

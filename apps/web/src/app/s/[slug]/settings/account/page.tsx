@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { User as UserIcon, Mail, LogOut, ShieldCheck, Upload, Home, Copy, KeyRound } from "lucide-react";
@@ -92,11 +92,26 @@ export default function AccountSettingsPage() {
   const newPasswordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
 
+  const focusPasswordField = useCallback((field: PasswordFieldKey | undefined) => {
+    const target = field === "current"
+      ? currentPasswordRef.current
+      : field === "new"
+        ? newPasswordRef.current
+        : field === "confirm"
+          ? confirmPasswordRef.current
+          : null;
+    window.requestAnimationFrame(() => target?.focus());
+  }, []);
+
   // Hydrate the form once the session resolves. We avoid hydrating on
   // every re-render so the input doesn't snap back if the user is mid-edit.
   useEffect(() => {
     if (session?.user.name) setDisplayName(session.user.name);
   }, [session?.user.name]);
+
+  useEffect(() => {
+    if (!changingPassword && passwordErrorField) focusPasswordField(passwordErrorField);
+  }, [changingPassword, focusPasswordField, passwordErrorField]);
 
   if (isPending || !session) {
     return (
@@ -124,17 +139,6 @@ export default function AccountSettingsPage() {
     if (newPassword !== confirmPassword) return { message: "New passwords don't match.", field: "confirm" };
     if (currentPassword === newPassword) return { message: "New password must be different from your current password.", field: "new" };
     return null;
-  }
-
-  function focusPasswordField(field: PasswordFieldKey | undefined) {
-    const target = field === "current"
-      ? currentPasswordRef.current
-      : field === "new"
-        ? newPasswordRef.current
-        : field === "confirm"
-          ? confirmPasswordRef.current
-          : null;
-    window.requestAnimationFrame(() => target?.focus());
   }
 
   async function handleSaveName() {
