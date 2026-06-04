@@ -48,6 +48,12 @@
   --inline-token-bg: color-mix(in srgb, var(--surface-secondary) 78%, var(--accent) 22%);
   --inline-token-foreground: color-mix(in srgb, var(--accent-soft-foreground) 75%, var(--foreground) 25%);
   --inline-token-border: color-mix(in srgb, var(--accent) 24%, var(--surface-secondary) 76%);
+  --code-block-bg: color-mix(in srgb, var(--surface-secondary) 88%, var(--surface) 12%);
+  --code-block-header-bg: color-mix(in srgb, var(--surface-tertiary) 82%, var(--surface) 18%);
+  --code-block-foreground: var(--foreground);
+  --code-block-muted: var(--muted-foreground);
+  --code-block-border: color-mix(in srgb, var(--border) 76%, var(--accent) 24%);
+  --code-block-success: var(--success-soft-foreground);
   --danger: #DE365C;
   --danger-foreground: #FCFCFC;
   --danger-text: var(--danger-soft-foreground);
@@ -349,6 +355,12 @@
   --inline-token-bg: color-mix(in srgb, var(--surface-secondary) 84%, var(--accent) 16%);
   --inline-token-foreground: color-mix(in srgb, var(--accent-soft-foreground) 75%, var(--foreground) 25%);
   --inline-token-border: color-mix(in srgb, var(--accent) 32%, var(--surface-secondary) 68%);
+  --code-block-bg: color-mix(in srgb, var(--surface-secondary) 82%, var(--background) 18%);
+  --code-block-header-bg: color-mix(in srgb, var(--surface-tertiary) 84%, var(--surface) 16%);
+  --code-block-foreground: var(--foreground);
+  --code-block-muted: color-mix(in srgb, var(--muted-foreground) 70%, var(--foreground) 30%);
+  --code-block-border: color-mix(in srgb, var(--border) 66%, var(--accent) 34%);
+  --code-block-success: color-mix(in srgb, var(--success-soft-foreground) 82%, var(--foreground) 18%);
   --danger: #DE365C;
   --danger-foreground: #FCFCFC;
   --danger-text: var(--danger-soft-foreground);
@@ -904,18 +916,88 @@ textarea:-webkit-autofill {
   font-weight: 600;
   -webkit-text-fill-color: var(--inline-token-foreground);
 }
+.raltic-code-block,
+.prose-message pre {
+  background: var(--code-block-bg);
+  color: var(--code-block-foreground);
+  border: 1px solid var(--code-block-border);
+  border-radius: 8px;
+  overflow-x: auto;
+  box-shadow: var(--surface-shadow);
+}
 .prose-message pre {
   margin: 0.5em 0;
   padding: 0.75em 1em;
-  background: var(--muted);
-  border-radius: var(--radius);
-  overflow-x: auto;
+}
+.raltic-code-block {
+  margin: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
 }
 .prose-message pre code {
-  background: none;
+  background: transparent;
+  color: inherit;
+  border: 0;
   padding: 0;
   font-size: 0.85em;
   line-height: 1.5;
+  font-weight: 500;
+  -webkit-text-fill-color: currentColor;
+}
+
+.raltic-terminal-surface {
+  background: var(--code-block-bg);
+  color: var(--code-block-foreground);
+  border: 1px solid var(--code-block-border);
+  border-color: var(--code-block-border);
+}
+.raltic-terminal-header {
+  background: var(--code-block-header-bg);
+  color: var(--code-block-muted);
+  border-color: var(--code-block-border);
+}
+.raltic-terminal-body {
+  color: var(--code-block-foreground);
+}
+.raltic-terminal-line {
+  color: var(--code-block-foreground);
+}
+.raltic-terminal-muted {
+  color: var(--code-block-muted);
+}
+.raltic-terminal-success {
+  color: var(--code-block-success);
+}
+
+.raltic-marketing-icon-chip {
+  background: color-mix(in srgb, var(--accent) 14%, var(--white) 86%);
+  color: color-mix(in srgb, var(--accent) 48%, var(--eclipse) 52%);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--white) 72%);
+}
+.raltic-marketing-status-chip {
+  background: color-mix(in srgb, var(--snow) 10%, var(--eclipse) 90%);
+  color: color-mix(in srgb, var(--snow) 84%, var(--eclipse) 16%);
+  border: 1px solid color-mix(in srgb, var(--snow) 16%, var(--eclipse) 84%);
+}
+.raltic-marketing-icon-chip svg,
+.raltic-marketing-status-chip svg {
+  color: currentColor;
+  stroke: currentColor;
+}
+.raltic-marketing-cta-section {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--eclipse) 92%, var(--accent) 8%) 0%, var(--eclipse) 100%);
+  border-color: color-mix(in srgb, var(--snow) 10%, transparent);
+}
+.raltic-marketing-cta-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--snow) 12%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 16%, var(--eclipse) 84%) 0%, color-mix(in srgb, var(--eclipse) 90%, var(--accent) 10%) 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--snow) 10%, transparent),
+    0 24px 80px -48px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .prose-message mark {

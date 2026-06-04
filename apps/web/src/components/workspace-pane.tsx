@@ -326,7 +326,7 @@ export function WorkspacePane({ agent }: Props) {
               ) : memoryEntries && memoryEntries.length === 0 ? (
                 <p className="rounded-lg border border-border/60 bg-background px-3 py-2 text-xs text-muted-foreground">
                   This agent hasn&apos;t written any long-term memory yet. As you chat, it&apos;ll
-                  start recording durable facts here automatically (or via its <code>memory_remember</code> tool).
+                  start recording durable facts here automatically (or via its <code className="raltic-inline-token">memory_remember</code> tool).
                 </p>
               ) : (
                 <MemoryList
@@ -371,7 +371,7 @@ export function WorkspacePane({ agent }: Props) {
                   <X className="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
-              <pre className="max-h-64 overflow-auto bg-[var(--surface-secondary)] px-3 py-2 text-[11px] font-mono leading-relaxed text-foreground">
+              <pre className="raltic-code-block max-h-64 overflow-auto whitespace-pre-wrap px-3 py-2 text-[11px] leading-relaxed">
                 {loadingFile ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
@@ -390,15 +390,15 @@ export function WorkspacePane({ agent }: Props) {
             <Card
               data-raltic-terminal-preview
               render={<div />}
-              className="mx-2 mb-2 overflow-hidden border-zinc-800 bg-zinc-950 text-zinc-100 shadow-overlay"
+              className="raltic-terminal-surface mx-2 mb-2 overflow-hidden shadow-overlay"
             >
-              <div className="flex items-center gap-1.5 border-b px-3 py-2 text-[11px] text-muted-foreground">
+              <div className="raltic-terminal-header flex items-center gap-1.5 border-b px-3 py-2 text-[11px]">
                 <Terminal className="h-3 w-3" />
                 <span className="font-mono">Recent terminal output</span>
               </div>
               <CardPanel
                 render={<pre />}
-                className="max-h-40 overflow-auto p-3 text-[10.5px] font-mono leading-snug text-zinc-200"
+                className="raltic-terminal-body max-h-40 overflow-auto p-3 text-[10.5px] font-mono leading-snug"
               >
                 {terminalTail}
               </CardPanel>

@@ -158,7 +158,7 @@ function UL({ children }: { children: React.ReactNode }) {
   return <ul className="mt-3 space-y-2 pl-5 text-[14.5px] text-zinc-300 [&_li]:list-disc">{children}</ul>;
 }
 function Code({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-zinc-900 px-1 py-0.5 text-[13px] text-zinc-200">{children}</code>;
+  return <code className="raltic-inline-token text-[13px]">{children}</code>;
 }
 function TermsNote({ children }: { children: React.ReactNode }) {
   return (

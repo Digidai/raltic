@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
   agents,
+  assertReadableCodeBlocks,
   assertReadableInlineTokens,
   contrast,
   dmChannel,
@@ -628,6 +629,7 @@ test("agent markdown inline tokens stay readable in chat messages", async ({ pag
     await expect(page.getByText(/我注意到你提到了/)).toBeVisible({ timeout: 10_000 });
     await expect(page.locator(".prose-message pre code")).toContainText("npm test");
     await assertReadableInlineTokens(page.locator(".prose-message"), `chat markdown inline tokens ${scenario.label}`);
+    await assertReadableCodeBlocks(page.locator(".prose-message"), `chat markdown code blocks ${scenario.label}`);
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1 || document.body.scrollWidth > window.innerWidth + 1);
     expect(overflow, `chat markdown inline tokens ${scenario.label} horizontal overflow`).toBe(false);
@@ -653,6 +655,7 @@ test("members invite success state uses HeroUI alert and terminal command surfac
   await expect(alert).toBeVisible();
   await expect(alert).toContainText("Share it with whoever should join:");
   await expect(alert.locator("[data-raltic-terminal-command]")).toContainText("https://raltic.com/invite/invite-hero");
+  await assertReadableCodeBlocks(alert, "members invite terminal command", "[data-raltic-terminal-command]");
 
   const inviteMetrics = await alert.evaluate((el) => {
     const command = el.querySelector<HTMLElement>("[data-raltic-terminal-command]");
@@ -1113,6 +1116,8 @@ test("agent detail page stays in the workspace shell on desktop and mobile", asy
     await page.goto("/s/demo/agents/agent-cloud", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Cloud Test Agent" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "System prompt" })).toBeVisible();
+    await assertReadableCodeBlocks(page, `agent system prompt ${viewport.width}px`, ".raltic-code-block");
     await expect(page.getByRole("heading", { name: "This page hit an error" })).toHaveCount(0);
 
     const tabMetrics = await page.getByRole("tablist", { name: "Agent sections" }).evaluate((tablist) => {
@@ -1299,8 +1304,10 @@ test("cloud agent workspace pane uses HeroUI Pro side panel surfaces", async ({ 
   await expect(closePreview).toBeVisible();
   await expect(closePreview.locator("svg")).toBeVisible();
   await expect(pane.locator("pre", { hasText: "Cloud workspace" })).toBeVisible();
+  await assertReadableCodeBlocks(pane, "workspace pane file preview", ".raltic-code-block");
   const terminalPreview = pane.locator("[data-raltic-terminal-preview]");
   await expect(terminalPreview).toContainText("ready");
+  await assertReadableCodeBlocks(pane, "workspace pane terminal preview", "[data-raltic-terminal-preview]");
   const terminalMetrics = await terminalPreview.evaluate((el) => {
     const styles = getComputedStyle(el as HTMLElement);
     return {

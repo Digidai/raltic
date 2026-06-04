@@ -159,8 +159,9 @@ export default function SecurityPage() {
             </CardPanel>
           </Card>
 
-          <Card render={<section className="border-t border-zinc-900 bg-black px-6 py-24" />} className="w-full rounded-none border-0 shadow-none">
-            <CardPanel className="mx-auto max-w-2xl text-center">
+          <Card render={<section className="raltic-marketing-cta-section border-t px-6 py-10 sm:py-12" />} className="w-full rounded-none border-0 shadow-none">
+            <CardPanel className="mx-auto max-w-3xl px-0 py-0">
+              <div className="raltic-marketing-cta-panel px-6 py-8 text-center sm:px-10 sm:py-10">
               <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-white sm:text-4xl">
                 Try Raltic with your real code.
               </h2>
@@ -169,6 +170,7 @@ export default function SecurityPage() {
                 <MarketingButton href="/signup">
                   Start free <ArrowRight className="h-4 w-4" />
                 </MarketingButton>
+              </div>
               </div>
             </CardPanel>
           </Card>

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { contrast, parseRgb } from "./helpers/heroui-workspace";
 
 async function gotoHome(page: Page) {
   const response = await page.goto("/");
@@ -91,6 +92,40 @@ test.describe("homepage full section render", () => {
     expect(await section.locator("h3").count()).toBeGreaterThanOrEqual(6);
   });
 
+  test("marketing icon chips keep readable icon contrast", async ({ page }) => {
+    await gotoHome(page);
+
+    const samples = await page
+      .locator("section#why .raltic-marketing-icon-chip, table .raltic-marketing-status-chip")
+      .evaluateAll((nodes) =>
+        nodes
+          .filter((node): node is HTMLElement => node instanceof HTMLElement)
+          .map((node) => {
+            const svg = node.querySelector<SVGElement>("svg");
+            const nodeStyle = getComputedStyle(node);
+            const iconStyle = svg ? getComputedStyle(svg) : nodeStyle;
+            return {
+              label: node.getAttribute("aria-label") ?? node.textContent?.trim() ?? "",
+              className: node.getAttribute("class") ?? "",
+              background: nodeStyle.backgroundColor,
+              color: iconStyle.color,
+            };
+          }),
+      );
+
+    expect(samples.length, "homepage should render marketing icon/status chips").toBeGreaterThanOrEqual(8);
+    for (const sample of samples) {
+      const foreground = parseRgb(sample.color);
+      const background = parseRgb(sample.background);
+      expect(sample.background, `${sample.label} should own an opaque icon background`).not.toBe("rgba(0, 0, 0, 0)");
+      expect(sample.color, `${sample.label} should not render as black-on-dark`).not.toBe("rgb(0, 0, 0)");
+      expect(
+        foreground && background ? contrast(foreground, background) : 0,
+        `${sample.label} icon contrast ${JSON.stringify(sample)}`,
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   test("Comparison renders the product table with at least eight rows", async ({ page }) => {
     await gotoHome(page);
 
@@ -139,6 +174,24 @@ test.describe("homepage full section render", () => {
     // Primary CTA renamed: "Get started" → "Start a cloud Agent"
     // (signed-out branch); signed-in branch is "Open Raltic".
     await expect(section.getByRole("link", { name: /Start a cloud Agent|Open Raltic/i })).toBeVisible();
+    const metrics = await section.evaluate((el) => {
+      const sectionRect = el.getBoundingClientRect();
+      const panel = el.querySelector<HTMLElement>(".raltic-marketing-cta-panel");
+      const button = el.querySelector<HTMLElement>("a,button");
+      const sectionStyle = getComputedStyle(el);
+      return {
+        sectionHeight: sectionRect.height,
+        panelExists: Boolean(panel),
+        bottomGap: button ? sectionRect.bottom - button.getBoundingClientRect().bottom : sectionRect.height,
+        backgroundColor: sectionStyle.backgroundColor,
+        backgroundImage: sectionStyle.backgroundImage,
+      };
+    });
+    expect(metrics.panelExists, "final CTA should render inside a bounded panel").toBe(true);
+    expect(metrics.sectionHeight, `final CTA should not become an oversized black band: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(460);
+    expect(metrics.bottomGap, `final CTA should not leave a large empty bottom gap: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(140);
+    expect(metrics.backgroundImage, "final CTA should carry a tokenized surface gradient").not.toBe("none");
+    expect(metrics.backgroundImage, "final CTA gradient should not be pure black").not.toContain("rgb(0, 0, 0)");
   });
 
   test("Footer links to all public product, audience, and legal routes", async ({ page }) => {

@@ -159,6 +159,11 @@ test.describe("marketing public access", () => {
       contentType: "application/json",
       body: JSON.stringify({ error: { message: "Newsletter service unavailable" } }),
     }));
+    await page.route("**:8787/api/v1/marketing/newsletter", (route) => route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { message: "Newsletter service unavailable" } }),
+    }));
 
     await page.goto("/indie", { waitUntil: "domcontentloaded" });
     await page.getByLabel("Your email address").fill("gene@example.com");
@@ -195,6 +200,11 @@ test.describe("marketing public access", () => {
   test("/teams waitlist error stays in normal flow on desktop widths", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 844 });
     await page.route("**/api/v1/marketing/waitlist", (route) => route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { message: "Waitlist service unavailable" } }),
+    }));
+    await page.route("**:8787/api/v1/marketing/waitlist", (route) => route.fulfill({
       status: 500,
       contentType: "application/json",
       body: JSON.stringify({ error: { message: "Waitlist service unavailable" } }),

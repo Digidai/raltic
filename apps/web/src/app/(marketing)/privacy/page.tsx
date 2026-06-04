@@ -156,7 +156,7 @@ function B({ children }: { children: React.ReactNode }) {
   return <strong className="font-semibold text-white">{children}</strong>;
 }
 function Code({ children }: { children: React.ReactNode }) {
-  return <code className="rounded bg-zinc-900 px-1 py-0.5 text-[13px] text-zinc-200">{children}</code>;
+  return <code className="raltic-inline-token text-[13px]">{children}</code>;
 }
 function PrivacyNote({ children }: { children: React.ReactNode }) {
   return (

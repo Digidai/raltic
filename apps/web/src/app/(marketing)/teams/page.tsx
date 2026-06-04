@@ -111,8 +111,9 @@ export default function TeamsPage() {
         </CardPanel>
       </Card>
 
-      <Card render={<section id="waitlist" className="border-t border-zinc-900 bg-black px-6 py-24 scroll-mt-20" />} className="w-full rounded-none border-0 shadow-none">
-        <CardPanel className="mx-auto max-w-2xl">
+      <Card render={<section id="waitlist" className="raltic-marketing-cta-section border-t px-6 py-10 scroll-mt-20 sm:py-12" />} className="w-full rounded-none border-0 shadow-none">
+        <CardPanel className="mx-auto max-w-3xl px-0 py-0">
+          <div className="raltic-marketing-cta-panel px-6 py-8 sm:px-10 sm:py-10">
           <div className="text-center">
             <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-white sm:text-4xl">
               Get in early.
@@ -126,6 +127,7 @@ export default function TeamsPage() {
               <WaitlistForm apiOrigin={API_ORIGIN} refererPath="/teams" />
             </CardPanel>
           </Card>
+          </div>
         </CardPanel>
       </Card>
 

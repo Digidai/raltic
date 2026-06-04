@@ -83,7 +83,7 @@ export const agents = [
     name: "cloud-test",
     displayName: "Cloud Test Agent",
     description: "Runs in Raltic cloud",
-    systemPrompt: null,
+    systemPrompt: "You are Cloud Test Agent.\n\nUse `raltic message send` for replies.\nKeep workspace changes scoped and explain commands before running them.",
     model: "claude-haiku-4-5",
     runtime: "claude",
     runtimeMode: "raltic",
@@ -225,6 +225,72 @@ export async function assertReadableInlineTokens(
       foreground && background ? contrast(foreground, background) : 0,
       `${label}: ${sample.text} contrast ${JSON.stringify(sample)}`,
     ).toBeGreaterThanOrEqual(4.5);
+  }
+}
+
+export async function assertReadableCodeBlocks(
+  scope: InlineTokenScope,
+  label: string,
+  selector = "pre",
+) {
+  const blocks = await scope.locator(selector).evaluateAll((nodes) =>
+    nodes
+      .filter((node): node is HTMLElement => node instanceof HTMLElement)
+      .filter((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return rect.width > 0
+          && rect.height > 0
+          && style.display !== "none"
+          && style.visibility !== "hidden"
+          && Boolean(node.textContent?.trim());
+      })
+      .map((node) => {
+        const style = getComputedStyle(node);
+        const textNodes = [node, ...Array.from(node.querySelectorAll<HTMLElement>("*"))]
+          .filter((sample) => {
+            const rect = sample.getBoundingClientRect();
+            const sampleStyle = getComputedStyle(sample);
+            return rect.width > 0
+              && rect.height > 0
+              && sampleStyle.display !== "none"
+              && sampleStyle.visibility !== "hidden"
+              && Boolean(sample.textContent?.trim());
+          })
+          .slice(0, 12)
+          .map((sample) => {
+            const sampleStyle = getComputedStyle(sample);
+            return {
+              text: sample.textContent?.replace(/\s+/g, " ").trim().slice(0, 80) ?? "",
+              color: sampleStyle.color,
+              className: sample.getAttribute("class") ?? "",
+            };
+          });
+        return {
+          text: node.textContent?.replace(/\s+/g, " ").trim().slice(0, 80) ?? "",
+          background: style.backgroundColor,
+          borderColor: style.borderColor,
+          className: node.getAttribute("class") ?? "",
+          textNodes,
+        };
+      }),
+  );
+
+  expect(blocks.length, `${label} should render code block samples`).toBeGreaterThan(0);
+  for (const block of blocks) {
+    const background = parseRgb(block.background);
+    expect(block.background, `${label}: ${block.text} should own a visible block background`).not.toBe("rgba(0, 0, 0, 0)");
+    expect(block.background, `${label}: ${block.text} should not use legacy muted block`).not.toBe("rgb(108, 116, 112)");
+    expect(block.background, `${label}: ${block.text} should not use fixed near-black zinc block`).not.toBe("rgb(9, 9, 11)");
+    expect(block.borderColor, `${label}: ${block.text} should keep a visible block border`).not.toBe("rgba(0, 0, 0, 0)");
+
+    for (const sample of block.textNodes) {
+      const foreground = parseRgb(sample.color);
+      expect(
+        foreground && background ? contrast(foreground, background) : 0,
+        `${label}: ${sample.text} contrast ${JSON.stringify({ block, sample })}`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
   }
 }
 

@@ -738,15 +738,15 @@ export function SetupWizard({
                       <Card
                         data-raltic-terminal-preview
                         render={<div />}
-                        className="overflow-hidden border-zinc-800 bg-zinc-950 text-zinc-100 shadow-overlay"
+                        className="raltic-terminal-surface overflow-hidden shadow-overlay"
                       >
                         <CardPanel className="space-y-0.5 p-2.5 font-mono text-[10.5px] leading-relaxed">
-                          <p className="text-zinc-300">$ {installTab === "persistent" ? "raltic-bridge setup ck_…" : quickCmd || "npx -y @raltic/bridge setup ck_…"}</p>
-                          <p className="text-zinc-300">[bridge] starting</p>
-                          <p className="text-zinc-300">[bridge]   server-url={API_URL}</p>
-                          <p className="text-zinc-300">[bridge] runtime {runtime} ready</p>
-                          <p className="text-zinc-300">[bridge] connected as user=… server=…</p>
-                          <p className="text-[var(--success-soft-foreground)]">[bridge] ready — waiting for messages</p>
+                          <p className="raltic-terminal-line">$ {installTab === "persistent" ? "raltic-bridge setup ck_…" : quickCmd || "npx -y @raltic/bridge setup ck_…"}</p>
+                          <p className="raltic-terminal-line">[bridge] starting</p>
+                          <p className="raltic-terminal-line">[bridge]   server-url={API_URL}</p>
+                          <p className="raltic-terminal-line">[bridge] runtime {runtime} ready</p>
+                          <p className="raltic-terminal-line">[bridge] connected as user=… server=…</p>
+                          <p className="raltic-terminal-success">[bridge] ready — waiting for messages</p>
                         </CardPanel>
                       </Card>
                     </>

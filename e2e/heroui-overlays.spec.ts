@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   assertOverlayMetrics,
+  assertReadableCodeBlocks,
   assertReadableInlineTokens,
   assertSelectedRadioOwnsSingleSurface,
   clickVisible,
@@ -287,6 +288,11 @@ test("setup wizard uses HeroUI surfaces through the bridge command step", async 
   await expect(dialog.locator("[data-raltic-terminal-preview]")).toBeVisible();
   if (!isPreDeployProductionTarget()) {
     await assertReadableInlineTokens(dialog, "setup wizard command step");
+    await assertReadableCodeBlocks(
+      dialog,
+      "setup wizard terminal blocks",
+      "[data-raltic-terminal-command], [data-raltic-terminal-preview]",
+    );
   }
 
   const selectedInstallTabMetrics = await dialog.getByRole("tab", { name: "Quick (recommended)" }).evaluate((el) => {

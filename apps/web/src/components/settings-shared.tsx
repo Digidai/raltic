@@ -23,10 +23,10 @@ export function KeyCommandBlock({ cmd }: { cmd: string }) {
     <Card
       data-raltic-terminal-command
       render={<div />}
-      className="overflow-hidden border-zinc-800 bg-zinc-950 text-zinc-100 shadow-overlay"
+      className="raltic-terminal-surface overflow-hidden shadow-overlay"
     >
-      <div className="flex items-center justify-between border-b border-zinc-800 px-2 py-1">
-        <span className="text-[10px] uppercase tracking-wider text-zinc-400">terminal</span>
+      <div className="raltic-terminal-header flex items-center justify-between border-b px-2 py-1">
+        <span className="text-[10px] uppercase tracking-wider">terminal</span>
         <Button
           type="button"
           onClick={async () => {
@@ -39,12 +39,12 @@ export function KeyCommandBlock({ cmd }: { cmd: string }) {
           className={"h-6 text-[11px] " +
             (copied
               ? "bg-[var(--success-soft)] text-[var(--success-soft-foreground)]"
-              : "text-zinc-400 hover:bg-zinc-800 hover:text-white")}
+              : "text-[var(--code-block-muted)] hover:bg-[var(--code-block-header-bg)] hover:text-[var(--code-block-foreground)]")}
         >
           <Copy className="h-3 w-3" />{copied ? "Copied!" : "Copy"}
         </Button>
       </div>
-      <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-all p-2 font-mono text-[11px] leading-relaxed">{cmd}</pre>
+      <pre className="raltic-terminal-body max-h-32 overflow-auto whitespace-pre-wrap break-all p-2 font-mono text-[11px] leading-relaxed">{cmd}</pre>
     </Card>
   );
 }

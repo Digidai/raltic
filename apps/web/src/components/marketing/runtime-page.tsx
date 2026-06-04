@@ -35,7 +35,6 @@ const DARK_SURFACE = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] b
 const DARK_SURFACE_SOFT = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] bg-[color-mix(in_srgb,var(--white)_5%,transparent)]";
 const LIGHT_SECTION = "bg-[var(--white)] text-[var(--eclipse)]";
 const LIGHT_SURFACE = "border-border bg-[var(--surface-secondary)]";
-const LIGHT_BODY = "text-foreground";
 
 /**
  * Shared template for /runtimes/[id]. Renders the per-runtime hero,
@@ -112,7 +111,7 @@ function Hero({ doc }: { doc: RuntimeDoc }) {
         {doc.verification === "experimental" && (
           <div className="mx-auto mt-6 max-w-2xl rounded-lg border border-warning/30 bg-[var(--warning-soft)] px-4 py-3 text-left text-[12px] text-[var(--warning)]">
             <strong className="text-[var(--warning)]">Experimental runtime.</strong> Code shipped; CLI shape was implemented from public docs without a local smoke pass. See{" "}
-            <code className="rounded bg-[color-mix(in_srgb,var(--eclipse)_18%,transparent)] px-1 text-foreground">docs/SMOKE_TESTS_openclaw_hermes.md</code>{" "}
+            <code className="raltic-inline-token">docs/SMOKE_TESTS_openclaw_hermes.md</code>{" "}
             for what verification needs to cover. Recommended for evaluation, not production-critical work.
           </div>
         )}
@@ -147,7 +146,7 @@ function InstallStrip({ doc }: { doc: RuntimeDoc }) {
           <Card className={`rounded-xl ${LIGHT_SURFACE}`}>
             <CardPanel className="flex items-center gap-3 px-4 py-3">
               <Terminal className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-              <code className={`flex-1 truncate ${LIGHT_BODY}`}>{doc.installCmd}</code>
+              <code className="raltic-inline-token flex-1 truncate">{doc.installCmd}</code>
             </CardPanel>
           </Card>
           <p className="mt-4 text-center text-[12px] text-muted-foreground">
@@ -181,7 +180,7 @@ function BestAt({ doc }: { doc: RuntimeDoc }) {
           ))}
         </div>
         <p className={`mx-auto mt-10 max-w-2xl text-center text-[12px] ${DARK_MUTED}`}>
-          Available models in Raltic: {doc.models.map((m) => <code key={m} className={`mx-0.5 rounded px-1 py-0.5 ${DARK_SURFACE_SOFT} ${DARK_BODY}`}>{m}</code>)}
+          Available models in Raltic: {doc.models.map((m) => <code key={m} className="raltic-inline-token mx-0.5">{m}</code>)}
         </p>
       </CardPanel>
     </Card>

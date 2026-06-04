@@ -30,7 +30,7 @@ function SystemPromptCard({ prompt }: { prompt: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>System prompt</CardTitle>
+        <CardTitle render={<h2 />}>System prompt</CardTitle>
         <CardDescription>The instructions this agent runs with.</CardDescription>
       </CardHeader>
       <CardPanel>
@@ -39,7 +39,7 @@ function SystemPromptCard({ prompt }: { prompt: string }) {
           // the column (long URLs in prompts). overflow-x kept on `auto`
           // so a deliberately ASCII-art block can scroll rather than
           // get mangled — but whitespace-pre-wrap usually wraps it first.
-          "min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] rounded bg-muted/50 p-3 text-xs leading-relaxed overflow-auto " +
+          "raltic-code-block min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] p-3 text-xs leading-relaxed overflow-auto " +
           (expanded ? "max-h-[60vh]" : "max-h-64")
         }>{prompt}</pre>
         {isLong && (

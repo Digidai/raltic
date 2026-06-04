@@ -934,13 +934,13 @@ function ComparisonCell({ value, highlight }: { value: "yes" | "no" | "partial";
   }
   if (value === "partial") {
     return (
-      <Chip size="sm" variant="soft" color="default" className="h-6 w-6 justify-center p-0" aria-label="Partial">
+      <Chip size="sm" variant="soft" color="default" className="raltic-marketing-status-chip h-6 w-6 justify-center p-0" aria-label="Partial">
         <Minus className="h-4 w-4" aria-label="Partial" />
       </Chip>
     );
   }
   return (
-    <Chip size="sm" variant="soft" color="default" className="h-6 w-6 justify-center p-0 opacity-60" aria-label="No">
+    <Chip size="sm" variant="soft" color="default" className="raltic-marketing-status-chip h-6 w-6 justify-center p-0 opacity-80" aria-label="No">
       <X className="h-4 w-4" aria-label="No" />
     </Chip>
   );
@@ -1160,20 +1160,12 @@ function FAQ(): React.ReactElement {
 function FinalCta(): React.ReactElement {
   return (
     <Card
-      render={<section className="relative isolate overflow-hidden border-t border-zinc-900 bg-black px-6 py-28 sm:py-36" />}
+      render={<section className="raltic-marketing-cta-section relative isolate overflow-hidden border-t px-6 py-10 sm:py-12" />}
       className="border-0 bg-transparent shadow-none"
     >
-      <CardPanel className="relative">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-[500px]"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 50% 100%, rgba(34,211,238,0.16), transparent 70%)",
-          }}
-        />
-        <div className="relative mx-auto max-w-3xl text-center">
-          <h2 className="text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl">
+      <CardPanel className="mx-auto max-w-5xl px-0 py-0">
+        <div className="raltic-marketing-cta-panel mx-auto px-6 py-8 text-center sm:px-10 sm:py-10">
+          <h2 className="text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-5xl">
             Stop tab-switching.<br />
             <span className="text-cyan-400">Start co-working.</span>
           </h2>
@@ -1287,7 +1279,7 @@ function Feature({ icon, title, body }: { icon: React.ReactNode; title: string; 
   return (
     <Card render={<div className="border border-zinc-200 bg-white" />} className="bg-white">
       <CardPanel className="p-7">
-        <Chip size="lg" variant="soft" color="default" className="h-10 w-10 justify-center p-0 text-zinc-700">
+        <Chip size="lg" variant="soft" color="accent" className="raltic-marketing-icon-chip h-10 w-10 justify-center p-0">
           {icon}
         </Chip>
         <h3 className="mt-5 text-base font-medium tracking-tight text-zinc-900">{title}</h3>
