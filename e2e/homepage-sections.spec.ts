@@ -19,22 +19,20 @@ test.describe("homepage full section render", () => {
   test("Hero is visible with the core positioning copy", async ({ page }) => {
     await gotoHome(page);
 
-    // Hero H1 was rewritten to "Your AI Agent. Or theirs." — leads
-    // with the dual-mode story instead of the old "ship together" copy.
-    const hero = page.locator("section", { hasText: /Your AI Agent/i }).first();
-    await expect(hero.getByRole("heading", { name: /Your AI Agent.*Or theirs/i })).toBeVisible();
-    await expect(hero.getByText(/default cloud Agent/i)).toBeVisible();
-    await expect(hero.getByText(/Claude Code, Codex, OpenClaw, Hermes/i)).toBeVisible();
+    const hero = page.locator("section", { hasText: /Build your business/i }).first();
+    await expect(hero.getByRole("heading", { name: /Build your business.*agent workflows/i })).toBeVisible();
+    await expect(hero.getByText(/workflow rooms/i)).toBeVisible();
+    await expect(hero.getByText(/Claude Code, Codex, OpenClaw, or Hermes/i)).toBeVisible();
   });
 
-  test("TwoWaysToRun shows both run-mode cards and CTAs", async ({ page }) => {
+  test("TwoWaysToRun shows workflow-first cards and CTAs", async ({ page }) => {
     await gotoHome(page);
 
-    const section = page.locator("section", { hasText: /Two ways to run/i });
-    await expect(section.getByRole("heading", { name: "Raltic cloud Agent" })).toBeVisible();
-    await expect(section.getByRole("heading", { name: /Your CLI.*Your daemon/i })).toBeVisible();
-    await expect(section.getByRole("link", { name: /Start with the cloud Agent/i })).toBeVisible();
-    await expect(section.getByRole("link", { name: /Set up the bridge/i })).toBeVisible();
+    const section = page.locator("section", { hasText: /Start from the workflow/i });
+    await expect(section.getByRole("heading", { name: "Run a workflow room" })).toBeVisible();
+    await expect(section.getByRole("heading", { name: "Bring your agents" })).toBeVisible();
+    await expect(section.getByRole("link", { name: /Start a workflow room/i })).toBeVisible();
+    await expect(section.getByRole("link", { name: /Connect a local runtime/i })).toBeVisible();
   });
 
   test("RuntimeBadges lists all runtimes and experimental pills", async ({ page }) => {
@@ -54,34 +52,34 @@ test.describe("homepage full section render", () => {
   test("Architecture shows the three-card flow and visibility table", async ({ page }) => {
     await gotoHome(page);
 
-    const section = page.locator("section", { hasText: /AI and security/i });
+    const section = page.locator("section", { hasText: /Run workflows without/i });
     await expect(section.locator("svg.lucide-laptop")).toBeVisible();
     await expect(section.locator("svg.lucide-cloud")).toBeVisible();
     await expect(section.locator("svg.lucide-globe")).toBeVisible();
-    await expect(section.getByRole("heading", { name: "The work happens locally" })).toBeVisible();
-    await expect(section.getByRole("heading", { name: "The chat happens in the cloud" })).toBeVisible();
-    await expect(section.getByRole("heading", { name: "The team gets the value" })).toBeVisible();
-    await expect(section.getByText("What we see", { exact: true })).toBeVisible();
-    await expect(section.getByText("What we never see", { exact: true })).toBeVisible();
+    await expect(section.getByRole("heading", { name: "Agents execute where you choose" })).toBeVisible();
+    await expect(section.getByRole("heading", { name: "Rooms coordinate the workflow" })).toBeVisible();
+    await expect(section.getByRole("heading", { name: "Runs become team memory" })).toBeVisible();
+    await expect(section.getByText("What crosses the workspace", { exact: true })).toBeVisible();
+    await expect(section.getByText("What stays out of the workspace", { exact: true })).toBeVisible();
   });
 
-  test("UseCases renders the engineering, ops, and product bento cards", async ({ page }) => {
+  test("UseCases renders revenue, launch, and engineering workflow cards", async ({ page }) => {
     await gotoHome(page);
 
     const section = page.locator("section#use-cases");
+    await expect(section.getByText("revenue", { exact: true })).toBeVisible();
+    await expect(section.getByText("launch", { exact: true })).toBeVisible();
     await expect(section.getByText("engineering", { exact: true })).toBeVisible();
-    await expect(section.getByText("ops", { exact: true })).toBeVisible();
-    await expect(section.getByText("product", { exact: true })).toBeVisible();
     await expect(section.locator("h3")).toHaveCount(3);
   });
 
-  test("AgentRecipe shows the team-agent headline, roster, and thread mock", async ({ page }) => {
+  test("AgentRecipe shows the workflow-room headline, roster, and run log", async ({ page }) => {
     await gotoHome(page);
 
-    const section = page.locator("section", { hasText: /A team of agents is a teammate/i });
-    await expect(section.getByRole("heading", { name: /team of agents is a teammate/i })).toBeVisible();
-    await expect(section.getByText(/Your agent roster.*#engineering/i)).toBeVisible();
-    await expect(section.getByText("A thread, ten minutes later", { exact: true })).toBeVisible();
+    const section = page.locator("section", { hasText: /A room is more than chat/i });
+    await expect(section.getByRole("heading", { name: /agent runs become decisions/i })).toBeVisible();
+    await expect(section.getByText(/Workflow agents.*#launch/i)).toBeVisible();
+    await expect(section.getByText("Run log + decision thread", { exact: true })).toBeVisible();
   });
 
   test("WhyRaltic renders at least six feature cards", async ({ page }) => {
@@ -89,7 +87,25 @@ test.describe("homepage full section render", () => {
 
     const section = page.locator("section#why");
     await expect(section.getByRole("heading", { name: /last AI rollout/i })).toBeVisible();
+    await expect(section.getByRole("heading", { name: "Nobody wants another private AI island" })).toBeVisible();
+    await expect(section.getByRole("heading", { name: "Agent work needs follow-through" })).toBeVisible();
     expect(await section.locator("h3").count()).toBeGreaterThanOrEqual(6);
+  });
+
+  test("homepage positioning does not regress to chat-app-first copy", async ({ page }) => {
+    await gotoHome(page);
+
+    const bodyText = await page.locator("body").innerText();
+    for (const oldCopy of [
+      "Raltic is just team chat",
+      "Same chat experience as Slack",
+      "one place to talk, one place to ship",
+      "Point chat at your own AI daemon",
+    ]) {
+      expect(bodyText).not.toContain(oldCopy);
+    }
+    await expect(page.getByText("one place to run, one place to decide.")).toBeVisible();
+    await expect(page.getByText("Run workflows with your own AI daemon (OpenClaw / Hermes)")).toBeVisible();
   });
 
   test("marketing icon chips keep readable icon contrast", async ({ page }) => {
@@ -134,6 +150,8 @@ test.describe("homepage full section render", () => {
     await expect(table.getByRole("columnheader", { name: /Cursor/i })).toBeVisible();
     await expect(table.getByRole("columnheader", { name: /Slack/i })).toBeVisible();
     await expect(table.getByRole("columnheader", { name: "Raltic" })).toBeVisible();
+    await expect(table.getByRole("rowheader", { name: "Workflow outputs reach the whole team" })).toBeVisible();
+    await expect(table.getByRole("rowheader", { name: "Multiple specialist agents in one workflow" })).toBeVisible();
     expect(await table.locator("tbody tr").count()).toBeGreaterThanOrEqual(8);
   });
 
@@ -166,38 +184,48 @@ test.describe("homepage full section render", () => {
     await expect(faqSection.locator(`#${bodyId}`).locator("p")).toBeVisible();
   });
 
-  test("FinalCta shows the stop tab-switching headline and HomeCta", async ({ page }) => {
+  test("FinalCta shows the workflow conversion headline and HomeCta", async ({ page }) => {
     await gotoHome(page);
 
-    const section = page.locator("section", { hasText: /Stop tab-switching/i });
-    await expect(section.getByRole("heading", { name: /Stop tab-switching/i })).toBeVisible();
+    const footer = page.locator("footer");
+    const lead = footer.locator("[data-raltic-footer-lead]");
+    await expect(lead.getByRole("heading", { name: /Turn useful agents/i })).toBeVisible();
     // Primary CTA renamed: "Get started" → "Start a cloud Agent"
     // (signed-out branch); signed-in branch is "Open Raltic".
-    await expect(section.getByRole("link", { name: /Start a cloud Agent|Open Raltic/i })).toBeVisible();
-    const metrics = await section.evaluate((el) => {
-      const sectionRect = el.getBoundingClientRect();
+    await expect(lead.getByRole("link", { name: /Start a cloud Agent|Open Raltic/i })).toBeVisible();
+    const metrics = await footer.evaluate((el) => {
+      const footerRect = el.getBoundingClientRect();
+      const lead = el.querySelector<HTMLElement>("[data-raltic-footer-lead]");
+      const grid = el.querySelector<HTMLElement>(".raltic-marketing-footer-grid");
       const panel = el.querySelector<HTMLElement>(".raltic-marketing-cta-panel");
-      const button = el.querySelector<HTMLElement>("a,button");
-      const sectionStyle = getComputedStyle(el);
+      const button = lead?.querySelector<HTMLElement>("a,button") ?? null;
+      const footerStyle = getComputedStyle(el);
+      const leadRect = lead?.getBoundingClientRect();
+      const gridRect = grid?.getBoundingClientRect();
       return {
-        sectionHeight: sectionRect.height,
+        footerHeight: footerRect.height,
+        leadHeight: leadRect?.height ?? 0,
+        leadExists: Boolean(lead),
         panelExists: Boolean(panel),
-        bottomGap: button ? sectionRect.bottom - button.getBoundingClientRect().bottom : sectionRect.height,
-        backgroundColor: sectionStyle.backgroundColor,
-        backgroundImage: sectionStyle.backgroundImage,
+        dividerGap: leadRect && gridRect ? gridRect.top - leadRect.bottom : null,
+        buttonBottomGap: button && leadRect ? leadRect.bottom - button.getBoundingClientRect().bottom : null,
+        backgroundColor: footerStyle.backgroundColor,
+        backgroundImage: footerStyle.backgroundImage,
       };
     });
-    expect(metrics.panelExists, "final CTA should render inside a bounded panel").toBe(true);
-    expect(metrics.sectionHeight, `final CTA should not become an oversized black band: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(460);
-    expect(metrics.bottomGap, `final CTA should not leave a large empty bottom gap: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(140);
-    expect(metrics.backgroundImage, "final CTA should carry a tokenized surface gradient").not.toBe("none");
-    expect(metrics.backgroundImage, "final CTA gradient should not be pure black").not.toContain("rgb(0, 0, 0)");
+    expect(metrics.leadExists, "footer should expose a lead CTA region").toBe(true);
+    expect(metrics.panelExists, "final CTA should not render as a separate card/panel").toBe(false);
+    expect(metrics.leadHeight, `footer CTA lead should stay compact: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(360);
+    expect(metrics.buttonBottomGap, `footer CTA should not leave a large empty bottom gap: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(90);
+    expect(metrics.dividerGap, `footer CTA and link grid should share one continuous surface: ${JSON.stringify(metrics)}`).toBeLessThanOrEqual(1);
+    expect(metrics.backgroundImage, "footer surface should carry a tokenized surface gradient").not.toBe("none");
+    expect(metrics.backgroundImage, "footer gradient should not be pure black").not.toContain("rgb(0, 0, 0)");
   });
 
   test("Footer links to all public product, audience, and legal routes", async ({ page }) => {
     await gotoHome(page);
 
-    const footer = page.locator("footer");
+    const footer = page.locator("footer .raltic-marketing-footer-grid");
     for (const href of ["/runtimes", "/connectors", "/security", "/privacy", "/terms", "/indie", "/teams", "/signup", "/login"]) {
       await expect(footer.locator(`a[href="${href}"]`)).toBeVisible();
     }
