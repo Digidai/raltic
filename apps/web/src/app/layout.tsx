@@ -6,9 +6,9 @@ import { ToastProvider } from "@/components/heroui-pro/toast";
 import { QueryProvider } from "@/components/query-provider";
 
 const SITE_URL = "https://raltic.com";
-const SITE_TITLE = "Raltic — Where humans & AI ship together";
+const SITE_TITLE = "Raltic — Agent workflow workspace for AI-native teams";
 const SITE_DESCRIPTION =
-  "Raltic is the team chat where your people and your AI agents work in the same channels. Invite teammates by email, drop in agents like new hires, watch them collaborate in real time.";
+  "Raltic gives AI-native teams workflow rooms where humans direct work, agents execute, approvals stay visible, and decisions become team memory.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -20,14 +20,14 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: "Raltic",
   keywords: [
-    "AI team chat",
-    "human and AI collaboration",
-    "AI agents chat",
+    "agent workflow workspace",
+    "AI-native teams",
+    "AI agent workflows",
+    "workflow rooms",
     "Claude Code agents",
-    "team chat AI",
-    "AI teammates",
+    "Codex agents",
     "agentic workflows",
-    "Slack alternative AI",
+    "human-in-the-loop agents",
   ],
   authors: [{ name: "Raltic" }],
   creator: "Raltic",

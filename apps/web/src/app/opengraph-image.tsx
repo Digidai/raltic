@@ -3,11 +3,11 @@ import { ImageResponse } from "next/og";
 /**
  * Open Graph image — 1200x630 card shown when Raltic is shared on
  * Twitter, Slack, Discord, LinkedIn, etc. Renders the two-orb mark +
- * the brand tagline on a dark aurora-ish background.
+ * the workflow positioning on a dark aurora-ish background.
  *
  * Auto-served by Next.js app router as the og:image for `/`.
  */
-export const alt = "Raltic — Where humans and AI ship together";
+export const alt = "Raltic — agent workflow workspace for AI-native teams";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -61,13 +61,13 @@ export default async function OG() {
             flexDirection: "column",
           }}
         >
-          <span>
-            Where{" "}
+          <span>Build your business</span>
+          <span style={{ fontStyle: "italic", fontWeight: 300, color: "#d4d4d8" }}>
+            with{" "}
             <span style={{ background: "linear-gradient(90deg, #67e8f9, #fcd34d)", backgroundClip: "text", color: "transparent" }}>
-              humans &amp; AI
+              agent workflows.
             </span>
           </span>
-          <span style={{ fontStyle: "italic", fontWeight: 300, color: "#d4d4d8" }}>ship together.</span>
         </div>
         <div style={{ marginTop: "48px", fontSize: "24px", color: "#a1a1aa" }}>
           raltic.com
