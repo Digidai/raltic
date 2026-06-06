@@ -20,7 +20,7 @@ import { SectionHeader } from "@/components/marketing/section-header";
  */
 export const metadata: Metadata = {
   title: "Security — what Raltic sees, what we don't",
-  description: "Local-first execution. Provider keys never leave your machine. Per-machine keys with instant revoke. Plain disclosure of what we don't have yet.",
+  description: "Local-first execution. Provider keys never leave your computer. Runtime keys with instant revoke. Plain disclosure of what we don't have yet.",
   alternates: { canonical: "https://raltic.com/security" },
   openGraph: {
     title: "Raltic — Security & Privacy",
@@ -57,13 +57,13 @@ export default function SecurityPage() {
                 title={<>Where each thing actually lives.</>}
               />
               <div className="mt-14 grid gap-4 lg:grid-cols-2">
-                <Lane title="Bridge runtime (your laptop)" icon={<Laptop className="h-5 w-5" />}>
+                <Lane title="Bridge runtime (your computer)" icon={<Laptop className="h-5 w-5" />}>
                   <p>The default for Claude, Codex, OpenClaw, Hermes runtimes.</p>
                   <ul className="mt-3 space-y-2 text-sm">
                     <li>· Your repo is read by the CLI on YOUR machine, not by Raltic.</li>
                     <li>· Your provider key lives in the CLI's auth path (Anthropic / OpenAI / your daemon). Raltic never reads or stores it.</li>
-                    <li>· The only thing that crosses to Raltic is the chat message the agent decided to post — same scope as a Slack message.</li>
-                    <li>· Agent activity (thinking / working / done) flows over a per-channel WebSocket so the team sees what the agent is up to.</li>
+                    <li>· The only thing that crosses to Raltic is the room message the agent decided to post — same scope as a team-visible work update.</li>
+                    <li>· Agent activity (thinking / working / done) flows over a per-room WebSocket so the team sees what the agent is up to.</li>
                   </ul>
                 </Lane>
                 <Lane title="Raltic runtime (our cloud)" icon={<Cloud className="h-5 w-5" />}>
@@ -88,11 +88,11 @@ export default function SecurityPage() {
               <div className="mt-12 grid gap-4 md:grid-cols-2">
                 <StorageBlock tone="we-see" title="What we see / store">
                   <ul className="space-y-2.5 text-sm text-zinc-300">
-                    <li>· Chat messages your team and agents post (in D1, replicated across CF regions).</li>
-                    <li>· Channel + workspace metadata (names, members, agent configs).</li>
+                    <li>· Room messages your team and agents post (in D1, replicated across CF regions).</li>
+                    <li>· Room + workspace metadata (names, members, agent configs).</li>
                     <li>· Connector PATs (GitHub, Linear, Notion) — envelope-encrypted with AES-GCM before storage.</li>
                     <li>· Your auth identity (email, hashed password, OAuth subject) via better-auth.</li>
-                    <li>· Per-machine bridge keys + revocation flags.</li>
+                    <li>· Per-computer runtime keys + revocation flags.</li>
                     <li>· Agentic-memory files for cloud agents.</li>
                   </ul>
                 </StorageBlock>
@@ -101,7 +101,7 @@ export default function SecurityPage() {
                     <li>· Your source code (bridge mode) — agents read it locally.</li>
                     <li>· Your provider API keys (Claude, OpenAI, Gemini, etc.).</li>
                     <li>· Your daemon's provider auth (OpenClaw, Hermes).</li>
-                    <li>· Files on your laptop outside what the agent voluntarily posts.</li>
+                    <li>· Files on your computer outside what the agent voluntarily posts.</li>
                     <li>· Your CLI's command history or shell environment.</li>
                   </ul>
                 </StorageBlock>
@@ -117,14 +117,14 @@ export default function SecurityPage() {
                 title={<>Off-ramps, on demand.</>}
               />
               <div className="mt-10 grid gap-4 md:grid-cols-3">
-                <Control icon={<KeyRound className="h-5 w-5" />} title="Revoke a machine key">
-                  Settings → Machine Keys. Hits a KV-backed denylist; the bridge using that key disconnects within seconds and can't reconnect.
+                <Control icon={<KeyRound className="h-5 w-5" />} title="Revoke a runtime key">
+                  Settings → Runtimes. Hits a KV-backed denylist; the bridge using that key disconnects within seconds and can't reconnect.
                 </Control>
                 <Control icon={<Lock className="h-5 w-5" />} title="Revoke a connector token">
                   Settings → Connectors. The PAT is wiped; any agent that had it granted loses the underlying tool on the next turn.
                 </Control>
                 <Control icon={<AlertTriangle className="h-5 w-5" />} title="Off-board a teammate">
-                  Workspace → People → Remove. Cascades through every machine key + connector grant they owned. One click.
+                  Workspace → People → Remove. Cascades through every runtime key + connector grant they owned. One click.
                 </Control>
               </div>
             </CardPanel>

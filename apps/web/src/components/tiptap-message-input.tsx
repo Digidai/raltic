@@ -9,6 +9,7 @@ import { forwardRef, useImperativeHandle, useEffect, useRef } from "react";
 export interface TiptapMessageInputHandle {
   focus: () => void;
   clear: () => void;
+  setText: (text: string) => void;
   getMarkdown: () => string;
   /** Replace @query text near cursor with replacement string */
   replaceMention: (query: string, replacement: string) => void;
@@ -164,6 +165,18 @@ const TiptapMessageInput = forwardRef<
   useImperativeHandle(ref, () => ({
     focus: () => editor?.commands.focus(),
     clear: () => editor?.commands.clearContent(true),
+    setText: (text: string) => {
+      if (!editor) return;
+      const lines = text.split("\n");
+      editor.commands.setContent({
+        type: "doc",
+        content: lines.map((line) => ({
+          type: "paragraph",
+          content: line ? [{ type: "text", text: line }] : [],
+        })),
+      });
+      editor.commands.focus("end");
+    },
     getMarkdown: () => editor?.getText({ blockSeparator: "\n" }) ?? "",
     replaceMention: (query: string, replacement: string) => {
       if (!editor) return;

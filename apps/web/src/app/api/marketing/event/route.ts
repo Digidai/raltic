@@ -25,6 +25,9 @@ const ALLOWED_EVENTS = new Set([
   "runtime_card_click",
   "wizard_start",
   "cloud_agent_start",
+  "workflow_starter_click",
+  "workflow_room_created",
+  "workflow_starter_draft_used",
 ]);
 const ALLOWED_UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 const MAX_UTM_VALUE_LEN = 64;

@@ -285,7 +285,7 @@ test.describe("desktop launch surface", () => {
     await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?client=desktop&next=%2Fdesktop%2Flaunch");
   });
 
-  test("connects the current computer with a workspace-scoped machine key", async ({ page, baseURL }) => {
+  test("connects the current computer with a workspace-scoped runtime key", async ({ page, baseURL }) => {
     await addFakeSession(page, baseURL);
     await mockAuthAndMe(page, baseURL);
     const keys = await mockMachineKeys(page, baseURL);

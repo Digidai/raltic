@@ -44,7 +44,7 @@ export default function TermsPage() {
 
           <H2>2. The Service</H2>
           <P>
-            Raltic is a team chat platform where humans and AI agents share channels, DMs, threads, and tasks. You can use Raltic's default cloud Agent (we host, you configure) or connect a local AI runtime you operate yourself (Claude Code, OpenAI Codex, OpenClaw, Hermes Agent).
+            Raltic is a workflow-room platform where humans and AI agents share rooms, DMs, threads, and tasks. Rooms are implemented internally as channels. You can use Raltic's default cloud Agent (we host, you configure) or connect a local AI runtime you operate yourself (Claude Code, OpenAI Codex, OpenClaw, Hermes Agent).
           </P>
 
           <H2>3. Account + eligibility</H2>
@@ -107,7 +107,7 @@ export default function TermsPage() {
             The Service is in private beta. We're shipping fast, breaking things occasionally, and learning what teams actually need. <strong className="text-white">The Service is provided AS-IS and AS-AVAILABLE without warranties</strong>, express or implied — including warranties of merchantability, fitness for a particular purpose, or non-infringement. We don't guarantee uptime, data durability, or feature stability during beta.
           </P>
           <P>
-            Don't rely on Raltic as the only copy of business-critical data during beta. Use the export tool, take periodic backups, and keep critical channels mirrored elsewhere until we exit beta.
+            Don't rely on Raltic as the only copy of business-critical data during beta. Use the export tool, take periodic backups, and keep critical rooms mirrored elsewhere until we exit beta.
           </P>
 
           <H2>10. Limitation of liability</H2>

@@ -256,10 +256,10 @@ test("setup wizard uses HeroUI surfaces through the bridge command step", async 
   });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Connect another laptop|Set up your laptop/ });
+  const dialog = page.getByRole("dialog", { name: /Connect another local runtime|Connect a local runtime/ });
   await expect(dialog).toBeVisible({ timeout: 15_000 });
   await expect(dialog.getByText("You already have a bridge connected.")).toBeVisible();
-  await expect(dialog.getByText("You'll need on this laptop:")).toBeVisible();
+  await expect(dialog.getByText("You'll need on this computer:")).toBeVisible();
   if (!isPreDeployProductionTarget()) {
     await assertReadableInlineTokens(dialog, "setup wizard requirements");
   }
@@ -280,7 +280,7 @@ test("setup wizard uses HeroUI surfaces through the bridge command step", async 
   expect(stageMetrics.cards).toBeGreaterThan(1);
   expect(stageMetrics.overflowX).toBe(false);
 
-  await dialog.getByRole("button", { name: "Issue a new machine key" }).click();
+  await dialog.getByRole("button", { name: "Issue a new runtime key" }).click();
   await dialog.getByRole("button", { name: "Issue key" }).click();
   await expect(dialog.getByRole("tab", { name: "Quick (recommended)" })).toHaveAttribute("aria-selected", "true");
   await expect(dialog.getByText("What this command does:")).toBeVisible();
@@ -347,9 +347,9 @@ test("setup wizard runtime picker uses one HeroUI radio selected surface", async
   await setupMockWorkspace(page, context, { hasConnectedBridge: false });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Set up your laptop/ });
+  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
   await expect(dialog).toBeVisible({ timeout: 15_000 });
-  await expect(dialog.getByText("Which AI runtime do you want to use?")).toBeVisible();
+  await expect(dialog.getByText("Which runtime should power local workflow rooms?")).toBeVisible();
 
   await assertSelectedRadioOwnsSingleSurface(
     dialog.getByRole("radio", { name: /Claude Code/ }),
@@ -375,7 +375,7 @@ test("member overlays keep contrast and picker inputs above the keyboard", async
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: /Members of #onboarding/ })).toBeHidden();
   await page.evaluate(() => document.documentElement.classList.add("dark"));
-  await page.getByRole("button", { name: "Channel actions" }).click();
+  await page.getByRole("button", { name: "Room actions" }).click();
   await page.getByRole("menuitem", { name: "Members" }).click();
   assertOverlayMetrics(await overlayMetrics(page, /Members of #onboarding/));
 });
@@ -385,8 +385,8 @@ test("alert dialogs keep contrast and require an explicit choice", async ({ page
   await setupMockWorkspace(page, context);
   await openMockChannel(page);
 
-  await page.getByRole("button", { name: "Channel actions" }).click();
-  await page.getByRole("menuitem", { name: "Leave channel" }).click();
+  await page.getByRole("button", { name: "Room actions" }).click();
+  await page.getByRole("menuitem", { name: "Leave room" }).click();
   assertOverlayMetrics(await overlayMetrics(page, /Leave #onboarding/, "alertdialog"), { requireClose: false });
 
   await page.mouse.click(12, 12);
@@ -412,11 +412,11 @@ test("mobile sidebar-launched dialogs render above the sidebar overlay", async (
   await openMockChannel(page);
 
   await page.getByRole("button", { name: "Open workspace navigation" }).click();
-  await clickVisible(page, 'button[aria-label="Create channel"]');
-  assertOverlayMetrics(await overlayMetrics(page, /Create channel/));
-  await assertDialogFooterReachable(page, /Create channel/);
+  await clickVisible(page, 'button[aria-label="Create workflow room"]');
+  assertOverlayMetrics(await overlayMetrics(page, /Create workflow room/));
+  await assertDialogFooterReachable(page, /Create workflow room/);
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: /Create channel/ })).toBeHidden();
+  await expect(page.getByRole("dialog", { name: /Create workflow room/ })).toBeHidden();
 
   await page.keyboard.press("Escape").catch(() => {});
   await page.getByRole("button", { name: "Open workspace navigation" }).click();

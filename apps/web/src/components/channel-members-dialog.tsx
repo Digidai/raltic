@@ -278,7 +278,7 @@ export function ChannelMembersDialog({
                 <div className="max-h-72 overflow-y-auto rounded-xl border border-border bg-[var(--surface-secondary)]">
                   {candidateHumans.length === 0 && candidateAgents.length === 0 ? (
                     <p className="px-3 py-4 text-center text-xs text-muted-foreground">
-                      {query ? "No matches." : "Everyone in the workspace is already in this channel."}
+                      {query ? "No matches." : "Everyone in the workspace is already in this room."}
                     </p>
                   ) : (
                     <>
@@ -373,7 +373,7 @@ export function ChannelMembersDialog({
         <ConfirmDialog
           open={true}
           onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}
-          title={`Remove ${removeTarget.label} from #${channel.name}?`}
+          title={`Remove ${removeTarget.label} from #${channel.name} room?`}
           description="They lose access immediately. You can add them back at any time."
           confirmLabel="Remove"
           destructive

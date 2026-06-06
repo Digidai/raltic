@@ -77,8 +77,8 @@ const RUN_STATUS_META: Record<AgentRun["status"], { label: string; color: "accen
 };
 
 const RUN_SOURCE_LABEL: Record<AgentRun["source"], string> = {
-  channel_mention: "Channel mention",
-  channel_message: "Channel message",
+  channel_mention: "Room mention",
+  channel_message: "Room message",
   dm: "DM",
   scheduled: "Scheduled",
   agent_to_agent: "Agent to agent",
@@ -330,7 +330,7 @@ export default function AgentProfilePage() {
         );
       } catch (e) {
         if (cancelled) return;
-        notifyThrown("Couldn't load channels", e);
+        notifyThrown("Couldn't load rooms", e);
         setChannels([]);
       }
     })();
@@ -475,7 +475,7 @@ export default function AgentProfilePage() {
               // simply re-fetching the agent list creates one. Surface
               // that as an explicit affordance so the user isn't stuck.
               <Button onClick={() => void reload()} className="flex-1 sm:flex-none"
-                title="Create a DM channel for this agent">
+                title="Create a direct thread for this agent">
                 <MessageSquare className="mr-1 h-3.5 w-3.5" /> Set up DM
               </Button>
             )}
@@ -513,7 +513,7 @@ export default function AgentProfilePage() {
             { key: "chat",     label: "Chat",     icon: MessageSquare },
             { key: "runs",     label: "Runs",     icon: Activity },
             { key: "tasks",    label: "Tasks",    icon: ListChecks },
-            { key: "channels", label: "Channels", icon: Hash },
+            { key: "channels", label: "Rooms", icon: Hash },
             { key: "settings", label: "Settings", icon: SettingsIcon },
           ] as const).map((t) => {
             const active = tab === t.key;
@@ -547,7 +547,7 @@ export default function AgentProfilePage() {
                 <CardHeader>
                   <CardTitle>Recent DM history</CardTitle>
                   <CardDescription>
-                    {agent.dmChannelId ? "Last 20 messages between you two." : "No DM channel yet."}
+                    {agent.dmChannelId ? "Last 20 direct messages between you two." : "No direct thread yet."}
                   </CardDescription>
                 </CardHeader>
                 <CardPanel>
@@ -625,7 +625,7 @@ export default function AgentProfilePage() {
                 )}
                 {runs && runs.length === 0 && !runsError && (
                   <p className="text-sm text-muted-foreground">
-                    No work log yet. Mention this agent in a channel or open its DM to create a traceable run.
+                    No work log yet. Mention this agent in a workflow room or open its DM to create a traceable run.
                   </p>
                 )}
                 {runs && runs.length > 0 && (
@@ -695,7 +695,7 @@ export default function AgentProfilePage() {
                               size="xs"
                               className="shrink-0 justify-center sm:justify-start"
                             >
-                              {isDmRun ? "Open DM" : "Open channel"} <ExternalLink className="h-3 w-3" />
+                              {isDmRun ? "Open DM" : "Open room"} <ExternalLink className="h-3 w-3" />
                             </Button>
                           </div>
                         </li>
@@ -714,7 +714,7 @@ export default function AgentProfilePage() {
                   <ListChecks className="h-4 w-4" /> Assigned to {agent.displayName}
                 </CardTitle>
                 <CardDescription>
-                  Tasks where this agent is the assignee, across every channel.
+                  Tasks where this agent is the assignee, across every workflow room.
                 </CardDescription>
               </CardHeader>
               <CardPanel>
@@ -801,15 +801,15 @@ export default function AgentProfilePage() {
                   <Hash className="h-4 w-4" /> Member of
                 </CardTitle>
                 <CardDescription>
-                  Channels this agent listens in. To add or remove, open the
-                  channel and edit its member list.
+                  Workflow rooms this agent listens in. To add or remove it,
+                  open the room and edit its member list.
                 </CardDescription>
               </CardHeader>
               <CardPanel>
                 {channels === null && <p className="text-sm text-muted-foreground">Loading…</p>}
                 {channels && channels.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    Not a member of any channel yet (except its own DM).
+                    Not a member of any workflow room yet (except its own DM).
                   </p>
                 )}
                 {channels && channels.length > 0 && (
@@ -891,8 +891,8 @@ export default function AgentProfilePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {agent.displayName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the agent and its DM channel. Past
-              messages in shared channels are preserved but the agent will
+              This permanently removes the agent and its DM room. Past
+              messages in shared rooms are preserved but the agent will
               no longer respond.
             </AlertDialogDescription>
           </AlertDialogHeader>

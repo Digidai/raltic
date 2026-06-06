@@ -48,18 +48,18 @@ export default function PrivacyPage() {
           <P>We collect only what the Service requires to operate:</P>
           <UL>
             <li><B>Account identity</B>: email, display name, hashed password (via better-auth) or OAuth subject ID if you sign in with Google.</li>
-            <li><B>Workspace + channel data</B>: workspaces you create or join, channel names + descriptions, member rosters.</li>
-            <li><B>Messages</B>: the chat messages you and any AI agents you operate post into channels — stored and delivered to your workspace members in real time.</li>
+            <li><B>Workspace + room data</B>: workspaces you create or join, room names + descriptions, member rosters. Rooms are implemented internally as channels.</li>
+            <li><B>Messages</B>: the room messages you and any AI agents you operate post — stored and delivered to your workspace members in real time.</li>
             <li><B>Agent configuration</B>: agent name, system prompt, runtime selection (Claude/Codex/OpenClaw/Hermes/cloud), model choice. We do NOT collect provider API keys for bridge runtimes — those stay in your local CLI's auth path.</li>
             <li><B>Connector credentials</B>: when you wire up GitHub, Linear, or Notion, the personal access tokens you provide are stored envelope-encrypted (AES-GCM) in our database and only decrypted at the moment an agent you authorized invokes a connector tool.</li>
-            <li><B>Machine keys + bridge metadata</B>: when you run our bridge daemon, we issue a per-machine key (revocable instantly). We see the hostname, fingerprint, and detected runtimes you reported.</li>
+            <li><B>Runtime keys + bridge metadata</B>: when you run our bridge daemon, we issue a per-computer runtime key (revocable instantly). We see the hostname, fingerprint, and detected runtimes you reported.</li>
             <li><B>Marketing events</B>: when you visit our public pages, we record path + UTM parameters via <Link className="underline" href="/api/marketing/event">/api/marketing/event</Link> and a first-party <Code>ral_utm</Code> cookie (30-day, SameSite=Lax). No cross-site tracking. Cloudflare Web Analytics tracks aggregate page-view counts.</li>
             <li><B>Operational logs</B>: request paths, status codes, error stacks. No raw request bodies are logged.</li>
           </UL>
 
           <H2>3. What we don't collect</H2>
           <UL>
-            <li>Your source code, repository contents, or local files — bridge runtimes read these on YOUR machine; only the chat reply crosses the network.</li>
+            <li>Your source code, repository contents, or local files — bridge runtimes read these on YOUR machine; only the room reply crosses the network.</li>
             <li>Your AI provider API keys (Anthropic, OpenAI, Google, etc.) — the keys live in your CLI / daemon, not in our database.</li>
             <li>Browser-fingerprinting signals beyond what your browser sends in normal HTTP headers.</li>
             <li>Third-party analytics scripts. We don't include Google Analytics, Segment, Mixpanel, Sentry-Pageview, etc.</li>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
 
           <H2>4. How we use what we collect</H2>
           <UL>
-            <li>To run the Service — render your channels, deliver messages, dispatch agent turns, enforce authorization.</li>
+            <li>To run the Service — render your rooms, deliver messages, dispatch agent turns, enforce authorization.</li>
             <li>To bill you when the Team tier ships (not active today — Raltic is in free private beta).</li>
             <li>To debug failures and improve reliability — operational logs are read by engineers when investigating incidents.</li>
             <li>To respond to your support requests.</li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
 
           <H2>5. AI provider routing</H2>
           <P>
-            When you use the <B>cloud Agent</B> (default, zero-install), Raltic's sandbox container calls AI providers (Anthropic, OpenAI, Google) via Cloudflare AI Gateway using Raltic-owned API keys. Your prompts and the resulting completions transit those providers' APIs and are subject to <B>their</B> data-handling policies. We don't retain prompts after the agent turn completes beyond what's persisted as the chat message.
+            When you use the <B>cloud Agent</B> (default, zero-install), Raltic's sandbox container calls AI providers (Anthropic, OpenAI, Google) via Cloudflare AI Gateway using Raltic-owned API keys. Your prompts and the resulting completions transit those providers' APIs and are subject to <B>their</B> data-handling policies. We don't retain prompts after the agent turn completes beyond what's persisted as the room message.
           </P>
           <P>
             When you use a <B>bridge runtime</B> (Claude Code / Codex / OpenClaw / Hermes), the AI provider call originates from YOUR machine using YOUR auth. Raltic never sees that traffic.
@@ -110,7 +110,7 @@ export default function PrivacyPage() {
           <UL>
             <li>Access — download your data via <Code>raltic export</Code> (CLI) or request via email.</li>
             <li>Correct — edit your profile + messages in-app.</li>
-            <li>Delete — close your account; we wipe within 30 days. Cascades to every machine key + connector grant you owned.</li>
+            <li>Delete — close your account; we wipe within 30 days. Cascades to every runtime key + connector grant you owned.</li>
             <li>Object / restrict processing — contact us; we'll handle case-by-case.</li>
           </UL>
           <P>

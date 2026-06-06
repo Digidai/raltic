@@ -40,6 +40,8 @@ const RUN_STATUS_META = {
 } as const satisfies Record<RunStatus, { label: string; color: "default" | "accent" | "warning" | "success" | "danger" }>;
 
 function formatRunSource(source: string): string {
+  if (source === "channel_mention") return "Room mention";
+  if (source === "channel_message") return "Room message";
   return source.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
@@ -225,7 +227,7 @@ export default function TaskBoardPage() {
   return (
     <WorkspacePage
       title="Tasks"
-      description="Kanban view of work across this workspace."
+      description="Kanban view of work across workflow rooms and agent runs."
       icon={<ListChecks className="h-5 w-5" aria-hidden="true" />}
       tone="warning"
       contentClassName="space-y-5"
@@ -234,8 +236,8 @@ export default function TaskBoardPage() {
             value={filterChannel}
             onChange={(e) => setFilterChannel(e.target.value)}
             className="w-full sm:w-44 sm:shrink-0"
-            aria-label="Filter by channel"
-            options={[{ value: "", label: "All channels" }, ...channelSelectOptions]}
+            aria-label="Filter by room"
+            options={[{ value: "", label: "All rooms" }, ...channelSelectOptions]}
           >
           </Select>
       }
@@ -257,7 +259,7 @@ export default function TaskBoardPage() {
             value={createChannel}
             onChange={(e) => setCreateChannel(e.target.value)}
             className="w-full sm:w-40 sm:shrink-0"
-            aria-label="Task channel"
+            aria-label="Task room"
             options={channelSelectOptions}
           >
           </Select>

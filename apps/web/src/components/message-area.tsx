@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Chip } from "@/components/heroui-pro/chip";
 import { Card } from "@/components/heroui-pro/card";
 import { ScrollShadow } from "@/components/heroui-pro/scroll-shadow";
@@ -25,9 +25,11 @@ import { cn } from "@/lib/utils";
 import type { MessageRow } from "@raltic/protocol";
 import { GeneratedAvatar } from "./generated-avatar";
 import TiptapMessageInput, { type TiptapMessageInputHandle } from "./tiptap-message-input";
-import { Smile, Pencil, Pin, PinOff, Trash2, MessageSquareReply, Copy, X as XIcon, ArrowDown, Hash, AtSign, LockKeyhole, SendHorizontal } from "lucide-react";
+import { Smile, Pencil, Pin, PinOff, Trash2, MessageSquareReply, Copy, X as XIcon, ArrowDown, Hash, AtSign, LockKeyhole, SendHorizontal, ClipboardCheck } from "lucide-react";
 import { useMentionPicker, type MentionMember } from "./mention-picker";
 import { notifySuccess } from "@/lib/notify";
+import { trackProductEvent } from "@/lib/product-tracking";
+import { buildWorkflowStarterDraft, getWorkflowStarter, type WorkflowStarterTemplate } from "@/lib/workflow-starters";
 
 interface MessageAreaProps {
   channelId: string | null;
@@ -42,6 +44,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
   // MessageArea is always rendered under /s/[slug]/{channel,dm}/[id] so
   // the param is always present.
   const params = useParams<{ slug?: string }>();
+  const searchParams = useSearchParams();
   const serverSlug = params?.slug ?? "";
   const { bumpRead, seedChannel } = useGateway();
   const agentActivities = useAgentActivities();
@@ -107,6 +110,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
   const [pendingAttachments, setPendingAttachments] = useState<StagedAttachment[]>([]);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [composerText, setComposerText] = useState("");
+  const [starterDismissed, setStarterDismissed] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MessageRow | null>(null);
 
   // Only mark messages as read when this tab is actually visible.
@@ -128,6 +132,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     setMessages([]);
     setToken(null);
     setComposerText("");
+    setStarterDismissed(false);
     // Fresh channel — assume the user wants to land at the bottom.
     // Without this, switching from a scrolled-up channel back to a
     // freshly-opened one would inherit "not at bottom" state and the
@@ -433,13 +438,15 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     return agents.find((a) => a.id === agentMember.memberId) ?? null;
   }, [channel?.type, members, agents]);
 
-  // Composer placeholder: name-the-recipient in DM, generic for channels.
+  const starterTemplate = useMemo(() => getWorkflowStarter(searchParams.get("starter")), [searchParams]);
+
+  // Composer placeholder: name-the-recipient in DM, workflow-oriented for rooms.
   // Matches the "Ask {agent} anything" pattern competitive products use
   // — turns an abstract input box into "I'm having a conversation".
   const composerPlaceholder = useMemo(() => {
     if (dmAgent) return `Ask ${dmAgent.displayName} anything`;
     if (channel?.type === "dm") return "Send a direct message";
-    if (channel?.name) return `Message #${channel.name}`;
+    if (channel?.name) return `Drop brief in #${channel.name}`;
     return "Send a message…";
   }, [dmAgent, channel?.type, channel?.name]);
 
@@ -490,8 +497,14 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     if (dmAgent) return dmAgent.displayName;
     if (channelAgents.length === 1) return channelAgents[0]?.displayName ?? "Agent in room";
     if (channelAgents.length > 1) return `${channelAgents.length} agents in room`;
-    return "Channel";
+    return "Room";
   }, [channelAgents, dmAgent]);
+
+  const isReadOnly = channel?.archivedAt != null;
+  const starterMatchesRoom = starterTemplate != null
+    && channel?.type !== "dm"
+    && channel?.name === starterTemplate.channelName;
+  const showStarterPanel = Boolean(starterMatchesRoom && !starterDismissed && !isReadOnly);
 
   const bringComposerIntoView = useCallback(() => {
     requestAnimationFrame(() => {
@@ -500,10 +513,20 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     });
   }, []);
 
+  const applyStarterDraft = useCallback(() => {
+    if (!starterTemplate) return;
+    const draft = buildWorkflowStarterDraft(starterTemplate, channelAgents[0]?.name ?? null);
+    inputRef.current?.setText(draft);
+    setComposerText(draft);
+    setStarterDismissed(true);
+    trackProductEvent("workflow_starter_draft_used", starterTemplate.key);
+    bringComposerIntoView();
+  }, [bringComposerIntoView, channelAgents, starterTemplate]);
+
   if (!channelId) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-        Select a conversation to start chatting.
+        Select a room or direct message to start working.
       </div>
     );
   }
@@ -639,7 +662,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
         notifySuccess("Unpinned");
       } else {
         await api.pinMessage(m.id);
-        notifySuccess("Pinned to channel");
+        notifySuccess("Pinned to room");
       }
       // Optimistic flip — the WS broadcast (message_update from the
       // backend's broadcastMessageUpdate call) will reconcile shortly,
@@ -717,14 +740,13 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     catch (e) { notifyThrown("Couldn't react", e); }
   }
 
-  const isReadOnly = channel?.archivedAt != null;
   const canSubmit = !isReadOnly && uploadingCount === 0 && (
     composerText.trim().length > 0 || pendingAttachments.length > 0
   );
   const channelTitle = channel?.type === "dm" && channelPeer?.name
     ? channelPeer.name
-    : channel?.name ?? "Channel";
-  const channelSubtitle = channel?.topic || channel?.description || "Get familiar with Raltic";
+    : channel?.name ?? "Room";
+  const channelSubtitle = channel?.topic || channel?.description || "Workflow room";
 
   return (
     <div
@@ -810,12 +832,21 @@ export function MessageArea({ channelId }: MessageAreaProps) {
             {loading && <p className="text-sm text-muted-foreground">Loading messages...</p>}
             {!loading && loadError && (
               <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-danger-text">
-                Couldn&apos;t load this conversation: {loadError}
+                Couldn&apos;t load this room: {loadError}
               </div>
             )}
-            {!loading && !loadError && messages.length === 0 && (
+            {!loading && !loadError && showStarterPanel && starterTemplate && (
+              <StarterBriefPanel
+                starter={starterTemplate}
+                onUse={applyStarterDraft}
+                onDismiss={() => setStarterDismissed(true)}
+              />
+            )}
+            {!loading && !loadError && messages.length === 0 && !showStarterPanel && (
               <div className="flex min-h-64 items-center justify-center">
-                <p className="text-sm text-muted-foreground">No messages yet. Say hi.</p>
+                <p className="max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
+                  No messages yet. Drop the workflow brief, @mention an agent, or record the approval you need.
+                </p>
               </div>
             )}
             {messages.map((m) => {
@@ -937,7 +968,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
                 ariaActiveDescendant={picker.aria.activeDescendant}
                 placeholder={
                   isReadOnly
-                    ? "This channel is archived - read-only"
+                    ? "This room is archived - read-only"
                     : composerPlaceholder
                 }
                 onTextUpdate={handleComposerTextUpdate}
@@ -959,7 +990,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <span
-                  aria-label="Conversation agent"
+                  aria-label="Room agent"
                   className="inline-flex max-w-[150px] items-center gap-1.5 rounded-full bg-default px-3 py-1.5 text-xs font-medium text-default-foreground sm:max-w-[220px]"
                 >
                   <span className="truncate">{composerAgentLabel}</span>
@@ -1005,6 +1036,75 @@ export function MessageArea({ channelId }: MessageAreaProps) {
         confirmLabel="Delete message"
         onConfirm={confirmDeleteMessage}
       />
+    </div>
+  );
+}
+
+function StarterBriefPanel({
+  starter,
+  onUse,
+  onDismiss,
+}: {
+  starter: WorkflowStarterTemplate;
+  onUse: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <Card className="border-accent/20 bg-[var(--surface-secondary)] !shadow-none">
+      <div className="p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <Chip size="sm" variant="soft" color={starter.requiresLocalRuntime ? "warning" : "accent"} className="font-mono text-[10px] uppercase tracking-wider">
+              Starter brief
+            </Chip>
+            <h2 className="mt-3 text-base font-semibold text-foreground">
+              {starter.title}
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Use this as a draft, then edit it before sending. Raltic will not start the agent until you send the message.
+            </p>
+          </div>
+          <Button
+            type="button"
+            isIconOnly
+            variant="ghost"
+            size="sm"
+            aria-label="Dismiss starter brief"
+            onClick={onDismiss}
+            className="self-end sm:self-start"
+          >
+            <XIcon className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="mt-4 grid gap-2 text-xs sm:grid-cols-3">
+          <StarterBriefRow label="focus" body={starter.draftFocus} />
+          <StarterBriefRow label="need" body={starter.draftNeed} />
+          <StarterBriefRow label="gate" body={starter.gate} />
+        </div>
+        {starter.requiresLocalRuntime && (
+          <p className="mt-3 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+            Repo inspection needs a connected local runtime. You can still create the room now and connect the runtime before asking for code review.
+          </p>
+        )}
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button type="button" size="sm" onClick={onUse} className="w-full justify-center sm:w-auto">
+            <ClipboardCheck className="h-3.5 w-3.5" />
+            Use brief
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={onDismiss} className="w-full justify-center sm:w-auto">
+            Start blank
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function StarterBriefRow({ label, body }: { label: string; body: string }) {
+  return (
+    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+      <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-1 leading-relaxed text-foreground/85">{body}</div>
     </div>
   );
 }
@@ -1085,7 +1185,7 @@ function MessageRowView({ m, label, currentUserId, editing, draft, onStartEdit, 
         size="sm"
         variant="ghost"
         onPress={onTogglePin}
-        aria-label={m.pinnedAt ? "Unpin from channel" : "Pin to channel"}
+        aria-label={m.pinnedAt ? "Unpin from room" : "Pin to room"}
         className="h-8 w-8 min-w-8 text-muted-foreground"
       >
         {m.pinnedAt ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
@@ -1310,7 +1410,7 @@ function ChannelAgentStrip({
     <>
       <div
         className="hidden max-w-[300px] min-w-0 items-center gap-1 rounded-full border border-border/70 bg-surface/80 px-1.5 py-1 sm:flex"
-        aria-label="Agents in this channel"
+        aria-label="Agents in this room"
       >
         {visibleAgents.map((agent) => (
           <Link
@@ -1344,7 +1444,7 @@ function ChannelAgentStrip({
       <Link
         href={`/s/${encodeURIComponent(serverSlug)}/agents`}
         className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-surface/80 px-2 py-1 text-[11px] text-muted-foreground sm:hidden"
-        aria-label={`${agents.length} agents in this channel`}
+        aria-label={`${agents.length} agents in this room`}
       >
         <AtSign className="h-3 w-3" aria-hidden="true" />
         <span>{agents.length} agents</span>

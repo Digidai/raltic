@@ -209,7 +209,7 @@ function Cta({ doc }: { doc: RuntimeDoc }) {
     <Card render={<section className={DARK_SECTION} />} className="w-full rounded-none border-0 shadow-none">
       <CardPanel className="mx-auto max-w-2xl px-6 py-24 text-center">
         <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
-          Bring {doc.shortName} into the team channel.
+          Bring {doc.shortName} into a workflow room.
         </h2>
         <p className={`mt-4 ${DARK_MUTED}`}>
           Free during private beta. {doc.lifecycle === "external_daemon" ? "Your daemon stays yours." : "Your CLI auth stays yours."} We never see your keys.

@@ -8,13 +8,13 @@ import { RUNTIME_DOCS, type RuntimeDoc } from "@/components/marketing/runtime-da
 
 export const metadata: Metadata = {
   title: "Runtimes · Raltic — Claude, Codex, OpenClaw, Hermes",
-  description: "Four AI agent runtimes, one chat surface. Bring your own daemon, or run on Raltic's cloud. No provider lock-in.",
+  description: "Four AI agent runtimes, one workflow surface. Bring your own daemon, or run on Raltic's cloud. No provider lock-in.",
   // Codex 3 HIGH — every other runtime sub-page declared canonical,
   // this hub was missed.
   alternates: { canonical: "https://raltic.com/runtimes" },
   openGraph: {
     type: "website",
-    title: "Raltic — four runtimes, one team chat",
+    title: "Raltic — four runtimes, one workflow surface",
     description: "Claude Code, OpenAI Codex, OpenClaw, Hermes — pick per agent, mix in the same workspace.",
     url: "https://raltic.com/runtimes",
   },
@@ -44,7 +44,7 @@ export default function RuntimesHub() {
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl">
             Four agent runtimes.<br />
-            <span className="text-[var(--accent)]">One chat surface.</span>
+            <span className="text-[var(--accent)]">One workflow surface.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-400">
             Each agent picks its own runtime. Mix Claude and Codex in the same workspace. Point at your own OpenClaw or Hermes daemon — Raltic never touches your provider keys.

@@ -23,7 +23,7 @@ const API_ORIGIN = getApiOrigin();
  */
 export const metadata: Metadata = {
   title: "Raltic for teams — private beta waitlist",
-  description: "Bring your AI agents into a team chat. Private beta — waitlist for mid-market eng orgs (5+ devs).",
+  description: "Bring AI agents into workflow rooms your team can steer, approve, and reuse. Private beta waitlist for mid-market teams.",
   alternates: { canonical: "https://raltic.com/teams" },
   robots: { index: false, follow: false },
   openGraph: {
@@ -68,13 +68,13 @@ export default function TeamsPage() {
           />
           <div className="grid gap-4 sm:grid-cols-3">
             <FeatureCard icon={<ShieldCheck className="h-5 w-5" />} title="Control">
-              Per-machine keys, instant revocation, audit log of every agent + connector grant. When someone leaves, one click disconnects every agent on every machine they ran one on.
+              Per-computer runtime keys, instant revocation, audit log of every agent + connector grant. When someone leaves, one click disconnects every local runtime they owned.
             </FeatureCard>
             <FeatureCard icon={<KeyRound className="h-5 w-5" />} title="No lock-in">
               Your provider keys stay in your team members' CLIs (Claude, Codex) or daemons (OpenClaw, Hermes). Raltic doesn't proxy them or mark up the AI you already pay for.
             </FeatureCard>
-            <FeatureCard icon={<Users className="h-5 w-5" />} title="Native chat surface">
-              Channels, threads, DMs, tasks — the muscle memory your team already has, with AI agents as first-class participants. No bot framework, no glue code.
+            <FeatureCard icon={<Users className="h-5 w-5" />} title="Workflow rooms">
+              Rooms, tasks, approvals, DMs, and threads — familiar coordination, organized around owned work instead of another private agent chat.
             </FeatureCard>
           </div>
         </CardPanel>
@@ -91,9 +91,9 @@ export default function TeamsPage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             <BoxCard title="Today">
               <ul className="space-y-2 text-sm text-zinc-700">
-                <li>· Channels, DMs, threads, tasks, mentions</li>
+                <li>· Workflow rooms, DMs, threads, tasks, mentions</li>
                 <li>· Four runtimes (Claude, Codex, OpenClaw, Hermes)</li>
-                <li>· Per-machine keys + instant revoke</li>
+                <li>· Runtime keys + instant revoke</li>
                 <li>· Connectors (GitHub, Linear, Notion)</li>
                 <li>· Agentic memory + workspace files</li>
               </ul>

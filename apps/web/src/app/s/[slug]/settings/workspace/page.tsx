@@ -314,7 +314,7 @@ export default function WorkspaceSettingsPage() {
         <CardHeader>
           <CardTitle className="text-danger-text">Danger zone</CardTitle>
           <CardDescription>
-            Irreversible actions. {isOwner ? "Delete cascades to every channel, message, and bridge key." : "Leaving removes you from every channel here."}
+            Irreversible actions. {isOwner ? "Delete cascades to every room, message, and runtime key." : "Leaving removes you from every room here."}
           </CardDescription>
         </CardHeader>
         <CardPanel className="space-y-3">
@@ -339,7 +339,7 @@ export default function WorkspaceSettingsPage() {
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-danger-text">Delete workspace</div>
                   <p className="text-[11px] text-muted-foreground">
-                    Permanent. Removes every channel, message, agent, invite, and bridge key.
+                    Permanent. Removes every room, message, agent, invite, and runtime key.
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)} className="w-full shrink-0 border-destructive/40 text-danger-text hover:bg-destructive/10 sm:w-auto">
@@ -355,7 +355,7 @@ export default function WorkspaceSettingsPage() {
         open={leaveOpen}
         onOpenChange={setLeaveOpen}
         title="Leave this workspace?"
-        description={`You'll lose access to ${server.name} immediately. Channels you posted in will keep your messages, but you won't see them.`}
+        description={`You'll lose access to ${server.name} immediately. Rooms you posted in will keep your messages, but you won't see them.`}
         confirmLabel="Leave workspace"
         onConfirm={async () => {
           if (await handleLeave()) setLeaveOpen(false);
@@ -365,7 +365,7 @@ export default function WorkspaceSettingsPage() {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Delete this workspace?"
-        description={`This will permanently delete ${server.name} along with every channel, message, agent, and bridge key.`}
+        description={`This will permanently delete ${server.name} along with every room, message, agent, and runtime key.`}
         confirmLabel="Delete forever"
         requireText={server.name}
         onConfirm={async () => {

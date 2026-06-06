@@ -23,6 +23,20 @@ test.describe("homepage full section render", () => {
     await expect(hero.getByRole("heading", { name: /Build your business.*agent workflows/i })).toBeVisible();
     await expect(hero.getByText(/workflow rooms/i)).toBeVisible();
     await expect(hero.getByText(/Claude Code, Codex, OpenClaw, or Hermes/i)).toBeVisible();
+    await expect(hero.getByTestId("workflow-preview")).toBeVisible();
+  });
+
+  test("Workflow preview switches examples without leaving the hero", async ({ page }) => {
+    await gotoHome(page);
+
+    const preview = page.getByTestId("workflow-preview");
+    await expect(preview.getByRole("tab", { name: /Customer risk/i })).toHaveAttribute("aria-selected", "true");
+    await expect(preview.getByText("15 min to account plan")).toBeVisible();
+
+    await preview.getByRole("tab", { name: /Code review/i }).click();
+    await expect(preview.getByRole("tab", { name: /Code review/i })).toHaveAttribute("aria-selected", "true");
+    await expect(preview.getByText(/Review a PR without uploading repo context/i)).toBeVisible();
+    await expect(preview.getByText("code stays local")).toBeVisible();
   });
 
   test("TwoWaysToRun shows workflow-first cards and CTAs", async ({ page }) => {
@@ -73,23 +87,14 @@ test.describe("homepage full section render", () => {
     await expect(section.locator("h3")).toHaveCount(3);
   });
 
-  test("AgentRecipe shows the workflow-room headline, roster, and run log", async ({ page }) => {
+  test("Workflow-first visual path makes the GTM model scannable", async ({ page }) => {
     await gotoHome(page);
 
-    const section = page.locator("section", { hasText: /A room is more than chat/i });
-    await expect(section.getByRole("heading", { name: /agent runs become decisions/i })).toBeVisible();
-    await expect(section.getByText(/Workflow agents.*#launch/i)).toBeVisible();
-    await expect(section.getByText("Run log + decision thread", { exact: true })).toBeVisible();
-  });
-
-  test("WhyRaltic renders at least six feature cards", async ({ page }) => {
-    await gotoHome(page);
-
-    const section = page.locator("section#why");
-    await expect(section.getByRole("heading", { name: /last AI rollout/i })).toBeVisible();
-    await expect(section.getByRole("heading", { name: "Nobody wants another private AI island" })).toBeVisible();
-    await expect(section.getByRole("heading", { name: "Agent work needs follow-through" })).toBeVisible();
-    expect(await section.locator("h3").count()).toBeGreaterThanOrEqual(6);
+    const section = page.locator("section", { hasText: /One room turns agent output/i });
+    for (const label of ["Brief", "Agents", "Approval", "Memory"]) {
+      await expect(section.getByText(label, { exact: true }).first()).toBeVisible();
+    }
+    await expect(section.getByText(/Start with the business process/i)).toBeVisible();
   });
 
   test("homepage positioning does not regress to chat-app-first copy", async ({ page }) => {
@@ -104,7 +109,7 @@ test.describe("homepage full section render", () => {
     ]) {
       expect(bodyText).not.toContain(oldCopy);
     }
-    await expect(page.getByText("one place to run, one place to decide.")).toBeVisible();
+    await expect(page.getByText("One room turns agent output into accountable work.")).toBeVisible();
     await expect(page.getByText("Run workflows with your own AI daemon (OpenClaw / Hermes)")).toBeVisible();
   });
 

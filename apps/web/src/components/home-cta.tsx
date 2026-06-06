@@ -13,11 +13,16 @@ import { MarketingButton } from "@/components/marketing/marketing-button";
  */
 export function HomeCta(): React.ReactElement {
   const { data: session, isPending } = useSession();
+  const [hydrated, setHydrated] = useState(false);
   // null = signed in but workspace lookup hasn't resolved yet. Render a
   // readable fallback instead of briefly pointing at /login. We pick
   // /me's defaultServerSlug first (single round-trip, matches the rest of
   // the app's "where do I land" logic) and fall back to the first server.
   const [openHref, setOpenHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (!session) return;
@@ -48,7 +53,10 @@ export function HomeCta(): React.ReactElement {
   // a bit looser but stays visually centered inside the same chip.
   const CTA_MIN = "min-w-[184px]";
 
-  if (isPending) {
+  // Keep SSR and the first client render identical. better-auth may resolve
+  // a session synchronously from cookies, so checking `session` before mount
+  // can otherwise hydrate `/signup` into `Open Raltic` and throw.
+  if (!hydrated || isPending) {
     return (
       <MarketingButton href="/signup" className={CTA_MIN}>
         Start a cloud Agent <span aria-hidden="true">→</span>

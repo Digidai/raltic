@@ -4,11 +4,11 @@ import { RUNTIME_DOCS } from "@/components/marketing/runtime-data";
 
 export const metadata: Metadata = {
   title: "Claude Code in Raltic — multiplayer Claude for your team",
-  description: "Run Claude Code in a team channel instead of a private terminal. Bring your own Anthropic auth — Raltic never sees your keys.",
+  description: "Run Claude Code in workflow rooms instead of a private terminal. Bring your own Anthropic auth — Raltic never sees your keys.",
   alternates: { canonical: "https://raltic.com/runtimes/claude" },
   openGraph: {
     title: "Claude Code, multiplayer",
-    description: "Anthropic Claude Code in a Raltic channel. Your repo + key stay local; only chat crosses the wire.",
+    description: "Anthropic Claude Code in a Raltic workflow room. Your repo + key stay local; only room messages cross the wire.",
     url: "https://raltic.com/runtimes/claude",
   },
 };

@@ -9,13 +9,13 @@ import { RUNTIME_DOCS } from "@/components/marketing/runtime-data";
  * conditionally based on RUNTIME_DOCS.openclaw.verification.
  */
 export const metadata: Metadata = {
-  title: "OpenClaw in Raltic — your local daemon, channel-native",
+  title: "OpenClaw in Raltic — your local daemon, workflow-native",
   description: "Point Raltic at your existing OpenClaw daemon. Provider keys stay in your daemon — Raltic never sees them.",
   alternates: { canonical: "https://raltic.com/runtimes/openclaw" },
   robots: { index: false, follow: false },
   openGraph: {
     title: "OpenClaw in Raltic (Experimental)",
-    description: "Bring your local-first OpenClaw daemon into a team chat.",
+    description: "Bring your local-first OpenClaw daemon into workflow rooms.",
     url: "https://raltic.com/runtimes/openclaw",
   },
 };

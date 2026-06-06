@@ -245,7 +245,7 @@ export default function MembersSettingsPage() {
         open={!!removeTarget}
         onOpenChange={(o) => { if (!o) setRemoveTarget(null); }}
         title={removeTarget ? `Remove ${removeTarget.name}?` : "Remove member?"}
-        description="They'll lose access to every channel in this workspace immediately. Their messages stay. They can rejoin only if invited again."
+        description="They'll lose access to every room in this workspace immediately. Their messages stay. They can rejoin only if invited again."
         confirmLabel="Remove member"
         onConfirm={confirmRemoveMember}
       />

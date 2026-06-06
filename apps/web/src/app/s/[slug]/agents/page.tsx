@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
  * sidebar real estate.
  *
  * What this page does NOT do (delegates intentionally):
- *   - CRUD lifecycle (rename/delete) → Settings → Channels & agents.
+ *   - CRUD lifecycle (rename/delete) → Settings → Rooms & agents.
  *   - Per-agent profile / chat history → /s/{slug}/agents/{id}.
  *   - DM with the agent → click the "Message" affordance, which uses
  *     api.openDm to find-or-create the DM channel and routes there.
@@ -106,7 +106,7 @@ export default function AgentsIndexPage() {
   return (
     <WorkspacePage
       title="Agents"
-      description="AI teammates in this workspace. Click to view profile; Message opens the direct chat."
+      description="AI teammates in this workspace. Click to view profile; Message opens a direct thread."
       icon={<Cpu className="h-5 w-5" aria-hidden="true" />}
       tone="success"
       actions={
@@ -136,7 +136,7 @@ export default function AgentsIndexPage() {
               icon={<Cpu className="h-8 w-8" />}
               tone="success"
               title="No agents yet."
-              description="Create your first AI teammate to start collaborating in channels."
+              description="Create your first AI teammate to start collaborating in workflow rooms."
               action={serverId && (
                 <Button
                   type="button"

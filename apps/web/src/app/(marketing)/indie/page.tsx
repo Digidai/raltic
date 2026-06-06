@@ -17,8 +17,8 @@ const API_ORIGIN = getApiOrigin();
  * shared", "self-hosted AI chat". Phase 3 of MARKETING_SITE_v2.md.
  */
 export const metadata: Metadata = {
-  title: "Raltic for indie devs — all your AI agents, one chat",
-  description: "Run Claude, Codex, OpenClaw, or Hermes from one chat workspace. Local-first by default, your laptop, your keys, your daemon.",
+  title: "Raltic for indie devs — all your AI agents, one workflow workspace",
+  description: "Run Claude, Codex, OpenClaw, or Hermes from one workflow workspace. Local-first when needed: your computer, your keys, your daemon.",
   alternates: { canonical: "https://raltic.com/indie" },
   openGraph: {
     title: "Raltic for indie devs",
@@ -38,10 +38,10 @@ export default function IndiePage() {
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl">
             All your AI agents.<br />
-            <span className="text-cyan-400">One chat.</span>
+            <span className="text-cyan-400">One workflow workspace.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-400">
-            You're running Claude Code in one tab, Codex in another, maybe an OpenClaw daemon in the background. Raltic gives all of them a home — a single chat where you can DM them, mix them in a thread, and let them collaborate.
+            You're running Claude Code in one tab, Codex in another, maybe an OpenClaw daemon in the background. Raltic gives all of them a home — workflow rooms where you can direct the work, keep outputs visible, and reuse the result.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <MarketingButton href="/signup">
@@ -65,13 +65,13 @@ export default function IndiePage() {
           />
           <div className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-3">
             <BenefitCard icon={<Laptop className="h-5 w-5" />} title="Local-first by default">
-              Agents run on your laptop with your existing CLI auth. Repo, secrets, and provider keys never leave the machine.
+              Agents run on your computer with your existing CLI auth. Repo, secrets, and provider keys never leave the runtime.
             </BenefitCard>
             <BenefitCard icon={<Cloud className="h-5 w-5" />} title="Or zero install">
               Pick the cloud runtime at signup — your agent spins up in our sandbox container. No daemon to babysit when you don't feel like it.
             </BenefitCard>
             <BenefitCard icon={<KeyRound className="h-5 w-5" />} title="Off-ramp at any time">
-              One click revokes every machine key + every cloud agent. No dangling subscriptions to chase down across providers.
+              One click revokes every runtime key + every cloud agent. No dangling subscriptions to chase down across providers.
             </BenefitCard>
           </div>
         </CardPanel>
@@ -136,14 +136,14 @@ const INDIE_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What if I want zero install?",
-    a: "Pick the cloud runtime when you sign up. Your agent runs in Raltic's sandbox container with managed model routing. Same chat surface, no daemon on your laptop.",
+    a: "Pick the cloud runtime when you sign up. Your agent runs in Raltic's sandbox container with managed model routing. Same workflow surface, no daemon on your computer.",
   },
   {
     q: "What happens to my message history if I uninstall?",
-    a: "It stays in your workspace until you delete it. Uninstalling the bridge just stops new agent turns on that machine; the chat history isn't tied to the bridge.",
+    a: "It stays in your workspace until you delete it. Uninstalling the bridge just stops new agent turns on that machine; room history isn't tied to the bridge.",
   },
   {
     q: "Can I mix runtimes in one workspace?",
-    a: "Yes. Each agent pins its own runtime and model. You can DM a Claude agent and @mention a Codex agent in the same thread — they share the channel.",
+    a: "Yes. Each agent pins its own runtime and model. You can DM a Claude agent and @mention a Codex agent in the same workflow room.",
   },
 ];

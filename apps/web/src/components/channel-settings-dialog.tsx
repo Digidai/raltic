@@ -72,7 +72,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
           ? (topic.trim() || null)
           : undefined,
       });
-      notifySuccess("Channel updated");
+      notifySuccess("Room updated");
       // Notify sidebar so the renamed channel surfaces immediately —
       // the message-area header refetches via onSaved but the sidebar
       // listens to this CustomEvent for its own re-fetch.
@@ -97,7 +97,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
       // Punt back to workspace root — channel page is gone.
       router.push(`/s/${serverSlug}`);
     } catch (e) {
-      notifyThrown("Couldn't delete channel", e);
+      notifyThrown("Couldn't delete room", e);
     } finally {
       setDeleting(false);
     }
@@ -117,7 +117,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
     setConvertingVisibility(true);
     try {
       await api.setChannelVisibility(channel.id, target);
-      notifySuccess(`Channel is now ${target}`);
+      notifySuccess(`Room is now ${target}`);
       window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
       onSaved?.();
       setVisibilityTarget(null);
@@ -135,7 +135,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
         <DialogBackdrop />
         <DialogPopup className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Channel settings</DialogTitle>
+            <DialogTitle>Room settings</DialogTitle>
           </DialogHeader>
           <DialogPanel>
             <div className="space-y-4">
@@ -143,7 +143,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                 <FieldLabel htmlFor="cs-name">Name</FieldLabel>
                 <Input
                   id="cs-name"
-                  aria-label="Channel name"
+                  aria-label="Room name"
                   value={name}
                   pattern="[a-z0-9_-]+"
                   maxLength={64}
@@ -155,12 +155,12 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                 <FieldLabel htmlFor="cs-desc">Description</FieldLabel>
                 <Input
                   id="cs-desc"
-                  aria-label="Channel description"
+                  aria-label="Room description"
                   value={description}
                   maxLength={2000}
                   disabled={!canManage}
                   onChange={(e) => setDescription((e.target as HTMLInputElement).value)}
-                  placeholder="What is this channel for?"
+                  placeholder="What workflow does this room own?"
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">Permanent purpose. Set once.</p>
               </Field>
@@ -205,13 +205,13 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                     ))}
                   </RadioGroup>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    Existing members keep access on convert. For a fresh start, create a new private channel instead.
+                    Existing members keep access on convert. For a fresh start, create a new private room instead.
                   </p>
                 </Field>
               )}
               {!canManage && (
                 <p className="text-[11px] text-muted-foreground">
-                  Only the channel creator or workspace owner can edit these.
+                  Only the room creator or workspace owner can edit these.
                 </p>
               )}
               {error && (
@@ -227,12 +227,12 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                       : <Archive className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
                     <div className="flex-1 text-xs">
                       <p className="font-medium">
-                        {channel.archivedAt != null ? "Channel is archived" : "Archive channel"}
+                        {channel.archivedAt != null ? "Room is archived" : "Archive room"}
                       </p>
                       <p className="mt-0.5 text-muted-foreground">
                         {channel.archivedAt != null
-                          ? "Posting is disabled and the channel is hidden from sidebars. Existing messages are preserved."
-                          : "Make the channel read-only and hide it from sidebars. Reversible — no data is lost."}
+                          ? "Posting is disabled and the room is hidden from sidebars. Existing messages are preserved."
+                          : "Make the room read-only and hide it from sidebars. Reversible — no data is lost."}
                       </p>
                       <Button
                         type="button"
@@ -276,7 +276,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger-text" />
                     <div className="flex-1 text-xs">
-                      <p className="font-medium text-danger-text">Delete channel</p>
+                      <p className="font-medium text-danger-text">Delete room</p>
                       <p className="mt-0.5 text-danger-text">
                         All messages, tasks, and reactions in <strong>#{channel.name}</strong> will be permanently removed. Members will lose access immediately.
                       </p>
@@ -288,7 +288,7 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
                           size="xs"
                           className="mt-2 text-[11px]"
                         >
-                          <Trash2 className="h-3 w-3" /> Delete channel
+                          <Trash2 className="h-3 w-3" /> Delete room
                         </Button>
                       ) : (
                         <div className="mt-2 space-y-2">
@@ -349,8 +349,8 @@ export function ChannelSettingsDialog({ channel, serverSlug, canManage, open, on
         onOpenChange={(next) => {
           if (!next && !convertingVisibility) setVisibilityTarget(null);
         }}
-        title={visibilityTarget ? `Convert #${channel.name} to ${visibilityTarget}?` : "Convert channel visibility?"}
-        description="Existing members keep access. For a fresh private space, create a new private channel instead."
+        title={visibilityTarget ? `Convert #${channel.name} to ${visibilityTarget}?` : "Convert room visibility?"}
+        description="Existing members keep access. For a fresh private space, create a new private room instead."
         confirmLabel={visibilityTarget ? `Convert to ${visibilityTarget}` : "Convert"}
         destructive={false}
         onConfirm={confirmVisibilityChange}

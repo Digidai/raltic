@@ -180,7 +180,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
           rows={4}
           value={useCase}
           onChange={e => setUseCase((e.target as HTMLTextAreaElement).value)}
-          placeholder="e.g. We run Claude Code daily and want a shared chat where the agent's work is visible to the whole eng team."
+          placeholder="e.g. We run Claude Code daily and want a shared workflow room where the agent's work is visible to the whole team."
           disabled={state === "submitting"}
           className="resize-none"
           maxLength={2000}

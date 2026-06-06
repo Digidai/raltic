@@ -39,7 +39,7 @@ export default function ChannelsBrowsePage() {
       // to the end so the directory order doesn't shift on every visit.
       setRows([...channels].sort((a, b) => a.createdAt - b.createdAt));
     } catch (e) {
-      notifyThrown("Couldn't load channels", e);
+      notifyThrown("Couldn't load rooms", e);
       setRows([]);
     }
   }, [slug]);
@@ -60,7 +60,7 @@ export default function ChannelsBrowsePage() {
       // from layout/sidebar — no prop drilling through the Next route layer.
       window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
     } catch (e) {
-      notifyThrown("Couldn't join channel", e);
+      notifyThrown("Couldn't join room", e);
     } finally {
       setJoining(null);
     }
@@ -68,8 +68,8 @@ export default function ChannelsBrowsePage() {
 
   return (
     <WorkspacePage
-      title="Channels"
-      description={<>Public channels in this workspace. Click <em>Join</em> to add one to your sidebar.</>}
+      title="Rooms"
+      description={<>Public workflow rooms in this workspace. Click <em>Join</em> to add one to your sidebar.</>}
       icon={<Hash className="h-5 w-5" aria-hidden="true" />}
       tone="accent"
     >
@@ -80,10 +80,10 @@ export default function ChannelsBrowsePage() {
             <WorkspaceEmptyState
               icon={<Hash className="h-8 w-8" />}
               tone="accent"
-              title="No public channels yet."
+              title="No public rooms yet."
               description={
                 <>
-                Admins can create channels from Settings → Channels & agents.
+                Admins can create workflow rooms from the sidebar or Settings.
                 </>
               }
             />

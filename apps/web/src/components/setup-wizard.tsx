@@ -31,7 +31,7 @@ interface Props {
   serverSlug: string;
   /** True if the user already has a connected bridge for THIS workspace
    *  — wizard is being re-opened (e.g. from settings) to set up an
-   *  additional laptop. Drives a copy change so we don't pretend the
+   *  additional computer. Drives a copy change so we don't pretend the
    *  user is brand-new. */
   hasExistingBridge?: boolean;
   /** Tone + framing of the wizard. "solo" is the brand-new-user path
@@ -94,10 +94,10 @@ const API_URL = getApiOrigin();
 
 /**
  * 4-step wizard shown to users who haven't connected a bridge yet:
- *   1. Welcome — what Raltic is, what to expect
- *   2. Create a machine API key (one-shot reveal)
- *   3. Run the bridge command on the user's laptop (with poll for connection)
- *   4. Send first message in the onboarding channel
+ *   1. Runtime boundary — when local execution matters
+ *   2. Create a runtime API key (one-shot reveal)
+ *   3. Run the bridge command on the user's computer (with poll for connection)
+ *   4. Send first workflow message
  */
 export function SetupWizard({
   serverId, serverSlug, hasExistingBridge = false,
@@ -148,7 +148,7 @@ export function SetupWizard({
   // Without the validation, a stale resume entry from a week ago whose
   // key was used long ago would false-positive into step 4 instantly.
   useEffect(() => {
-    // When the user is explicitly setting up an additional laptop (has
+    // When the user is explicitly setting up an additional computer (has
     // a working bridge already + landed via ?wizard=1), ignore any
     // stale resume entry from an abandoned earlier attempt — they want
     // a fresh key flow, not to continue someone else's progress.
@@ -212,7 +212,7 @@ export function SetupWizard({
   // ── Step 3: poll for THIS specific key's bridge to connect. We check
   // `machineKeys.lastUsedAt` for the just-issued key id — NOT the
   // user-level `hasConnectedBridge` flag, which would short-circuit a
-  // "set up another laptop" flow because some other key is already
+  // "set up another computer" flow because some other key is already
   // connected. Soft-cap at the timeout so we can surface help.
   useEffect(() => {
     // Either we just issued (have plaintext) OR we resumed (have id only).
@@ -228,12 +228,12 @@ export function SetupWizard({
           // Key disappeared (deleted / different account). Bail with an
           // explicit error rather than spinning forever.
           clearInterval(t);
-          setError("Your machine key was removed. Start over to issue a new one.");
+          setError("Your runtime key was removed. Start over to issue a new one.");
           return;
         }
         if (me.revokedAt) {
           clearInterval(t);
-          setError("Your machine key was revoked. Start over to issue a new one.");
+          setError("Your runtime key was revoked. Start over to issue a new one.");
           return;
         }
         if (me.lastUsedAt) {
@@ -345,7 +345,7 @@ export function SetupWizard({
     return () => clearInterval(t);
   }, [step, firstReplySeen, onboardingDmId]);
 
-  // ── Step 4 runtime refresh — re-pull this key's per-machine snapshots
+  // ── Step 4 runtime refresh — re-pull this key's per-computer snapshots
   // every 3s so a `codex login` in user's terminal becomes visible
   // promptly. Stops when wizard closes (cleanup on step !== 4).
   useEffect(() => {
@@ -380,7 +380,7 @@ export function SetupWizard({
   }
 
   /** "Start over" path — revoke the abandoned key first so retried users
-   *  don't accumulate a graveyard of valid-but-unused machine keys (each
+   *  don't accumulate a graveyard of valid-but-unused runtime keys (each
    *  one is a full bridge credential). Best-effort: if revoke fails we
    *  still let them retry; orphaned keys can be cleaned up from settings. */
   async function startOverFromStep2() {
@@ -431,10 +431,10 @@ export function SetupWizard({
       : `raltic-bridge setup ${issued} --server-url ${API_URL}`
     : "";
   const wizardTitle = hasExistingBridge
-    ? "Connect another laptop"
+    ? "Connect another local runtime"
     : flavor === "invite"
-    ? "Bring YOUR agents online"
-    : "Set up your laptop";
+    ? "Bring YOUR agents into workflow rooms"
+    : "Connect a local runtime";
   return (
     <Dialog open onOpenChange={(next) => { if (!next) handleDismiss(); }}>
       <DialogPortal>
@@ -462,25 +462,25 @@ export function SetupWizard({
                   You joined{" "}
                   <strong>{inviterWorkspaceName ?? "another workspace"}</strong>{" "}
                   — their agents are already online (their bridge handles those).
-                  To create agents <em>of your own</em>, we connect your laptop here.
+                  To run agents <em>of your own</em> in workflow rooms, connect your local runtime here.
                 </>
               ) : (
                 <>
-                  Each AI teammate runs on <em>your own</em> laptop and joins channels
-                  here in real time. We&apos;ll connect your laptop in 2 minutes.
+                  Use this when a workflow needs local code, keys, or private tools.
+                  Cloud agents can work without this; local agents join rooms through your bridge.
                 </>
               )}
             </CardDescription>
           </CardHeader>
           <CardPanel className="min-h-0 flex-1 overflow-y-auto">
             <ol className="space-y-3 text-sm">
-              <Step n={1} active={step === 1} done={step > 1} title="Welcome" />
+              <Step n={1} active={step === 1} done={step > 1} title="Choose runtime boundary" />
               <Step n={2} active={step === 2} done={step > 2}
-                title="Create a machine API key" />
+                title="Create a local runtime key" />
               <Step n={3} active={step === 3} done={step > 3}
-                title={bridgeOnline ? "Bridge connected ✓" : "Run the bridge on your laptop"} />
+                title={bridgeOnline ? "Local runtime connected ✓" : "Run the bridge on this computer"} />
               <Step n={4} active={step === 4 && !firstReplySeen} done={firstReplySeen}
-                title={firstReplySeen ? "First reply received ✓" : "Send your first message"} />
+                title={firstReplySeen ? "First reply received ✓" : "Send a workflow message"} />
             </ol>
 
             <Card render={<section />} className="mt-6 bg-[var(--surface-secondary)] !shadow-none">
@@ -491,7 +491,7 @@ export function SetupWizard({
                     <Alert variant="info" className="text-xs">
                       <AlertTitle>You already have a bridge connected.</AlertTitle>
                       <AlertDescription>
-                        This will issue a NEW machine key for an additional laptop. Your existing
+                        This will issue a new runtime key for an additional computer. Your existing
                         key + bridge keep working — agents are leader-elected so you won&apos;t double-reply.
                       </AlertDescription>
                     </Alert>
@@ -503,13 +503,13 @@ export function SetupWizard({
                       can PATCH the onboarding agent to the chosen runtime
                       via api.updateAgent. Defaults to Claude (best-tested
                       path); the toggle isn't shown when the user is
-                      adding a SECOND laptop (their agents already have a
+                      adding a SECOND computer (their agents already have a
                       runtime set). */}
                   {!hasExistingBridge && (
                     <div>
-                      <p className="font-medium">Which AI runtime do you want to use?</p>
+                      <p className="font-medium">Which runtime should power local workflow rooms?</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        All run locally on YOUR laptop. You can change per-agent later.
+                        Pick the agent runtime that can safely touch local code, keys, or tools. You can change per-agent later.
                       </p>
                       <RadioGroup
                         aria-label="AI runtime"
@@ -561,7 +561,7 @@ export function SetupWizard({
 
                   <Card render={<section />} className="bg-background !shadow-none">
                     <CardPanel className="p-3 text-xs">
-                    <p className="font-medium">You&apos;ll need on this laptop:</p>
+                    <p className="font-medium">You&apos;ll need on this computer:</p>
                     <ul className="mt-1 space-y-0.5 text-muted-foreground">
                       <li>• <strong>Node ≥ 20</strong> — check with <code className="raltic-inline-token">node -v</code></li>
                       {runtime === "claude" && (
@@ -604,16 +604,16 @@ export function SetupWizard({
                   </Card>
 
                   <Button onClick={() => setStep(2)} className="mt-2">
-                    {hasExistingBridge ? "Issue a new machine key" : "Continue"}
+                    {hasExistingBridge ? "Issue a new runtime key" : "Continue"}
                   </Button>
                 </div>
               )}
 
               {step === 2 && (
                 <div className="space-y-3 text-sm">
-                  <p>Pick a name for this laptop — you'll see it in your settings.</p>
+                  <p>Pick a name for this local runtime — you&apos;ll see it in your settings.</p>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input aria-label="Machine key name" value={keyName} onChange={(e) => setKeyName((e.target as HTMLInputElement).value)} placeholder="My Mac" className="min-w-0 flex-1" />
+                    <Input aria-label="Runtime key name" value={keyName} onChange={(e) => setKeyName((e.target as HTMLInputElement).value)} placeholder="My Mac" className="min-w-0 flex-1" />
                     <Button onClick={createKey} loading={creating} className="w-full sm:w-auto">
                       <KeyRound className="mr-1 h-3.5 w-3.5" /> Issue key
                     </Button>
@@ -631,7 +631,7 @@ export function SetupWizard({
                     <Alert variant="info" className="text-xs">
                       <AlertTitle>Resumed from a previous session</AlertTitle>
                       <AlertDescription>
-                        We&apos;re watching for the bridge from key{" "}
+                        We&apos;re watching for the bridge from runtime key{" "}
                         <code className="raltic-inline-token">{keyName}</code>.
                         Already pasted the command in your terminal? Just keep it running and we&apos;ll detect the connection.
                       </AlertDescription>
@@ -653,7 +653,7 @@ export function SetupWizard({
                         <AlertDescription>
                           <ul className="mt-1 space-y-0.5">
                             <li>1. Downloads <code className="raltic-inline-token">@raltic/bridge</code> via npx (no global install)</li>
-                            <li>2. Registers this laptop with your workspace using the API key below</li>
+                            <li>2. Registers this computer with your workspace using the runtime key below</li>
                             <li>3. Stays running in this terminal — watches for messages from your agents</li>
                           </ul>
                         </AlertDescription>
@@ -700,7 +700,7 @@ export function SetupWizard({
 
                       {installTab === "quick" && (
                         <>
-                          <p className="text-xs">Open a terminal on your laptop and run:</p>
+                          <p className="text-xs">Open a terminal on this computer and run:</p>
                           <CopyableCommand cmd={quickCmd} />
                         </>
                       )}
@@ -820,14 +820,14 @@ export function SetupWizard({
                 <div className="space-y-3 text-sm">
                   <p className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[var(--success-soft-foreground)]" />
-                    Your bridge is connected. The Onboarding Assistant is online.
+                    Your bridge is connected. Local agents can now join workflow rooms from this machine.
                   </p>
 
-                  {/* Per-machine runtime detection strip. Refreshes every
+                  {/* Per-computer runtime detection strip. Refreshes every
                       3s so users running `codex login` mid-wizard see
                       their state update without manual reload. Renders
                       ALL machines that have used this key (rare but
-                      possible — same key on multiple laptops). */}
+                      possible — same key on multiple computers). */}
                   {detectedMachines.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -846,8 +846,7 @@ export function SetupWizard({
                     </p>
                   ) : (
                     <p className="text-muted-foreground">
-                      Send a message in the DM below and the agent will respond on your laptop. We&apos;ll
-                      mark this step done as soon as the first reply lands here.
+                      Send a first workflow message in the DM below. We&apos;ll mark this step done as soon as the agent replies from your runtime.
                     </p>
                   )}
                   <Button onClick={() => {
@@ -855,7 +854,7 @@ export function SetupWizard({
                     if (onboardingDmId) router.push(`/s/${serverSlug}/dm/${onboardingDmId}`);
                   }}>
                     <MessageSquare className="mr-1 h-3.5 w-3.5" />
-                    {onboardingDmId ? "Open the DM" : "Open my workspace"}
+                    {onboardingDmId ? "Open onboarding DM" : "Open my workspace"}
                   </Button>
                 </div>
               )}

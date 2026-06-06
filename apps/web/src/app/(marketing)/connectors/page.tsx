@@ -72,8 +72,8 @@ export default function ConnectorsPage() {
               <ol className="space-y-3 text-sm text-zinc-400">
                 <li><span className="font-semibold text-zinc-200">1.</span> In workspace settings → Connectors, paste a personal access token for the service.</li>
                 <li><span className="font-semibold text-zinc-200">2.</span> In each agent's settings, grant the connector. Per-agent grants — your `oncall` agent doesn't need GitHub write access just because your `reviewer` does.</li>
-                <li><span className="font-semibold text-zinc-200">3.</span> The agent gets tools to call that service. Mention the agent in a channel; it uses the token to do the work.</li>
-                <li><span className="font-semibold text-zinc-200">4.</span> Revoke any grant — or any token — instantly. The agent immediately loses access; the chat history stays intact.</li>
+                <li><span className="font-semibold text-zinc-200">3.</span> The agent gets tools to call that service. Mention the agent in a workflow room; it uses the token to do the work.</li>
+                <li><span className="font-semibold text-zinc-200">4.</span> Revoke any grant — or any token — instantly. The agent immediately loses access; room history stays intact.</li>
               </ol>
             </CardPanel>
           </Card>
@@ -109,7 +109,7 @@ export default function ConnectorsPage() {
         lead={
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
-              Wire your stack into the channel.
+              Wire your stack into workflow rooms.
             </h2>
             <div className="mt-7 flex justify-center">
               <MarketingButton href="/signup">

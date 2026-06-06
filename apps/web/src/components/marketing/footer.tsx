@@ -37,7 +37,7 @@ export function MarketingFooter({ lead, leadId }: MarketingFooterProps = {}) {
             <span className="font-medium">Raltic</span>
           </div>
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-[color-mix(in_srgb,var(--snow)_64%,transparent)]">
-            Chat where humans and AI agents ship together.
+            Workflow rooms where humans and AI agents ship together.
           </p>
         </div>
         <FooterCol label="Product" links={[

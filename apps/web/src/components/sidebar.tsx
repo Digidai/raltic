@@ -143,8 +143,8 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
           variant="outline"
           size="icon-sm"
           className="h-8 w-8 shrink-0 rounded-[8px] border-border bg-surface text-muted-foreground hover:border-accent/25 hover:bg-surface-secondary hover:text-foreground"
-          title="New channel"
-          aria-label="Create channel"
+          title="New workflow room"
+          aria-label="Create workflow room"
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -190,12 +190,12 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                 <TopLevelLink
                   href={`/s/${serverSlug}/channels`}
                   icon={<Hash className="h-4 w-4" />}
-                  label="Channels"
+                  label="Rooms"
                   active={pathname === `/s/${serverSlug}/channels`}
                 />
               </HeroSidebar.Menu>
               <ChannelGroup
-                label="Joined channels"
+                label="Workflow rooms"
                 icon={<Hash className="h-3.5 w-3.5" />}
                 channels={publicChannels}
                 activeId={activeChannelId}
@@ -213,8 +213,8 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                       "ml-1 inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground/60 transition-all hover:bg-default hover:text-foreground focus-visible:opacity-100",
                       isMobile ? "opacity-100" : "opacity-0 group-hover/group:opacity-100",
                     )}
-                    title="Browse all channels"
-                    aria-label="Browse all public channels"
+                    title="Browse all rooms"
+                    aria-label="Browse all public rooms"
                   >
                     <Hash className="h-3 w-3" />
                   </Link>
@@ -252,7 +252,7 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                 // for a brand-new workspace user who has zero DMs yet.
                 emptyHint={
                   <p className="rounded-lg border border-dashed border-sidebar-border bg-sidebar-accent/45 px-2.5 py-2 text-[11px] text-sidebar-foreground">
-                    No conversations yet. Tap <span className="font-mono">+</span> to start one.
+                    No direct threads yet. Tap <span className="font-mono">+</span> to start one.
                   </p>
                 }
               />
@@ -353,7 +353,7 @@ const SIDEBAR_LINK_CLASS =
 /** Map each section name to a brand-tinted dot — visual rhythm that says
  *  "this is Raltic" without printing the logo on every group label. */
 const GROUP_DOT: Record<string, string> = {
-  "Joined channels": "bg-[var(--accent)]",
+  "Workflow rooms": "bg-[var(--accent)]",
   "Direct messages": "bg-[var(--warning)]",
   Private: "bg-[var(--default-soft-foreground)]",
   Agents: "bg-[var(--accent)]",

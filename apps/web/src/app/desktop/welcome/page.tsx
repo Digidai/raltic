@@ -24,12 +24,12 @@ const steps = [
   },
   {
     icon: KeyRound,
-    title: "Create a scoped machine key",
+    title: "Create a scoped runtime key",
     body: "After sign-in, Raltic saves a workspace-specific key for the desktop bridge.",
   },
   {
     icon: MessageSquare,
-    title: "Return to your channels",
+    title: "Return to your workflow rooms",
     body: "Once connected, the app opens your workspace with local agents available.",
   },
 ];
@@ -54,7 +54,7 @@ export default function DesktopWelcomePage() {
               Connect this computer to your workspace.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground sm:text-lg">
-              Raltic Desktop runs the local bridge for Claude Code and Codex agents, then brings you back to the channels where the work happens.
+              Raltic Desktop runs the local bridge for Claude Code and Codex agents, then brings you back to the workflow rooms where the work happens.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">

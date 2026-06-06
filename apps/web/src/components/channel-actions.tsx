@@ -107,7 +107,7 @@ export function ChannelActions({ channel, members, selfUserId, serverSlug, canMa
       setLeaveConfirmOpen(false);
       router.push(`/s/${serverSlug}`);
     } catch (e) {
-      notifyThrown("Couldn't leave channel", e instanceof ApiError ? e : new Error(String(e)));
+      notifyThrown("Couldn't leave room", e instanceof ApiError ? e : new Error(String(e)));
     } finally {
       setLeaving(false);
     }
@@ -142,7 +142,7 @@ export function ChannelActions({ channel, members, selfUserId, serverSlug, canMa
       <DropdownMenu>
         <DropdownMenuTrigger
           className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground shadow-sm transition-colors hover:border-accent/25 hover:bg-surface-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Channel actions"
+          aria-label="Room actions"
         >
           <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
@@ -153,25 +153,25 @@ export function ChannelActions({ channel, members, selfUserId, serverSlug, canMa
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
             <Settings className="h-4 w-4" />
-            {canManage ? "Channel settings" : "View details"}
+            {canManage ? "Room settings" : "View details"}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleToggleStar} disabled={togglingStar}>
             {channel.starredAt != null ? (
-              <><StarOff className="h-4 w-4" />Unstar channel</>
+              <><StarOff className="h-4 w-4" />Unstar room</>
             ) : (
-              <><Star className="h-4 w-4" />Star channel</>
+              <><Star className="h-4 w-4" />Star room</>
             )}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleToggleMute} disabled={togglingMute}>
             {channel.mutedAt != null ? (
-              <><Bell className="h-4 w-4" />Unmute channel</>
+              <><Bell className="h-4 w-4" />Unmute room</>
             ) : (
-              <><BellOff className="h-4 w-4" />Mute channel</>
+              <><BellOff className="h-4 w-4" />Mute room</>
             )}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setLeaveConfirmOpen(true)} variant="destructive">
             <LogOut className="h-4 w-4" />
-            Leave channel
+            Leave room
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -197,9 +197,9 @@ export function ChannelActions({ channel, members, selfUserId, serverSlug, canMa
       <ConfirmDialog
         open={leaveConfirmOpen}
         onOpenChange={setLeaveConfirmOpen}
-        title={`Leave #${channel.name}?`}
+        title={`Leave #${channel.name} room?`}
         description="You'll lose access to its history until someone adds you back."
-        confirmLabel="Leave channel"
+        confirmLabel="Leave room"
         destructive
         onConfirm={handleLeave}
       />

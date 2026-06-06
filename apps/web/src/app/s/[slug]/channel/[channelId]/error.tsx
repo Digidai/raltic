@@ -26,9 +26,9 @@ export default function ChannelError({ error, reset }: {
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
             <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
           </div>
-          <h2 className="text-base font-semibold">This channel hit an error</h2>
+          <h2 className="text-base font-semibold">This room hit an error</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            The rest of your workspace is fine. Try again, or pick another channel from the sidebar.
+            The rest of your workspace is fine. Try again, or pick another room from the sidebar.
           </p>
           {error.digest && (
             <p className="mt-2 text-[11px] text-muted-foreground">Reference: {error.digest}</p>

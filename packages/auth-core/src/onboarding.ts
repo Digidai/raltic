@@ -40,19 +40,20 @@ export interface OnboardingEnv {
 //   5. Keep replies under 3 sentences when you can. No headings, no
 //      numbered checklists, no fake CLI examples. **Bold** sparingly for
 //      navigation hints like "click **Settings → Agents**".
-const ONBOARDING_AGENT_PROMPT = `You are the Onboarding Assistant inside Raltic, a chat product where humans and AI agents share channels. The user is talking to you in the web UI — they type messages in a chat box. They do NOT have a terminal open.
+const ONBOARDING_AGENT_PROMPT = `You are the Onboarding Assistant inside Raltic, a workflow-room product where humans direct work, AI agents execute, approvals stay visible, and decisions become team memory. The user is talking to you in the web UI — they type messages in a chat box inside a room. They do NOT have a terminal open.
 
-Your job: make a brand-new user feel comfortable in 3-5 short messages. Be warm, concrete, and brief.
+Your job: help a brand-new user start one useful workflow room in 3-5 short messages. Be warm, concrete, and brief.
 
 Language: reply in whatever language the user wrote in. Do not ask which language they prefer — infer it.
 
 Things the user can do entirely in the web UI (always direct them here):
+- Start a workflow room: workspace home → choose a starter workflow, or click **+** in the sidebar to create a room.
 - Create a new agent: sidebar → **Settings** → **Agents** → **New agent**.
-- Talk to an agent: click the agent's name in the sidebar under **Direct messages** and type.
+- Talk to an agent directly: click the agent's name in the sidebar under **Direct messages** and type.
 - Invite a teammate: **Settings** → **Members** → **Invite**.
 - Switch between workspaces: click the workspace name top-left.
 
-If the user asks "why isn't my agent responding": their bridge for THIS workspace likely isn't running. Point them to **Settings → Machine API keys** which has a one-click setup wizard. Do NOT paste shell commands at them.
+If the user asks "why isn't my local agent responding": their bridge for THIS workspace likely isn't running. Point them to **Settings → Runtimes** which has a one-click setup wizard. Do NOT paste shell commands at them.
 
 Never write \`raltic\` CLI commands in your reply. That's an internal tool YOU use, not them. If the user pastes a CLI command asking where to run it, kindly say "you don't need to run that — let me show you in the UI" and point them to the right Settings tab.
 
@@ -302,11 +303,11 @@ export async function seedPersonalDefaults(
     // (Q&A) so the public-channel feature itself is demonstrated.
     seedTasks.push(seedChannel(env, onboardingChannelId, [
       welcomeMessage(agentId,
-        `👋 Welcome to Raltic, **${opts.ownerName}**!\n\nThis channel is a quick tour. Read top to bottom — should take 2 minutes.`),
+        `👋 Welcome to Raltic, **${opts.ownerName}**!\n\nThis room is a quick tour of the workflow model: brief → agents run → human approval → team memory.`),
       welcomeMessage(agentId,
-        `**1. Talk to me anytime.**\n\nIn the sidebar under *Direct messages*, click **Onboarding Assistant**. I can help you set goals, draft messages, or just answer "what does X do".`),
+        `**1. Start from a real workflow.**\n\nGo to the workspace home and pick a starter like customer-risk, launch-readiness, or code-review. Raltic will create a room where the brief, agent updates, approvals, tasks, and decision stay together.`),
       welcomeMessage(agentId,
-        `**2. Bring your own agents.**\n\nWhen you're ready to run an agent on your laptop (Claude Code, Codex CLI, …), go to **Settings → Runtimes** for the 2-minute bridge setup. Until then, you can chat with me — I run in Raltic's cloud, no install needed.`),
+        `**2. Choose where agents execute.**\n\nCloud agents can start low-risk workflow rooms immediately. When a workflow touches repo context, secrets, or private tools, go to **Settings → Runtimes** and connect your local runtime.`),
     ]));
   }
   if (!existingDmCh[0]) {
@@ -316,7 +317,7 @@ export async function seedPersonalDefaults(
       // lead with concrete next-steps; mirror that here so the
       // user has something to react to BEFORE typing.
       welcomeMessage(agentId,
-        `Hi **${opts.ownerName}** 👋 — I'm your Onboarding Assistant. I run in Raltic's cloud, so this works even before you set up anything else.\n\nTry asking me one of these:\n\n- "What can you do?"\n- "Help me create my first agent"\n- "How do I invite a teammate?"\n\nOr just tell me what you're trying to build and I'll suggest a path.`),
+        `Hi **${opts.ownerName}** 👋 — I'm your Onboarding Assistant. I run in Raltic's cloud, so this works before you connect anything else.\n\nTry asking me one of these:\n\n- "Help me start my first workflow room"\n- "Which workflow should I run first?"\n- "When do I need a local runtime?"\n\nOr tell me what your team is trying to build, and I'll suggest a concrete first room.`),
     ]));
   }
   if (seedTasks.length > 0) {

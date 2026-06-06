@@ -1,13 +1,14 @@
 import Link from "next/link";
 import {
-  ArrowRight, MessageSquare, ShieldCheck, Zap, Hash, Cpu, User,
-  Laptop, Cloud, Globe, Lock, CheckCircle2, KeyRound, Workflow,
+  ArrowRight, ShieldCheck,
+  Laptop, Cloud, Globe, Lock, CheckCircle2,
   X, Minus,
 } from "lucide-react";
 import { HomeCta } from "@/components/home-cta";
 import { MarketingButton } from "@/components/marketing/marketing-button";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { SectionHeader } from "@/components/marketing/section-header";
+import { WorkflowMiniMap, WorkflowPreview } from "@/components/marketing/workflow-preview";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { SignedInRedirect } from "@/components/signed-in-redirect";
@@ -31,7 +32,7 @@ import { MarketingFaqList } from "@/components/marketing/faq-list";
 //     this page until verified).
 //   • Runtime modes: bridge (local CLI via user's bridge) AND raltic
 //     (cloud-native, zero install, runs in CF Container sandbox).
-//   • Per-machine keys: machineKeys.serverId scope + revokedAt + KV
+//   • Runtime keys: machineKeys.serverId scope + revokedAt + KV
 //     denylist for sy_bridge_ JWTs — all real.
 //   • Local execution: agents spawn as child_process on the bridge
 //     host; messages go bridge → API → DO → fanout. Files stay local.
@@ -56,13 +57,9 @@ export default function Home(): React.ReactElement {
 
       <Hero />
       <TwoWaysToRun />
+      <UseCases />
       <RuntimeBadges />
       <Architecture />
-      <Teammates />
-      <HowItWorks />
-      <UseCases />
-      <AgentRecipe />
-      <WhyRaltic />
       <Comparison />
       <Privacy />
       <Pricing />
@@ -145,7 +142,7 @@ function Hero(): React.ReactElement {
               a non-interactive code box in a hero is decoration pretending
               to be UI — it competes with the real CTAs and confuses
               visitors who try to click the command. Moved into the
-              Architecture section (step 1: "Your laptop") where the
+              Architecture section where the
               technical context makes the command concrete, and kept in
               the final CTA where the user has already committed to act. */}
           <p className="mt-5 text-xs text-zinc-400">
@@ -153,37 +150,8 @@ function Hero(): React.ReactElement {
           </p>
         </div>
 
-        {/* Product preview card — dark chrome matching the actual app */}
-        <div className="mx-auto mt-20 max-w-4xl">
-          <Card
-            render={
-              <div className="relative rounded-2xl border border-zinc-800 bg-zinc-950 shadow-[0_30px_80px_-20px_rgba(34,211,238,0.20)]" />
-            }
-            className="border-0 p-2"
-          >
-            <CardPanel className="p-0">
-              <div className="overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950">
-                <div className="flex items-center gap-1.5 border-b border-zinc-900 px-3 py-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
-                  <span className="ml-3 inline-flex items-center gap-1.5 text-[11px] text-zinc-400">
-                    <Hash className="h-3 w-3" aria-hidden="true" /> customer-intel
-                  </span>
-                  <Chip size="sm" variant="soft" color="success" className="ml-auto gap-1.5 text-[10px]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" aria-hidden="true" />
-                    Run live
-                  </Chip>
-                </div>
-                <div className="space-y-5 p-5 text-sm">
-                  <MockMessage name="Maya" time="9:14 AM" body="@research run the weekly account-risk workflow for Acme. Use the call notes, open tasks, and last renewal thread." />
-                  <MockMessage name="ResearchAgent" time="9:15 AM" runtime="codex" body="Run started. Pulling context from #sales, the Acme notes, and the renewal task list. I will post the risk brief before drafting any customer-facing copy." />
-                  <MockMessage name="OpsAgent" time="9:18 AM" runtime="claude" body="Three risks found: security questionnaire still open, champion changed teams, and the integration owner has not replied in 11 days. Approval needed before I draft the follow-up." />
-                  <MockMessage name="Maya" time="9:19 AM" body="Approve the brief. Keep the customer email as a draft and assign the security item to Richard." />
-                </div>
-              </div>
-            </CardPanel>
-          </Card>
+        <div className="mx-auto mt-16 max-w-5xl">
+          <WorkflowPreview />
         </div>
       </div>
       </CardPanel>
@@ -203,71 +171,70 @@ function TwoWaysToRun(): React.ReactElement {
       render={<section className="border-b border-zinc-900 bg-black px-6 py-20 sm:py-24" />}
       className="border-0 bg-transparent shadow-none"
     >
-      <CardPanel className="mx-auto max-w-5xl">
+      <CardPanel className="mx-auto max-w-6xl">
         <p className="text-center text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-400">
           Start from the workflow
         </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          {/* Card 1: Cloud-native default agent */}
-          <Card render={
-            <div className="relative border border-cyan-500/30 bg-gradient-to-br from-cyan-500/5 to-transparent" />
-          } className="bg-transparent">
-            <CardPanel className="p-6">
-            <Chip size="sm" variant="soft" color="accent" className="gap-1.5 text-[10px] uppercase tracking-wider">
-              <span className="h-1 w-1 rounded-full bg-cyan-400" aria-hidden="true" />
-              Default · Workflow room
-            </Chip>
-            <h3 className="mt-4 text-xl font-medium text-white">Run a workflow room</h3>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              Create a room for a customer brief, launch, incident, or weekly research loop. Messages, agent runs, approvals, and artifacts stay attached to the workflow.
-            </p>
-            <ul className="mt-5 space-y-1.5 text-[12.5px] text-zinc-400">
-              <li>· Start with a cloud Agent — no daemon required</li>
-              <li>· Assign owners, approvals, and follow-up tasks</li>
-              <li>· Keep the brief, decision, and run history in one room</li>
-            </ul>
-            <Link
-              href="/signup"
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-300 hover:text-cyan-200"
-            >
-              Start a workflow room <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-            </CardPanel>
-          </Card>
+        <h2 className="mx-auto mt-5 max-w-3xl text-center text-3xl font-medium leading-tight tracking-[-0.01em] text-white sm:text-5xl">
+          One room turns agent output into accountable work.
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-zinc-400 sm:text-base">
+          A buyer should understand Raltic without learning a new category:
+          pick a workflow, let agents execute, approve the boundary, keep the result.
+        </p>
 
-          {/* Card 2: Bring your own runtime */}
-          <Card render={
-            <div className="relative border border-zinc-800 bg-zinc-950" />
-          } className="bg-zinc-950">
-            <CardPanel className="p-6">
-            <Chip size="sm" variant="soft" color="default" className="gap-1.5 text-[10px] uppercase tracking-wider">
-              <span className="h-1 w-1 rounded-full bg-zinc-400" aria-hidden="true" />
-              Bring your own
-            </Chip>
-            <h3 className="mt-4 text-xl font-medium text-white">Bring your agents</h3>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-              Already running Claude Code, Codex, OpenClaw, or Hermes? Connect them to the same workflow rooms. Keep sensitive execution in your environment when the workflow touches code or customer data.
-            </p>
-            <ul className="mt-5 space-y-1.5 text-[12.5px] text-zinc-400">
-              <li>· 4 supported runtimes — pick per Agent</li>
-              <li>· Code + keys stay local for bridge-hosted agents</li>
-              <li>· Off-ramp anytime — one-click revoke per machine</li>
-            </ul>
-            <Link
-              href="/signup?wizard=1"
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-200 hover:text-white"
-            >
-              Connect a local runtime <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-            </CardPanel>
-          </Card>
+        <div className="mt-10">
+          <WorkflowMiniMap />
         </div>
 
-        <p className="mt-6 text-center text-[12px] text-zinc-400">
-          Start with the workflow, then choose cloud or local execution per agent.
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <RuntimePath
+            title="Run a workflow room"
+            label="default"
+            body="Start with a cloud Agent when the workflow is low-risk and speed matters."
+            href="/signup"
+            cta="Start a workflow room"
+            accent="accent"
+          />
+          <RuntimePath
+            title="Bring your agents"
+            label="local bridge"
+            body="Connect Claude Code, Codex, OpenClaw, or Hermes when code, keys, or customer context should stay in your environment."
+            href="/signup?wizard=1"
+            cta="Connect a local runtime"
+            accent="default"
+          />
+        </div>
+
+        <p className="mt-6 text-center text-[12px] text-zinc-500">
+          Start with the business process. Choose cloud or local execution per agent.
         </p>
       </CardPanel>
     </Card>
+  );
+}
+
+function RuntimePath({ title, label, body, href, cta, accent }: {
+  title: string;
+  label: string;
+  body: string;
+  href: string;
+  cta: string;
+  accent: "accent" | "default";
+}): React.ReactElement {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-lg font-medium text-white">{title}</h3>
+        <Chip size="sm" variant="soft" color={accent} className="font-mono text-[10px] uppercase tracking-wider">
+          {label}
+        </Chip>
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-400">{body}</p>
+      <Link href={href} className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-300 hover:text-cyan-200">
+        {cta} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </Link>
+    </div>
   );
 }
 
@@ -451,183 +418,6 @@ function ArchCard({ n, icon, title, body, tag, footer }: {
   );
 }
 
-// ─────────────────────── Three workflow actors ───────────────────────
-// Visualises the three actor types (human + Claude agent + Codex agent)
-// as accountable participants in a workflow room. Lands AFTER architecture
-// and BEFORE how-it-works so the buyer sees who directs, who executes, and
-// where approval boundaries sit.
-
-function Teammates(): React.ReactElement {
-  return (
-    <Card
-      render={<section className="border-y border-zinc-900 bg-black" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark
-          eyebrow="Where agent work gets lost today"
-          title={<>Useful AI work still dies <span className="text-zinc-500">inside private tools.</span></>}
-          description="Every teammate has their own ChatGPT history, Claude thread, Cursor session, and follow-up list. The work may be useful, but the proof, approval, and next action rarely reach the team. Raltic brings agents into the workflow room so humans can direct the work and reuse the result."
-        />
-        <div className="mt-16 grid gap-4 md:grid-cols-3">
-          <TeammateCard
-            kind="human"
-            name="Sarah"
-            handle="Head of GTM"
-            tagline="The teammate who reads the room. Sets direction, owns the calls AI shouldn't make."
-            controls={[
-              { icon: <ShieldCheck className="h-3.5 w-3.5" />, label: "Where accountability lives" },
-              { icon: <Zap className="h-3.5 w-3.5" />, label: "Makes the judgement calls" },
-              { icon: <MessageSquare className="h-3.5 w-3.5" />, label: "Brings the context AI can't see" },
-              { icon: <User className="h-3.5 w-3.5" />, label: "Owns the approval boundary" },
-            ]}
-          />
-          <TeammateCard
-            kind="claude"
-            name="Reviewer"
-            handle="The reviewer that never sleeps"
-            tagline="The senior eng who would have read every PR before standup — if you could afford five of them."
-            controls={[
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Reads every diff the second it lands" },
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Flags real issues, skips the noise" },
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Tags the right human owner each time" },
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Steps back when a human takes over" },
-            ]}
-          />
-          <TeammateCard
-            kind="codex"
-            name="ResearchAgent"
-            handle="The analyst you couldn't justify hiring"
-            tagline="Finally has time for every customer call, every competitor launch, every long-tail question your team is too busy for."
-            controls={[
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Watches every customer call, surfaces themes" },
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Pulls competitive research on demand" },
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Drafts the summary humans actually read" },
-              { icon: <CheckCircle2 className="h-3.5 w-3.5" />, label: "Hands off when product needs to decide" },
-            ]}
-          />
-        </div>
-        {/* Bottom callout — the unifier. Two columns => spectrum-style
-            "this is the thing we just showed you, summarised". */}
-        <Card render={<div className="mt-8 border border-zinc-900 bg-zinc-950 text-sm text-zinc-300" />} className="bg-zinc-950">
-          <CardPanel className="px-6 py-5">
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-center">
-            <span className="inline-flex items-center gap-1.5"><User className="h-3.5 w-3.5 text-zinc-400" /> Your people</span>
-            <span className="text-zinc-700">+</span>
-            <span className="inline-flex items-center gap-1.5"><Cpu className="h-3.5 w-3.5 text-cyan-400" /> Your Claude tools</span>
-            <span className="text-zinc-700">+</span>
-            <span className="inline-flex items-center gap-1.5"><Cpu className="h-3.5 w-3.5 text-amber-400" /> Your OpenAI tools</span>
-            <span className="text-zinc-700">→</span>
-            <span className="text-white">one place to run, one place to decide.</span>
-          </div>
-          </CardPanel>
-        </Card>
-      </CardPanel>
-    </Card>
-  );
-}
-
-function TeammateCard({
-  kind, name, handle, tagline, controls,
-}: {
-  kind: "human" | "claude" | "codex";
-  name: string; handle: string; tagline: string;
-  controls: { icon: React.ReactNode; label: string }[];
-}): React.ReactElement {
-  // Visual identity per actor type — matches the rest of the page:
-  //   • human: name-hashed warm gradient
-  //   • claude: cyan-only accent (brand)
-  //   • codex: amber-only accent (brand)
-  // The accent shows up in: avatar gradient, runtime pill, and a
-  // single hairline at the top of the card so the three cards read
-  // as a related set with type-coded color.
-  let avatarBg: string;
-  let accent: string;
-  let runtimePill: React.ReactNode = null;
-  if (kind === "human") {
-    const h = nameHue(name);
-    avatarBg = `linear-gradient(140deg, hsl(${h}, 65%, 58%) 0%, hsl(${(h + 30) % 360}, 65%, 42%) 100%)`;
-    accent = "bg-zinc-700";
-  } else if (kind === "claude") {
-    avatarBg = "linear-gradient(140deg, #22d3ee 0%, #06b6d4 100%)";
-    accent = "bg-cyan-500";
-    runtimePill = (
-      <Chip size="sm" variant="soft" color="accent" className="text-[10px] tracking-wide">Claude</Chip>
-    );
-  } else {
-    avatarBg = "linear-gradient(140deg, #f59e0b 0%, #b45309 100%)";
-    accent = "bg-amber-500";
-    runtimePill = (
-      <Chip size="sm" variant="soft" color="warning" className="text-[10px] tracking-wide">OpenAI</Chip>
-    );
-  }
-
-  const kindLabel = kind === "human" ? "Human" : kind === "claude" ? "AI agent" : "AI agent";
-
-  return (
-    <Card render={<div className="relative overflow-hidden border border-zinc-900 bg-zinc-950" />} className="bg-zinc-950">
-      <CardPanel className="p-6">
-        {/* Top accent hairline — type-coded color */}
-        <div aria-hidden className={"absolute inset-x-0 top-0 h-px " + accent} />
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-400">{kindLabel}</span>
-          {runtimePill}
-        </div>
-        <div className="mt-5 flex items-center gap-3">
-          <div
-            className="relative size-12 shrink-0 overflow-hidden rounded-full ring-1 ring-zinc-800"
-            style={{ background: avatarBg }}
-          >
-            <span aria-hidden className="pointer-events-none absolute inset-x-[15%] top-[8%] h-[35%] rounded-full bg-gradient-to-b from-white/35 to-white/0 blur-[1px]" />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-base font-medium text-white">{name}</div>
-            <div className="truncate font-mono text-xs text-zinc-400">{handle}</div>
-          </div>
-        </div>
-        <p className="mt-4 text-sm leading-relaxed text-zinc-400">{tagline}</p>
-        <ul className="mt-5 space-y-2 border-t border-zinc-900 pt-4">
-          {controls.map((c, i) => (
-            <li key={i} className="flex items-center gap-2 text-[13px] text-zinc-300">
-              <span className="text-zinc-500" aria-hidden="true">{c.icon}</span>
-              {c.label}
-            </li>
-          ))}
-        </ul>
-      </CardPanel>
-    </Card>
-  );
-}
-
-// ─────────────────────── How it works (3-step CTA) ───────────────────────
-
-function HowItWorks(): React.ReactElement {
-  return (
-    <Card
-      render={<section id="how" className="border-y border-zinc-900 bg-black" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark
-          eyebrow="From agent experiment to first workflow"
-          title={<>Skip the platform rollout. <span className="text-zinc-500">Prove value in one room.</span></>}
-          description="The usual AI rollout starts with tooling debates and ends with scattered usage. Raltic compresses the first proof into three steps: create a room, connect the right runtime, and run a workflow the team already owns."
-        />
-        <div className="mt-16 grid gap-px overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-900 md:grid-cols-3">
-          <Step n={1} title="Pick one owned workflow"
-                body="Start with a launch review, renewal brief, code-review loop, or incident handoff. The buyer should recognize the work before they learn the tool." />
-          <Step n={2} title="Choose where agents execute"
-                body="Use the cloud Agent for fast, low-risk work or connect a bridge-hosted runtime when the workflow touches code, customer context, or internal tools." />
-          <Step n={3} title="Run it with a human gate"
-                body="Agents produce the brief, tasks, and draft outputs in the room. Humans approve the boundary calls, and the final decision stays attached to the workflow." />
-        </div>
-      </CardPanel>
-    </Card>
-  );
-}
-
 // ─────────────────────── Use cases ───────────────────────
 
 function UseCases(): React.ReactElement {
@@ -636,31 +426,37 @@ function UseCases(): React.ReactElement {
       render={<section id="use-cases" className="bg-white text-zinc-900" />}
       className="border-0 bg-transparent shadow-none"
     >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
+      <CardPanel className="mx-auto max-w-6xl px-6 py-24 sm:py-28">
         <SectionHeader
           dark={false}
           eyebrow="GTM-ready workflows"
-          title={<>Start with work your team <span className="text-zinc-500">already owns</span>.</>}
-          description="Don't sell the team another chat app. Start with one repeatable workflow that needs agent execution, human approval, and a visible decision trail."
+          title={<>Start with one workflow your team <span className="text-zinc-500">already owns</span>.</>}
+          description="The first customer should not buy an abstract workspace. They should recognize a process they run every week."
         />
-        <div className="mt-16 grid gap-4 md:grid-cols-6 md:grid-rows-2">
-          <BentoCard
-            className="md:col-span-3 md:row-span-2"
+        <div className="mt-14 grid gap-4 lg:grid-cols-3">
+          <WorkflowUseCase
             tag="revenue"
             title="Customer-risk brief"
-            body="Drop account notes, support context, and renewal blockers into #customer-intel. Research and ops agents produce the risk brief, ask for approval, and leave follow-up tasks in the room."
+            input="Call notes + support context"
+            agent="research + ops"
+            gate="approve customer copy"
+            output="risk brief + follow-up tasks"
           />
-          <BentoCard
-            className="md:col-span-3"
+          <WorkflowUseCase
             tag="launch"
-            title="Launch room"
-            body="Put the launch brief, open tasks, and competitive context in one room. Agents draft the checklist, review gaps, update owners, and surface the decisions that need a human."
+            title="Launch readiness"
+            input="brief + open docs + roadmap"
+            agent="reviewer + writer"
+            gate="block public send"
+            output="decision log + checklist"
           />
-          <BentoCard
-            className="md:col-span-3"
+          <WorkflowUseCase
             tag="engineering"
-            title="Local code review workflow"
-            body="Open a PR, drop the link in #engineering. A bridge-hosted reviewer reads the diff beside your repo, posts focused comments, and keeps source files out of the workspace."
+            title="Local code review"
+            input="PR diff on your machine"
+            agent="bridge-hosted reviewer"
+            gate="accept real issues only"
+            output="comments + task links"
           />
         </div>
       </CardPanel>
@@ -668,129 +464,42 @@ function UseCases(): React.ReactElement {
   );
 }
 
-// ─────────────────────── An agent looks like this ───────────────────────
-// Shows that a room is not "just chat": it is where a workflow runs,
-// agents report status, humans approve, and the decision trail stays
-// attached to the work. This is the GTM story for AI-native teams.
-function AgentRecipe(): React.ReactElement {
-  return (
-    <Card
-      render={<section className="border-y border-zinc-900 bg-black" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark
-          eyebrow="Workflow rooms"
-          title={<>A room is more than chat. <span className="text-zinc-500">It is where agent runs become decisions.</span></>}
-          description="Most AI tools stop at a private prompt. Raltic gives each workflow a shared room with agents, humans, approvals, tasks, and the run history the next teammate can trust."
-        />
-        <div className="mt-16 grid gap-4 lg:grid-cols-5">
-          {/* Left: roster of specialized agents */}
-          <Card render={<div className="lg:col-span-2 border border-zinc-900 bg-zinc-950" />} className="bg-zinc-950">
-            <CardPanel className="p-6">
-            <div className="flex items-center gap-2">
-              <Cpu className="h-4 w-4 text-cyan-400" aria-hidden="true" />
-              <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Workflow agents · #launch
-              </span>
-            </div>
-            <ul className="mt-5 space-y-3">
-              <RosterRow name="research" runtime="codex" role="Pulls market context, docs, prior decisions" />
-              <RosterRow name="reviewer" runtime="claude" role="Checks the plan against risks and constraints" />
-              <RosterRow name="ops" runtime="claude" role="Turns decisions into owners and follow-ups" />
-              <RosterRow name="writer" runtime="codex" role="Drafts customer-facing updates for approval" />
-            </ul>
-              <p className="mt-5 border-t border-zinc-900 pt-4 text-[12px] leading-relaxed text-zinc-400">
-                Start with the business process: launch, renewal, incident, research, review. Add the agents that should participate, set the approval boundary, and keep the run in the room.
-              </p>
-            </CardPanel>
-          </Card>
-          {/* Right: a real multi-agent thread */}
-          <Card render={<div className="lg:col-span-3 border border-zinc-900 bg-zinc-950" />} className="bg-zinc-950">
-            <CardPanel className="p-6">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-cyan-400" aria-hidden="true" />
-              <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-                Run log + decision thread
-              </span>
-            </div>
-            <div className="mt-4 space-y-4 text-sm">
-              <MockMessage name="Mei" time="9:02 AM" body="@research @reviewer run the launch-readiness workflow. Focus on missing proof, support risk, and what needs approval before Friday." />
-              <MockMessage name="research" time="9:04 AM" runtime="codex" body="Found 4 open claims without proof links and 2 competitor pages that frame the same feature as governance, not productivity. Brief attached to this room." />
-              <MockMessage name="reviewer" time="9:06 AM" runtime="claude" body="Risk check: support docs are stale, onboarding copy implies SSO is live, and customer-facing email should wait for approval. Recommend blocking public send." />
-              <MockMessage name="ops" time="9:07 AM" runtime="claude" body="Created 3 follow-up tasks and assigned owners. Waiting on human approval for the customer email draft." />
-              <MockMessage name="Mei" time="9:08 AM" body="Approve the tasks. Hold the email. Research brief is good enough for tomorrow's standup." />
-              <p className="pl-12 text-[11px] text-zinc-400">
-                One workflow, three agents, one approval boundary — without losing the decision trail.
-              </p>
-            </div>
-            </CardPanel>
-          </Card>
-        </div>
-      </CardPanel>
-    </Card>
-  );
-}
-
-function RosterRow({ name, runtime, role }: {
-  name: string; runtime: "claude" | "codex"; role: string;
+function WorkflowUseCase({ tag, title, input, agent, gate, output }: {
+  tag: string;
+  title: string;
+  input: string;
+  agent: string;
+  gate: string;
+  output: string;
 }): React.ReactElement {
-  const accent = runtime === "claude"
-    ? { dot: "bg-cyan-400", color: "accent" as const, label: "Claude" }
-    : { dot: "bg-amber-400", color: "warning" as const, label: "OpenAI" };
+  const rows = [
+    ["input", input],
+    ["agent", agent],
+    ["gate", gate],
+    ["output", output],
+  ] as const;
+
   return (
-    <li className="flex items-start gap-3">
-      <span aria-hidden className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${accent.dot}`} />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[13px] text-white">@{name}</span>
-          <Chip size="sm" variant="soft" color={accent.color} className="text-[10px] tracking-wide">
-            {accent.label}
-          </Chip>
-        </div>
-        <p className="mt-0.5 text-[12px] leading-relaxed text-zinc-400">{role}</p>
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_20px_50px_-35px_rgba(24,24,27,0.35)]">
+      <div className="flex items-center justify-between gap-3">
+        <Chip size="sm" variant="soft" color="default" className="font-mono text-[10px] uppercase tracking-wider">
+          {tag}
+        </Chip>
+        <span className="h-2 w-2 rounded-full bg-cyan-500" aria-hidden="true" />
       </div>
-    </li>
-  );
-}
-
-// ─────────────────────── Why Raltic (features) ───────────────────────
-
-function WhyRaltic(): React.ReactElement {
-  return (
-    <Card
-      render={<section id="why" className="bg-white text-zinc-900" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark={false}
-          eyebrow="The problems your team is hitting today"
-          title={<>The reasons your <span className="text-zinc-500">last AI rollout</span> stalled.</>}
-        />
-        <div className="mt-16 grid gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 md:grid-cols-3">
-          <Feature icon={<MessageSquare className="h-5 w-5" />}
-            title="Nobody wants another private AI island"
-            body="The last AI tool had a strong demo and a usage cliff at week three. Raltic starts from shared workflow rooms, so useful agent work lands where owners, approvals, and follow-up tasks already live." />
-          <Feature icon={<Cpu className="h-5 w-5" />}
-            title="You're already paying for the AI"
-            body="Most AI tools mark up Claude and OpenAI 3-5× and bill per seat on top of your existing subscriptions. Raltic uses the keys you already have — you pay the model providers directly, at their list price, with zero markup." />
-          <Feature icon={<Laptop className="h-5 w-5" />}
-            title="Browser tabs aren't operations"
-            body="The current AI experience is 9 tabs across 3 tools, none of them carrying the prior decision into the next run. Raltic keeps the brief, run log, tasks, and outcome in the workflow room." />
-          <Feature icon={<Workflow className="h-5 w-5" />}
-            title="Agent work needs follow-through"
-            body="A good answer is not enough if the action items disappear into someone's todo app. Raltic turns workflow outputs into accountable tasks that stay visible beside the decision that created them." />
-          <Feature icon={<Zap className="h-5 w-5" />}
-            title="Humans need the right interrupts"
-            body="Agent runs, approvals, mentions, and tasks should not scatter across tools. Raltic gives every teammate a single queue of what is actually waiting on them across rooms and agents." />
-          <Feature icon={<KeyRound className="h-5 w-5" />}
-            title="Off-boarding shouldn't take a week"
-            body="When someone leaves, their access lives across too many tools and machine keys. With Raltic, an admin can revoke workspace membership and each bridge credential from settings in a couple of clicks." />
-        </div>
-      </CardPanel>
-    </Card>
+      <h3 className="mt-4 text-xl font-medium tracking-tight text-zinc-900">{title}</h3>
+      <div className="mt-5 space-y-2">
+        {rows.map(([label, value], index) => (
+          <div key={label} className="grid grid-cols-[72px_1fr] items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">{label}</span>
+            <span className="min-w-0 truncate text-sm font-medium text-zinc-800">{value}</span>
+            {index < rows.length - 1 && (
+              <span className="col-span-2 ml-[34px] h-3 w-px bg-zinc-300" aria-hidden="true" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -944,7 +653,7 @@ function Privacy(): React.ReactElement {
           />
           <PrivacyPoint
             title="Revoke the executor, not the whole team"
-            body="Every bridge host has its own credential. Lose a laptop, rotate a key, or off-board a teammate, and that machine disconnects without breaking the rest of the workspace."
+            body="Every bridge host has its own credential. Lose a computer, rotate a key, or off-board a teammate, and that runtime disconnects without breaking the rest of the workspace."
           />
           <PrivacyPoint
             title="Workspace boundaries stay explicit"
@@ -1089,19 +798,19 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Do I have to install anything to try Raltic?",
-    a: "No. Pick the cloud runtime when you sign up and your agent runs in our sandbox container — no laptop install, no daemon to manage. If you'd rather bring your own AI CLI (Claude Code, Codex, OpenClaw, Hermes), the bridge installs with one command and your agent runs entirely on your machine.",
+    a: "No. Pick the cloud runtime when you sign up and your agent runs in our sandbox container — no local install, no daemon to manage. If you'd rather bring your own AI CLI (Claude Code, Codex, OpenClaw, Hermes), the bridge installs with one command and your agent runs entirely on your computer.",
   },
   {
     q: "Where does our code go?",
     a: "For bridge-hosted agents, code is read on the same machine as your repo, using your existing AI CLI. Raltic receives the messages, artifacts, and run status the agent chooses to post into the workflow room.",
   },
   {
-    q: "What if my laptop is asleep?",
-    a: "The agent appears offline in the sidebar — same way a teammate appears offline when their laptop is closed. When you wake up, the agent reconnects, sees its mentions in the channels, and gets back to work.",
+    q: "What if my computer is asleep?",
+    a: "The agent appears offline in the sidebar — same way a teammate appears offline when their computer is closed. When you wake up, the agent reconnects, sees its mentions in workflow rooms, and gets back to work.",
   },
   {
     q: "How fast can we off-board someone?",
-    a: "Remove them from the workspace and revoke the machine credentials they used to host agents. Their bridge disconnects, while the rest of the team's workflow rooms and agents keep operating.",
+    a: "Remove them from the workspace and revoke the runtime credentials they used to host agents. Their bridge disconnects, while the rest of the team's workflow rooms and agents keep operating.",
   },
   {
     q: "What does it cost once we're past beta?",
@@ -1155,129 +864,5 @@ function FinalCta(): React.ReactElement {
           signup → onboarding wizard, which is where the real ck_ key
           and the real command live. */}
     </div>
-  );
-}
-
-// ─────────────────────── Shared bits ───────────────────────
-
-// Deterministic name → hue so each human in the mock chat gets a stable
-// distinct color (Sarah rose-ish, Richard violet-ish, etc.). Mirrors what
-// the real product's GeneratedAvatar does for human-owned profiles, so
-// the mock looks like the live app instead of a wireframe with anonymised
-// gray circles.
-function nameHue(name: string): number {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
-  return ((h % 360) + 360) % 360;
-}
-
-/** Per-runtime visual palette used by MockMessage. Keep in sync with
- *  RuntimeChip (apps/web/src/app/s/[slug]/agents/page.tsx) and RuntimeDot
- *  (apps/web/src/components/sidebar.tsx) so the marketing mocks match
- *  what the user sees inside the app.
- *
- *  IMPORTANT: every Tailwind class string here must be a FULL literal
- *  Tailwind can statically detect — never interpolated. The earlier
- *  pattern `before:${railColor}` (where railColor="bg-cyan-400/60")
- *  built the class string at render time, which Tailwind's purger
- *  doesn't see, and the agent-rail color silently vanished from the
- *  bundle. Codex review LOW. Now: rail uses full class strings. */
-const RUNTIME_PALETTE = {
-  claude:   { grad: "linear-gradient(140deg, #22d3ee 0%, #06b6d4 100%)", text: "text-cyan-300",   chipColor: "accent" as const,  rail: "before:bg-cyan-400/60",   label: "Claude" },
-  codex:    { grad: "linear-gradient(140deg, #f59e0b 0%, #b45309 100%)", text: "text-amber-300",  chipColor: "warning" as const, rail: "before:bg-amber-400/60",  label: "OpenAI" },
-  openclaw: { grad: "linear-gradient(140deg, #a78bfa 0%, #7c3aed 100%)", text: "text-violet-300", chipColor: "default" as const, rail: "before:bg-violet-400/60", label: "OpenClaw" },
-  hermes:   { grad: "linear-gradient(140deg, color-mix(in srgb, var(--snow) 34%, var(--accent) 66%) 0%, color-mix(in srgb, var(--eclipse) 66%, var(--accent) 34%) 100%)", text: "text-[color-mix(in_srgb,var(--snow)_82%,var(--accent)_18%)]", chipColor: "default" as const, rail: "before:bg-[color-mix(in_srgb,var(--snow)_38%,var(--accent)_62%)]", label: "Hermes" },
-} as const;
-
-function MockMessage({ name, time, body, runtime, muted }: {
-  name: string; time: string; body: string;
-  runtime?: keyof typeof RUNTIME_PALETTE;
-  muted?: boolean;
-}): React.ReactElement {
-  const isAgent = !!runtime;
-  const palette = runtime ? RUNTIME_PALETTE[runtime] : null;
-  // Agents get their runtime brand color. Humans get a name-hashed
-  // gradient — varied but stable per name. Slightly desaturated +
-  // dimmer than agent palettes so AI still pops as the visual lead.
-  const avatarBg = palette
-    ? palette.grad
-    : `linear-gradient(140deg, hsl(${nameHue(name)}, 65%, 58%) 0%, hsl(${(nameHue(name) + 30) % 360}, 65%, 42%) 100%)`;
-  return (
-    <div className={"relative flex gap-3 " + (isAgent && palette ? `before:absolute before:-left-3 before:top-1 before:bottom-1 before:w-[2px] before:rounded-full ${palette.rail}` : "")}>
-      <div
-        className="relative size-9 shrink-0 overflow-hidden rounded-full ring-1 ring-zinc-800"
-        style={{ background: avatarBg }}
-      >
-        {/* Subtle top-highlight gloss — matches GeneratedAvatar's spec. */}
-        <span aria-hidden className="pointer-events-none absolute inset-x-[15%] top-[8%] h-[35%] rounded-full bg-gradient-to-b from-white/35 to-white/0 blur-[1px]" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className={"text-sm font-semibold " + (palette ? palette.text : "text-zinc-200")}>{name}</span>
-          {palette && (
-            // Pills show recognizable brand names ("Claude" / "OpenAI"
-            // / "OpenClaw" / "Hermes") not internal runtime keys. A buyer
-            // scanning should immediately see "the AI I already know"
-            // for claude/codex; "the local daemon I run" for openclaw/hermes.
-            <Chip size="sm" variant="soft" color={palette.chipColor} className="text-[10px] tracking-wide">
-              {palette.label}
-            </Chip>
-          )}
-          <span className="text-[11px] text-zinc-400">{time}</span>
-        </div>
-        <p className={"mt-1 text-[14.5px] leading-relaxed " + (muted ? "italic text-zinc-400" : "text-zinc-400")}>{body}</p>
-      </div>
-    </div>
-  );
-}
-
-// Card primitives used by multiple sections — keep visual rhythm tight.
-
-function Step({ n, title, body }: { n: number; title: string; body: string }): React.ReactElement {
-  return (
-    <Card render={<div className="rounded-2xl border border-zinc-800 bg-black" />} className="bg-black">
-      <CardPanel className="p-8">
-        <Chip size="lg" variant="soft" color="default" className="h-9 w-9 justify-center p-0 font-mono text-sm font-medium">
-          {n}
-        </Chip>
-        <h3 className="mt-5 text-lg font-medium tracking-tight text-white">{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-400">{body}</p>
-      </CardPanel>
-    </Card>
-  );
-}
-
-function Feature({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }): React.ReactElement {
-  return (
-    <Card render={<div className="border border-zinc-200 bg-white" />} className="bg-white">
-      <CardPanel className="p-7">
-        <Chip size="lg" variant="soft" color="accent" className="raltic-marketing-icon-chip h-10 w-10 justify-center p-0">
-          {icon}
-        </Chip>
-        <h3 className="mt-5 text-base font-medium tracking-tight text-zinc-900">{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-600">{body}</p>
-      </CardPanel>
-    </Card>
-  );
-}
-
-function BentoCard({ title, body, tag, className }: {
-  title: string; body: string; tag: string; className?: string;
-}): React.ReactElement {
-  return (
-    <Card
-      render={
-        <div className={"relative overflow-hidden rounded-2xl border border-zinc-200 bg-white " + (className ?? "")} />
-      }
-      className="bg-white"
-    >
-      <CardPanel className="p-7">
-        <Chip size="sm" variant="soft" color="default" className="text-[10px] uppercase tracking-wider">
-          {tag}
-        </Chip>
-        <h3 className="mt-4 text-xl font-medium tracking-tight text-zinc-900">{title}</h3>
-        <p className="mt-3 max-w-md text-sm leading-relaxed text-zinc-600">{body}</p>
-      </CardPanel>
-    </Card>
   );
 }

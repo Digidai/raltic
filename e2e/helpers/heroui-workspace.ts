@@ -38,6 +38,15 @@ export const researchChannel = {
   lastReadSeq: 1,
 };
 
+export const starterWorkflowChannel = {
+  ...onboardingChannel,
+  id: "ch-new",
+  name: "launch-readiness",
+  description: "Workflow room for launch proof, docs, support risk, approval, and owner handoff.",
+  maxSeq: 0,
+  lastReadSeq: 0,
+};
+
 export const dmChannel = {
   id: "dm-agent",
   serverId: "srv-demo",
@@ -448,6 +457,13 @@ export async function setupMockWorkspace(
       viewerCanManage: true,
       viewerCanAddMembers: true,
     }));
+    if (path === "/api/v1/channels/ch-new") return route.fulfill(json({
+      channel: starterWorkflowChannel,
+      members: channelMembers,
+      peer: null,
+      viewerCanManage: true,
+      viewerCanAddMembers: true,
+    }));
     if (path === "/api/v1/channels/dm-agent") return route.fulfill(json({
       channel: dmChannel,
       members: [],
@@ -457,6 +473,7 @@ export async function setupMockWorkspace(
     }));
     if (path === "/api/v1/channels/ch-onboarding/messages") return route.fulfill(json({ messages: [] }));
     if (path === "/api/v1/channels/ch-research/messages") return route.fulfill(json({ messages: [] }));
+    if (path === "/api/v1/channels/ch-new/messages") return route.fulfill(json({ messages: [] }));
     if (path === "/api/v1/channels/dm-agent/messages") return route.fulfill(json({ messages: [] }));
     if (path === "/api/v1/ws/token") return route.fulfill(json({ token: "ws-mock", wsUrl: "ws://127.0.0.1:9/ws/channel/ch-onboarding" }));
     if (path.endsWith("/read") && method === "POST") return route.fulfill(json({ ok: true }));
@@ -587,7 +604,7 @@ export function assertOverlayMetrics(metrics: Awaited<ReturnType<typeof overlayM
 }
 
 export async function openMembersDialog(page: Page) {
-  await page.getByRole("button", { name: "Channel actions" }).click();
+  await page.getByRole("button", { name: "Room actions" }).click();
   await page.getByRole("menuitem", { name: "Members" }).click();
   assertOverlayMetrics(await overlayMetrics(page, /Members of #onboarding/));
 }

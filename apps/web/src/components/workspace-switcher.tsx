@@ -210,7 +210,7 @@ export function WorkspaceSwitcher({
           <Users className="h-4 w-4" /> Members & invites
         </DropdownMenuItem>
         <DropdownMenuItem href={`/s/${currentServerSlug}/channels`}>
-          <Hash className="h-4 w-4" /> Browse channels
+          <Hash className="h-4 w-4" /> Browse rooms
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -323,7 +323,7 @@ export function WorkspaceMenuSection({
         <Users className="h-4 w-4" /> Members & invites
       </DropdownMenuItem>
       <DropdownMenuItem href={`/s/${currentServerSlug}/channels`}>
-        <Hash className="h-4 w-4" /> Browse channels
+        <Hash className="h-4 w-4" /> Browse rooms
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuLabel className="pt-1.5 pb-0.5 text-[10px] uppercase tracking-wider">

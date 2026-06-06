@@ -38,8 +38,8 @@ export function useSettings(): SettingsContextValue {
 const TABS = [
   { slug: "workspace", label: "Workspace",         Icon: Building2 },
   { slug: "members",   label: "Members & invites", Icon: Users },
-  { slug: "agents",    label: "Channels & agents", Icon: Hash },
-  // "Runtimes" reframes the per-laptop bridge concept around what
+  { slug: "agents",    label: "Rooms & agents",     Icon: Hash },
+  // "Runtimes" reframes the per-computer bridge concept around what
   // actually matters to the user: the compute environment that runs
   // their agents (Claude/Codex/Gemini/Copilot CLIs on a machine). The
   // underlying schema column is still `machine_keys`; we keep the

@@ -50,7 +50,7 @@ export default function MachineKeysPage() {
       const kData = await api.listMachineKeys({ serverId: server.id });
       setKeys(kData.keys as Key[]);
     } catch (e) {
-      notifyThrown("Couldn't load machine keys", e);
+      notifyThrown("Couldn't load runtime keys", e);
     }
   }, [server.id]);
   useEffect(() => { reload(); }, [reload]);
@@ -74,17 +74,17 @@ export default function MachineKeysPage() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setKeyError(msg);
-      notifyThrown("Couldn't create machine key", e);
+      notifyThrown("Couldn't create runtime key", e);
     }
   }
 
   return (
-    <SettingsSection title="Runtimes" description="Each laptop running the bridge is a runtime that executes your agents locally. Add one per machine; remove when you stop using that machine.">
+    <SettingsSection title="Runtimes" description="Each computer running the bridge is a local runtime for agents that need code, keys, or private tools. Add one per computer; remove it when you stop using that computer.">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><KeyRound className="h-4 w-4" /> Bridge keys</CardTitle>
+          <CardTitle className="flex items-center gap-2"><KeyRound className="h-4 w-4" /> Runtime keys</CardTitle>
           <CardDescription>
-            Create one per laptop where you&apos;ll run the bridge.{" "}
+            Create one per computer where you&apos;ll run the bridge.{" "}
             <Link href={`/s/${slug}?wizard=1`} className="underline text-foreground hover:opacity-80">
               Re-open the setup wizard
             </Link>{" "}
@@ -94,11 +94,11 @@ export default function MachineKeysPage() {
         <form onSubmit={handleCreate}>
           <CardPanel>
             <Field>
-              <FieldLabel htmlFor="machine-key-name">Key name</FieldLabel>
+              <FieldLabel htmlFor="machine-key-name">Runtime key name</FieldLabel>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="machine-key-name"
-                  aria-label="Key name"
+                  aria-label="Runtime key name"
                   value={keyName}
                   placeholder="e.g. macbook-pro"
                   className="min-w-0 flex-1"
@@ -113,7 +113,7 @@ export default function MachineKeysPage() {
         <CardFooter className="flex flex-col gap-3">
           {issued && (
             <Alert variant="success" className="w-full">
-              <AlertTitle>Key created</AlertTitle>
+              <AlertTitle>Runtime key created</AlertTitle>
               <AlertDescription className="space-y-2">
                 <p>Copy it now — you won&apos;t see it again.</p>
               <KeyCommandBlock cmd={issued.cmd} />
@@ -152,7 +152,7 @@ export default function MachineKeysPage() {
                     ) : (
                       <Alert variant="info" className="mt-3">
                         <AlertDescription className="text-xs">
-                          Key never connected. Open the{" "}
+                          Runtime key never connected. Open the{" "}
                           <Link href={`/s/${slug}?wizard=1`} className="underline text-foreground hover:opacity-80">setup wizard</Link>{" "}
                           for the bridge command + per-runtime install guidance.
                         </AlertDescription>
@@ -168,9 +168,9 @@ export default function MachineKeysPage() {
       <ConfirmDialog
         open={!!revokeTarget}
         onOpenChange={(o) => { if (!o) setRevokeTarget(null); }}
-        title={revokeTarget ? `Revoke "${revokeTarget.name}"?` : "Revoke key?"}
-        description="Bridges using this key will disconnect on their next request. You can create a new key for the same laptop anytime."
-        confirmLabel="Revoke key"
+        title={revokeTarget ? `Revoke "${revokeTarget.name}"?` : "Revoke runtime key?"}
+        description="Local runtimes using this key will disconnect on their next request. You can create a new key for the same computer anytime."
+        confirmLabel="Revoke runtime key"
         onConfirm={confirmRevokeKey}
       />
     </SettingsSection>
@@ -178,7 +178,7 @@ export default function MachineKeysPage() {
 }
 
 /**
- * Liveness chip for a machine key (= a runtime).
+ * Liveness chip for a runtime key.
  *
  * Bridge heartbeats every 60s; machine_keys.last_used_at gets bumped
  * on each beat. The page reads that timestamp and renders:

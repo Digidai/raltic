@@ -245,8 +245,8 @@ export default function DesktopLaunchPage() {
             </CardHeader>
             <CardPanel className="space-y-4 text-sm">
               <Step n="1" title="Sign in" body="Use the same Raltic account as the web app." done={!loading && !!target} />
-              <Step n="2" title="Connect this computer" body="A per-machine key is created and stored locally with restricted permissions." done={bridgeConnectedToTarget || connected} />
-              <Step n="3" title="Work in channels" body="Local agents can read your repo on this machine; only chat crosses the wire." done={connected} />
+              <Step n="2" title="Connect this computer" body="A scoped runtime key is created and stored locally with restricted permissions." done={bridgeConnectedToTarget || connected} />
+              <Step n="3" title="Work in rooms" body="Local agents can read your repo on this machine; only room messages cross the wire." done={connected} />
             </CardPanel>
           </aside>
         </div>

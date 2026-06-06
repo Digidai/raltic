@@ -385,7 +385,7 @@ test("sidebar destination pages fill the workspace main column and keep navigati
     { path: "/s/demo/tasks", nav: "Tasks", heading: "Tasks" },
     { path: "/s/demo/agents", nav: "Agents", heading: "Agents" },
     { path: "/s/demo/people", nav: "People", heading: "People" },
-    { path: "/s/demo/channels", nav: "Channels", heading: "Channels" },
+    { path: "/s/demo/channels", nav: "Rooms", heading: "Rooms" },
   ];
 
   for (const destination of destinations) {
@@ -418,7 +418,7 @@ test("sidebar destination pages fill the workspace main column and keep navigati
       const active = document.querySelector<HTMLElement>("[data-testid='workspace-sidebar'] [aria-current='page']");
       const activeContent = active?.closest<HTMLElement>(".sidebar__menu-item-content") ?? null;
       const topDestinationLinks = Array.from(document.querySelectorAll<HTMLElement>("[data-testid='workspace-sidebar'] nav a"))
-        .filter((el) => ["Inbox", "Tasks", "Agents", "People", "Channels"].includes(el.textContent?.trim() ?? ""))
+        .filter((el) => ["Inbox", "Tasks", "Agents", "People", "Rooms"].includes(el.textContent?.trim() ?? ""))
         .map((el) => {
           const box = el.getBoundingClientRect();
           return { top: box.top, bottom: box.bottom, height: box.height };
@@ -482,6 +482,30 @@ test("sidebar destination pages fill the workspace main column and keep navigati
   }
 });
 
+test("workspace home carries the workflow-room activation narrative", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, { hasConnectedBridge: false });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Start a workflow room." })).toBeVisible();
+  for (const label of ["Brief", "Agents", "Approval", "Memory"]) {
+    await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
+  }
+  await expect(page.getByRole("article", { name: /Customer-risk brief workflow starter/ })).toBeVisible();
+  await expect(page.getByRole("article", { name: /Launch readiness workflow starter/ })).toBeVisible();
+  await expect(page.getByRole("article", { name: /Local code review workflow starter/ })).toBeVisible();
+  await expect(page.getByText("Local runtime is optional.")).toBeVisible();
+
+  const launchStarter = page.getByRole("article", { name: /Launch readiness workflow starter/ });
+  await launchStarter.getByRole("button", { name: /Start room/ }).click();
+  await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-new\?starter=launch-readiness$/);
+  await expect(page.getByRole("heading", { name: "launch-readiness" })).toBeVisible();
+  await expect(page.getByText("Starter brief")).toBeVisible();
+  await page.getByRole("button", { name: "Use brief" }).click();
+  await expect(page.getByTestId("message-composer-input").getByText(/Turn this launch into a visible readiness workflow/)).toBeVisible();
+});
+
 test("settings sections expose every destination and keep the active state in one layer", async ({ page, context }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await setupMockWorkspace(page, context);
@@ -489,7 +513,7 @@ test("settings sections expose every destination and keep the active state in on
   const sections = [
     { path: "/s/demo/settings/workspace", nav: "Workspace", heading: "Workspace" },
     { path: "/s/demo/settings/members", nav: "Members & invites", heading: "Members & invites" },
-    { path: "/s/demo/settings/agents", nav: "Channels & agents", heading: "Channels & agents" },
+    { path: "/s/demo/settings/agents", nav: "Rooms & agents", heading: "Rooms & agents" },
     { path: "/s/demo/settings/keys", nav: "Runtimes", heading: "Runtimes" },
     { path: "/s/demo/settings/connectors", nav: "Connectors", heading: "Connectors" },
     { path: "/s/demo/settings/account", nav: "Account", heading: "Account" },
@@ -529,7 +553,7 @@ test("settings sections expose every destination and keep the active state in on
       };
     });
 
-    expect(navMetrics.allLinks).toEqual(["Workspace", "Members & invites", "Channels & agents", "Runtimes", "Connectors", "Account"]);
+    expect(navMetrics.allLinks).toEqual(["Workspace", "Members & invites", "Rooms & agents", "Runtimes", "Connectors", "Account"]);
     expect(navMetrics.active?.height, `${section.nav} active row height`).toBeCloseTo(32, 1);
     expect(navMetrics.active?.borderRadius, `${section.nav} active row radius`).not.toBe("0px");
     expect(navMetrics.active?.borderLeftWidth, `${section.nav} active row should not use a legacy left rail`).not.toBe("2px");
@@ -1069,7 +1093,7 @@ test("mobile settings navigation keeps every destination visible without horizon
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
   const settingsNav = page.getByRole("navigation", { name: "Settings sections" });
 
-  for (const label of ["Workspace", "Members & invites", "Channels & agents", "Runtimes", "Connectors", "Account"]) {
+  for (const label of ["Workspace", "Members & invites", "Rooms & agents", "Runtimes", "Connectors", "Account"]) {
     await expect(settingsNav.getByRole("link", { name: label })).toBeVisible();
   }
 
@@ -1199,7 +1223,7 @@ test("workspace controls live in the settings menu instead of the sidebar brand 
   await expect(menu.getByText("Gene's Workspace", { exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Workspace settings" })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Members & invites" })).toBeVisible();
-  await expect(menu.getByRole("menuitem", { name: "Browse channels" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Browse rooms" })).toBeVisible();
   await expect(menu.getByText("Switch workspace", { exact: true })).toBeVisible();
   await expect(menu.getByText("No other workspaces.", { exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
@@ -1246,7 +1270,7 @@ test("mobile drawer closes after channel and DM navigation without covering the 
   assertRectInsideViewport(metrics.composerFooter, metrics.viewport, "mobile composer footer");
   expect(metrics.visibleConversationHeaders).toBe(1);
 
-  await page.getByRole("button", { name: "Channel actions" }).click();
+  await page.getByRole("button", { name: "Room actions" }).click();
   await expect(page.getByRole("menuitem", { name: "Members" })).toBeVisible();
   await page.keyboard.press("Escape");
 

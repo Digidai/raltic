@@ -33,13 +33,13 @@ test.describe("HeroUI Pro global quality gates", () => {
     await page.getByRole("dialog", { name: /Members of #onboarding/ }).getByRole("button", { name: "Close" }).first().click();
     await expect(page.getByRole("dialog", { name: /Members of #onboarding/ })).toBeHidden();
 
-    await openChannelAction(page, "Channel settings");
-    await expect(page.getByRole("dialog", { name: /Channel settings/ })).toBeVisible();
-    await assertCloseControl(page.getByRole("dialog", { name: /Channel settings/ }));
-    await page.getByRole("dialog", { name: /Channel settings/ }).getByRole("button", { name: "Close" }).first().click();
-    await expect(page.getByRole("dialog", { name: /Channel settings/ })).toBeHidden();
+    await openChannelAction(page, "Room settings");
+    await expect(page.getByRole("dialog", { name: /Room settings/ })).toBeVisible();
+    await assertCloseControl(page.getByRole("dialog", { name: /Room settings/ }));
+    await page.getByRole("dialog", { name: /Room settings/ }).getByRole("button", { name: "Close" }).first().click();
+    await expect(page.getByRole("dialog", { name: /Room settings/ })).toBeHidden();
 
-    await openChannelAction(page, "Leave channel");
+    await openChannelAction(page, "Leave room");
     await expect(page.getByRole("alertdialog", { name: /Leave #onboarding/ })).toBeVisible();
     await page.getByRole("button", { name: "Cancel" }).click();
     await expect(page.getByRole("alertdialog", { name: /Leave #onboarding/ })).toBeHidden();
@@ -54,7 +54,7 @@ test.describe("HeroUI Pro global quality gates", () => {
       await openMockChannel(page);
       await setTheme(page, theme);
 
-      const membersTrigger = page.getByRole("button", { name: "Channel actions" });
+      const membersTrigger = page.getByRole("button", { name: "Room actions" });
       await membersTrigger.click();
       await page.getByRole("menuitem", { name: "Members" }).click();
       await assertNamedDialog(page, /Members of #onboarding/);
@@ -69,10 +69,10 @@ test.describe("HeroUI Pro global quality gates", () => {
       await page.getByRole("dialog", { name: /Members of #onboarding/ }).getByRole("button", { name: "Close" }).first().click();
       await expect(page.getByRole("dialog", { name: /Members of #onboarding/ })).toBeHidden();
 
-      await openChannelAction(page, "Channel settings");
-      const settingsDialog = page.getByRole("dialog", { name: /Channel settings/ });
+      await openChannelAction(page, "Room settings");
+      const settingsDialog = page.getByRole("dialog", { name: /Room settings/ });
       await settingsDialog.getByLabel("Current topic").fill(`quality-${theme}`);
-      await assertNamedDialog(page, /Channel settings/);
+      await assertNamedDialog(page, /Room settings/);
       await assertCloseControl(settingsDialog);
       await assertEnabledButtonsUsable(settingsDialog);
       await assertSelectedRadioOwnsSingleSurface(settingsDialog.getByRole("radio", { name: /Public/ }), "channel settings visibility");
@@ -89,12 +89,12 @@ test.describe("HeroUI Pro global quality gates", () => {
     await setupMockWorkspace(page, context);
     await openMockChannel(page);
 
-    const createChannelTrigger = page.getByRole("button", { name: "Create channel" }).first();
+    const createChannelTrigger = page.getByRole("button", { name: "Create workflow room" }).first();
     await createChannelTrigger.focus();
     await createChannelTrigger.click();
-    const createDialog = page.getByRole("dialog", { name: /Create channel/ });
+    const createDialog = page.getByRole("dialog", { name: /Create workflow room/ });
     await createDialog.getByLabel("Name").fill("quality-check");
-    await assertNamedDialog(page, /Create channel/);
+    await assertNamedDialog(page, /Create workflow room/);
     await assertCloseControl(createDialog);
     await assertEnabledButtonsUsable(createDialog);
     await createDialog.getByRole("button", { name: "Close" }).first().click();
@@ -178,7 +178,7 @@ async function setTheme(page: Page, theme: ThemeMode) {
 }
 
 async function openChannelAction(page: Page, itemName: string) {
-  await page.getByRole("button", { name: "Channel actions" }).click();
+  await page.getByRole("button", { name: "Room actions" }).click();
   await page.getByRole("menuitem", { name: itemName }).click();
 }
 

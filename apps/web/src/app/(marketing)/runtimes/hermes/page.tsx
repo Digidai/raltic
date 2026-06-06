@@ -8,13 +8,13 @@ import { RUNTIME_DOCS } from "@/components/marketing/runtime-data";
  * "Experimental" banner from RUNTIME_DOCS.hermes.verification.
  */
 export const metadata: Metadata = {
-  title: "Hermes Agent in Raltic — Nous Research, channel-native",
-  description: "Run Nous Research's Hermes daemon and use it from a Raltic channel. Memory + skills stay on your machine.",
+  title: "Hermes Agent in Raltic — Nous Research, workflow-native",
+  description: "Run Nous Research's Hermes daemon and use it from a Raltic workflow room. Memory + skills stay on your machine.",
   alternates: { canonical: "https://raltic.com/runtimes/hermes" },
   robots: { index: false, follow: false },
   openGraph: {
     title: "Hermes Agent in Raltic (Experimental)",
-    description: "Bring your local Hermes Agent into a team chat.",
+    description: "Bring your local Hermes Agent into workflow rooms.",
     url: "https://raltic.com/runtimes/hermes",
   },
 };

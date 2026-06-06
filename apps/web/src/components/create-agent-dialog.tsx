@@ -73,7 +73,7 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
   }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Detected runtime availability across all of the user's machine keys.
+  // Detected runtime availability across all of the user's runtime keys.
   // Drives the picker's per-option install/login hint.
   const [machines, setMachines] = useState<MachineRuntimeRow[] | null>(null);
 
@@ -84,7 +84,7 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
     let cancelled = false;
     // Scope to THIS workspace — without `{ serverId }`, a bridge ready
     // in workspace B would make a runtime look ready in workspace A
-    // even though machine keys are workspace-scoped at the bridge layer.
+    // even though runtime keys are workspace-scoped at the bridge layer.
     api.listMachineKeys({ serverId }).then(({ keys }) => {
       if (cancelled) return;
       const all: MachineRuntimeRow[] = [];
@@ -228,7 +228,7 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
                         </p>
                         {runtimeAvail[r] === "not_installed" && (
                           <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
-                            Not installed on any of your bridges. Run on your laptop:
+                            Not installed on any of your bridges. Run on this computer:
                             <code className="raltic-inline-token ml-1 break-all">
                               {RUNTIME_INSTALL_CMD[r]}
                             </code>

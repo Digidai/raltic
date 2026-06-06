@@ -3,7 +3,7 @@ import { mutatingTargetSkipReason } from "./helpers/env";
 import { E2E_EMAIL, E2E_PASSWORD, login } from "./helpers/auth";
 
 /**
- * Channels feature — end-to-end regression against the deployed
+ * Workflow-room feature — end-to-end regression against the deployed
  * environment. Opt-in only.
  *
  * Run:
@@ -17,16 +17,16 @@ import { E2E_EMAIL, E2E_PASSWORD, login } from "./helpers/auth";
  * The user must already exist and have email_verified=1 (bootstrap via
  * better-auth signup + `wrangler d1 execute … "UPDATE user SET
  * email_verified=1 WHERE email='…'"`). Each run creates ONE throwaway
- * channel in the user's first workspace and leaves it at the end (or
+ * room in the user's first workspace and leaves it at the end (or
  * deletes it via the danger-zone confirm).
  *
  * Coverage:
- *  - Create channel via dialog (no members beyond self)
+ *  - Create room via dialog (no members beyond self)
  *  - Open Members dialog → see self in roster
  *  - Settings dialog → rename → save
  *  - Members chip count updates after rename refetch
- *  - Leave channel → router pushes back to workspace root → sidebar
- *    no longer lists the channel
+ *  - Leave room → router pushes back to workspace root → sidebar
+ *    no longer lists the room
  */
 const RUN = process.env.E2E_RUN_CHANNELS === "1";
 const TARGET_SKIP = mutatingTargetSkipReason();
@@ -42,29 +42,29 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
 
   test("create → members → rename → leave full flow", async ({ page }) => {
     // Sidebar — the workspace landing redirects to the user's default
-    // workspace after login. Wait for the "Create channel" button so
+    // workspace after login. Wait for the "Create workflow room" button so
     // we know the sidebar has hydrated.
-    const createBtn = page.getByRole("button", { name: "Create channel" });
+    const createBtn = page.getByRole("button", { name: "Create workflow room" });
     await expect(createBtn).toBeVisible({ timeout: 15000 });
 
     const channelName = `ch-rt-${Date.now().toString(36)}`;
     const renamedName = `${channelName}-renamed`;
 
-    // -------- 1. Create the channel via the dialog --------
+    // -------- 1. Create the room via the dialog --------
     await createBtn.click();
-    const dialog = page.getByRole("dialog", { name: /create channel/i });
+    const dialog = page.getByRole("dialog", { name: /create workflow room/i });
     await expect(dialog).toBeVisible();
     await dialog.getByLabel(/^name$/i).fill(channelName);
     // Create PRIVATE so the leave step at the end actually removes
-    // the channel from the sidebar. Public channels stay visible
+    // the room from the sidebar. Public rooms stay visible
     // even after leave (by design — discovery via /channels page).
     await dialog.locator('[data-slot="radio"]').filter({ hasText: /Private/i }).click();
     // Skip member picker — pure self-create exercises the new
     // initialMemberIds=undefined path (the simplest backend codepath).
-    await dialog.getByRole("button", { name: /create channel/i }).click();
+    await dialog.getByRole("button", { name: /create room/i }).click();
     await expect(dialog).toBeHidden({ timeout: 10000 });
 
-    // Navigate to the new channel via the sidebar link (the create
+    // Navigate to the new room via the sidebar link (the create
     // dialog's onCreated dispatches the channels-changed event which
     // triggers a sidebar refetch).
     const sidebarLink = page.getByRole("link", { name: new RegExp(`^${channelName}$`) });
@@ -90,9 +90,9 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
     await expect(membersDialog).toBeHidden();
 
     // -------- 3. Settings — rename --------
-    await page.getByRole("button", { name: /channel actions/i }).click();
-    await page.getByRole("menuitem", { name: /channel settings|view details/i }).click();
-    const settingsDialog = page.getByRole("dialog", { name: /channel settings/i });
+    await page.getByRole("button", { name: /room actions/i }).click();
+    await page.getByRole("menuitem", { name: /room settings|view details/i }).click();
+    const settingsDialog = page.getByRole("dialog", { name: /room settings/i });
     await expect(settingsDialog).toBeVisible();
     const nameInput = settingsDialog.getByLabel(/^name$/i);
     await nameInput.fill(renamedName);
@@ -103,13 +103,13 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
       .toBeVisible({ timeout: 10000 });
 
     // -------- 4. Leave via the ⋯ menu + ConfirmDialog --------
-    await page.getByRole("button", { name: /channel actions/i }).click();
-    await page.getByRole("menuitem", { name: /leave channel/i }).click();
+    await page.getByRole("button", { name: /room actions/i }).click();
+    await page.getByRole("menuitem", { name: /leave room/i }).click();
     const confirm = page.getByRole("alertdialog", { name: new RegExp(`Leave #${renamedName}`) });
     await expect(confirm).toBeVisible();
     // Confirm button lives inside the alert-dialog scope; constraining
     // the search avoids matching the menuitem that opened this confirm.
-    await confirm.getByRole("button", { name: /^leave channel$/i }).click();
+    await confirm.getByRole("button", { name: /^leave room$/i }).click();
     // Router pushes back to workspace root (/s/[slug]).
     await expect(page).toHaveURL(/\/s\/[^/]+\/?$/, { timeout: 10000 });
     // Sidebar no longer lists the channel.

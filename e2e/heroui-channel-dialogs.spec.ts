@@ -134,16 +134,16 @@ async function assertMembersTextSamplesReadable(page: Page) {
 }
 
 test.describe("HeroUI Pro channel dialogs", () => {
-  test("create channel dialog keeps overlay contrast and footer reachable above the mobile keyboard", async ({ page, context }) => {
+  test("create workflow room dialog keeps overlay contrast and footer reachable above the mobile keyboard", async ({ page, context }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await setupMockWorkspace(page, context);
     await openMockChannel(page);
 
     await openMobileSidebar(page);
-    await clickVisible(page, 'button[aria-label="Create channel"]');
+    await clickVisible(page, 'button[aria-label="Create workflow room"]');
 
-    assertOverlayMetrics(await overlayMetrics(page, /Create channel/));
-    await expect(page.getByRole("textbox", { name: "Channel name" })).toHaveCSS("font-size", /16px/);
+    assertOverlayMetrics(await overlayMetrics(page, /Create workflow room/));
+    await expect(page.getByRole("textbox", { name: "Room name" })).toHaveCSS("font-size", /16px/);
     const publicVisibility = page.getByRole("radio", { name: /Public/ });
     const privateVisibility = page.getByRole("radio", { name: /Private/ });
     await expect(publicVisibility).toBeChecked();
@@ -153,7 +153,7 @@ test.describe("HeroUI Pro channel dialogs", () => {
     await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Olivia/ }), "create channel member picker");
     await page.locator('[data-slot="checkbox"]').filter({ hasText: "Cloud Test Agent" }).click();
     await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Cloud Test Agent/ }), "create channel agent picker");
-    const createDialog = page.getByRole("dialog", { name: /Create channel/ });
+    const createDialog = page.getByRole("dialog", { name: /Create workflow room/ });
     for (const label of ["Olivia", "Cloud Test Agent"]) {
       const chip = createDialog.locator("[data-slot='chip']").filter({ hasText: label });
       await expect(chip).toBeVisible();
@@ -161,10 +161,10 @@ test.describe("HeroUI Pro channel dialogs", () => {
       expect(chipClassName, `${label} selected chip should not use page-level cyan background`).not.toContain("bg-cyan");
       expect(chipClassName, `${label} selected chip should not use page-level cyan text`).not.toContain("text-cyan");
     }
-    await assertDialogFooterWithinVisualViewport(page, /Create channel/);
+    await assertDialogFooterWithinVisualViewport(page, /Create workflow room/);
 
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: /Create channel/ })).toBeHidden();
+    await expect(page.getByRole("dialog", { name: /Create workflow room/ })).toBeHidden();
   });
 
   test("start direct message opens above the mobile sidebar drawer without clipping the picker", async ({ page, context }) => {
@@ -184,9 +184,9 @@ test.describe("HeroUI Pro channel dialogs", () => {
     await setupMockWorkspace(page, context);
     await openMockChannel(page);
 
-    await page.getByRole("button", { name: "Channel actions" }).click();
+    await page.getByRole("button", { name: "Room actions" }).click();
     await expect(page.getByRole("menuitem", { name: "Members" })).toBeVisible();
-    await expect(page.getByRole("menuitem", { name: "Leave channel" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Leave room" })).toBeVisible();
     await page.getByRole("menuitem", { name: "Members" }).click();
     let membersDialog = page.getByRole("dialog", { name: /Members of #onboarding/ });
     assertOverlayMetrics(await overlayMetrics(page, /Members of #onboarding/));
@@ -218,8 +218,8 @@ test.describe("HeroUI Pro channel dialogs", () => {
     await setupMockWorkspace(page, context);
     await openMockChannel(page);
 
-    await page.getByRole("button", { name: "Channel actions" }).click();
-    await page.getByRole("menuitem", { name: "Leave channel" }).click();
+    await page.getByRole("button", { name: "Room actions" }).click();
+    await page.getByRole("menuitem", { name: "Leave room" }).click();
     assertOverlayMetrics(await overlayMetrics(page, /Leave #onboarding/, "alertdialog"), { requireClose: false });
 
     await page.mouse.click(12, 12);

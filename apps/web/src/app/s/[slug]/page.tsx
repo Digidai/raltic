@@ -2,14 +2,31 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/heroui-pro/button";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
-import { api } from "@/lib/api";
+import { api, type Channel } from "@/lib/api";
 import { SetupWizard } from "@/components/setup-wizard";
 import { BrandMonogram } from "@/components/brand";
-import { Sparkles, ExternalLink } from "lucide-react";
+import { notifyThrown } from "@/lib/notify";
+import { trackProductEvent } from "@/lib/product-tracking";
+import { WORKFLOW_STARTERS, type WorkflowStarterKey, type WorkflowStarterTemplate } from "@/lib/workflow-starters";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ClipboardCheck,
+  ExternalLink,
+  FileText,
+  GitPullRequest,
+  LineChart,
+  ListChecks,
+  Loader2,
+  MessageSquare,
+  ShieldCheck,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 
 interface ServerStats {
   id: string;
@@ -17,6 +34,10 @@ interface ServerStats {
   description: string | null;
   agentCount: number;
   channelCount: number;
+  roomCount: number;
+  starterAgentId: string | null;
+  onboardingDmId: string | null;
+  channels: Array<Pick<Channel, "id" | "name" | "type">>;
 }
 
 interface PersonalRef {
@@ -54,8 +75,15 @@ function snoozeWizard(userId: string, personalSlug: string): void {
   } catch { /* private browsing — ignore */ }
 }
 
+const STARTER_ICONS: Record<WorkflowStarterKey, LucideIcon> = {
+  "customer-risk": LineChart,
+  "launch-readiness": ClipboardCheck,
+  "code-review": GitPullRequest,
+};
+
 export default function ServerHomePage() {
   const params = useParams();
+  const router = useRouter();
   const sp = useSearchParams();
   const slug = params.slug as string;
   // `?wizard=1` lets users re-open the wizard explicitly (from settings,
@@ -78,6 +106,7 @@ export default function ServerHomePage() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [personal, setPersonal] = useState<PersonalRef | null>(null);
+  const [startingWorkflow, setStartingWorkflow] = useState<WorkflowStarterKey | null>(null);
 
   // Is the user looking at their own personal workspace?
   const onPersonalWorkspace = stats != null && personal != null && stats.id === personal.id;
@@ -103,6 +132,15 @@ export default function ServerHomePage() {
           description: data.server.description,
           agentCount: data.agents.length,
           channelCount: data.channels.length,
+          roomCount: data.channels.filter((c) => c.type !== "dm").length,
+          starterAgentId: (
+            data.agents.find((a) => a.name === "onboarding")
+            ?? data.agents.find((a) => a.isDefault)
+            ?? data.agents.find((a) => a.runtimeMode === "raltic")
+            ?? data.agents[0]
+          )?.id ?? null,
+          onboardingDmId: data.channels.find((c) => c.type === "dm" && c.name === "onboarding-assistant")?.id ?? null,
+          channels: data.channels.map((c) => ({ id: c.id, name: c.name, type: c.type })),
         });
         setHasBridgeHere(me.hasConnectedBridge);
         setUserId(me.subject.userId);
@@ -166,94 +204,149 @@ export default function ServerHomePage() {
     if (!forceWizard && userId && personal) snoozeWizard(userId, personal.slug);
   }
 
+  async function startWorkflowRoom(starter: WorkflowStarterTemplate) {
+    if (!stats || startingWorkflow) return;
+    trackProductEvent("workflow_starter_click", starter.key);
+    const existing = stats.channels.find((c) => c.type !== "dm" && c.name === starter.channelName);
+    if (existing) {
+      router.push(`/s/${slug}/channel/${existing.id}?starter=${starter.key}`);
+      return;
+    }
+
+    setStartingWorkflow(starter.key);
+    try {
+      const res = await api.createChannel({
+        serverId: stats.id,
+        name: starter.channelName,
+        description: starter.description,
+        type: starter.type,
+        initialAgentIds: stats.starterAgentId ? [stats.starterAgentId] : undefined,
+      });
+      trackProductEvent("workflow_room_created", starter.key);
+      window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
+      router.push(`/s/${slug}/channel/${res.id}?starter=${starter.key}`);
+    } catch (e) {
+      notifyThrown("Couldn't start workflow room", e);
+    } finally {
+      setStartingWorkflow(null);
+    }
+  }
+
   if (loading) return <div className="flex flex-1 items-center justify-center"><div className="text-sm text-muted-foreground">Loading…</div></div>;
   if (!stats) return <div className="flex flex-1 items-center justify-center"><div className="text-sm text-muted-foreground">Workspace not found</div></div>;
 
   return (
-    <div className="relative flex h-full w-full min-w-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10">
-      <Card className="w-full max-w-md text-center">
-        <CardPanel className="p-8">
-        <BrandMonogram letter={stats.name} size="xl" className="mx-auto mb-6" />
-        <h1 className="mb-2 font-heading text-2xl font-semibold leading-tight">
-          Welcome to {stats.name}
-        </h1>
-        {stats.description && (
-          <p className="text-sm text-muted-foreground mb-6">{stats.description}</p>
-        )}
-        <div className="mb-8 grid grid-cols-2 gap-3">
-          <Stat label="Agents" value={stats.agentCount} />
-          <Stat label="Channels" value={stats.channelCount} />
-        </div>
+    <div className="relative h-full w-full min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 lg:px-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+        <header className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+          <Card className="overflow-hidden">
+            <CardPanel className="p-5 sm:p-7">
+              <div className="flex items-start gap-4">
+                <BrandMonogram letter={stats.name} size="lg" className="mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <Chip size="sm" variant="soft" color="accent" className="font-mono text-[10px] uppercase tracking-wider">
+                    Workflow command center
+                  </Chip>
+                  <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                    Start a workflow room.
+                  </h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    Pick a real business process, let agents run the work, keep human approval visible,
+                    and turn the result into team memory inside {stats.name}.
+                  </p>
+                  {stats.description && (
+                    <p className="mt-3 text-xs text-muted-foreground">{stats.description}</p>
+                  )}
+                </div>
+              </div>
 
-        {onPersonalWorkspace ? (
-          // ── On the user's OWN workspace ─────────────────────────────
-          // Cloud-mode agents work without any bridge install, so the
-          // copy now adapts: if any cloud agent exists, point at it
-          // first; only nag for bridge if the user actually has a
-          // bridge-mode agent waiting (codex P3 audit Angle 6 HIGH +
-          // Angle 9 M1).
-          hasBridgeHere || !hasBridgeAgents ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Pick an agent or channel from the sidebar to start a conversation.
-              </p>
-              {/* Bridge is optional — surface it as a tertiary "later"
-                  CTA rather than the headline. */}
-              {!hasBridgeHere && (
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  onClick={() => setWizardOpen(true)}
-                  className="h-auto px-0 py-0 text-xs text-muted-foreground"
-                >
-                  Want to run agents on your own laptop? Set up the bridge (2 min)
-                </Button>
-              )}
+              <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                <Stat label="Agents" value={stats.agentCount} />
+                <Stat label="Rooms" value={stats.roomCount} />
+              </div>
+            </CardPanel>
+          </Card>
+
+          <div className="rounded-xl border border-border bg-surface/80 p-4 shadow-surface">
+            <div className="grid gap-2">
+              <WorkflowStep icon={<FileText className="h-4 w-4" />} label="Brief" body="Start with the work to be done." />
+              <WorkflowStep icon={<Sparkles className="h-4 w-4" />} label="Agents" body="Cloud or local agents execute." />
+              <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="Approval" body="Humans own the boundary calls." />
+              <WorkflowStep icon={<ListChecks className="h-4 w-4" />} label="Memory" body="Decisions and tasks stay reusable." />
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                One of your agents runs on your laptop, but the bridge
-                isn&apos;t connected yet. Two-minute setup brings it online.
+          </div>
+        </header>
+
+        <section aria-labelledby="starter-workflows-heading">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                Start here
               </p>
-              <Button onClick={() => setWizardOpen(true)} className="mt-2">
-                <Sparkles className="mr-1 h-3.5 w-3.5" /> Start the 2-min setup
-              </Button>
+              <h2 id="starter-workflows-heading" className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+                Choose the first workflow your team already owns.
+              </h2>
             </div>
-          )
-        ) : (
-          // ── On someone ELSE's workspace (invited member) ────────────
-          //
-          // Don't push the wizard modally here. Instead, surface ONE
-          // contextual hint when relevant: the user's PERSONAL workspace
-          // has no bridge → "your own agents are offline elsewhere; go
-          // fix it there". Click drops them onto /s/{personal}?wizard=1
-          // so the wizard pops on the correct target.
-          //
-          // If `hasBridgeInPersonal` is true, the user is set up and
-          // doesn't need a nag on every join. Just the friendly "pick
-          // an agent" line.
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              You're a member here. Use the sidebar to jump into a channel.
-            </p>
-            {personal && hasBridgeInPersonal === false && (
+            {stats.onboardingDmId && (
               <Button
-                render={<Link href={`/s/${personal.slug}?wizard=1`} />}
+                render={<Link href={`/s/${slug}/dm/${stats.onboardingDmId}`} />}
                 variant="outline"
                 size="sm"
                 className="w-full justify-center sm:w-auto"
               >
-                <Sparkles className="h-3.5 w-3.5 text-[var(--accent-soft-foreground)]" />
-                Set up your bridge in your own workspace to bring YOUR agents online
-                <ExternalLink className="h-3 w-3 opacity-60" />
+                <MessageSquare className="h-3.5 w-3.5" />
+                Ask onboarding agent
               </Button>
             )}
           </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {WORKFLOW_STARTERS.map((starter) => (
+              <WorkflowStarterCard
+                key={starter.key}
+                starter={starter}
+                hasLocalRuntime={Boolean(hasBridgeHere)}
+                existing={stats.channels.some((c) => c.type !== "dm" && c.name === starter.channelName)}
+                loading={startingWorkflow === starter.key}
+                disabled={startingWorkflow !== null}
+                onStart={() => { void startWorkflowRoom(starter); }}
+              />
+            ))}
+          </div>
+        </section>
+
+        {onPersonalWorkspace ? (
+          <RuntimeBoundaryPanel
+            hasBridgeHere={Boolean(hasBridgeHere)}
+            hasBridgeAgents={hasBridgeAgents}
+            onOpenWizard={() => setWizardOpen(true)}
+          />
+        ) : (
+          <Card className="bg-surface/80">
+            <CardPanel className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">You joined this workspace.</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Start from an existing room, or create a workflow room for the work you own here.
+                </p>
+              </div>
+              {personal && hasBridgeInPersonal === false && (
+                <Button
+                  render={<Link href={`/s/${personal.slug}?wizard=1`} />}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-center sm:w-auto"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-[var(--accent-soft-foreground)]" />
+                  Connect local runtime in your workspace
+                  <ExternalLink className="h-3 w-3 opacity-60" />
+                </Button>
+              )}
+            </CardPanel>
+          </Card>
         )}
-        </CardPanel>
-      </Card>
+
+      </div>
 
       {/* Wizard ALWAYS targets the user's PERSONAL workspace, regardless
           of how it was opened (auto-pop OR explicit ?wizard=1). The
@@ -285,10 +378,135 @@ export default function ServerHomePage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <Card className="!shadow-none">
-      <CardPanel className="p-3 text-center">
-        <div className="text-2xl font-semibold text-foreground">{value}</div>
-        <Chip size="sm" variant="soft" color="default" className="mt-1 justify-center">{label}</Chip>
+    <div className="rounded-lg border border-border bg-surface/70 px-3 py-2 text-center">
+      <div className="text-2xl font-semibold text-foreground">{value}</div>
+      <Chip size="sm" variant="soft" color="default" className="mt-1 justify-center">{label}</Chip>
+    </div>
+  );
+}
+
+function WorkflowStep({ icon, label, body }: { icon: React.ReactNode; label: string; body: string }) {
+  return (
+    <div className="grid grid-cols-[36px_1fr] gap-3 rounded-lg border border-border bg-background/70 p-3">
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-accent/15 bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-foreground">{label}</span>
+        <span className="block text-xs leading-relaxed text-muted-foreground">{body}</span>
+      </span>
+    </div>
+  );
+}
+
+function WorkflowStarterCard({
+  starter,
+  hasLocalRuntime,
+  existing,
+  loading,
+  disabled,
+  onStart,
+}: {
+  starter: WorkflowStarterTemplate;
+  hasLocalRuntime: boolean;
+  existing: boolean;
+  loading: boolean;
+  disabled: boolean;
+  onStart: () => void;
+}) {
+  const Icon = STARTER_ICONS[starter.key];
+  const runtimePending = starter.requiresLocalRuntime && !hasLocalRuntime;
+  return (
+    <article
+      aria-label={`${starter.title} workflow starter`}
+      className="flex min-h-[360px] flex-col rounded-xl border border-border bg-surface/80 p-4 shadow-surface transition-colors hover:border-accent/25"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-[var(--accent-soft-foreground)]">
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <Chip size="sm" variant="soft" color={starter.type === "private" ? "default" : "accent"} className="font-mono text-[10px] uppercase tracking-wider">
+          {runtimePending ? "local runtime" : starter.type}
+        </Chip>
+      </div>
+      <h3 className="mt-4 text-lg font-semibold tracking-tight text-foreground">{starter.title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{starter.brief}</p>
+
+      <div className="mt-4 space-y-2 text-xs">
+        <StarterRow label="agent" body={starter.agent} />
+        <StarterRow label="gate" body={starter.gate} />
+        <StarterRow label="output" body={starter.output} />
+      </div>
+
+      <div className="mt-auto pt-4">
+        <Button
+          type="button"
+          onClick={onStart}
+          disabled={disabled}
+          variant={existing ? "outline" : "default"}
+          size="sm"
+          className="w-full justify-center"
+        >
+          {loading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : existing ? (
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5" />
+          )}
+          {loading ? "Starting..." : existing ? "Open room" : runtimePending ? "Create room first" : "Start room"}
+          {!loading && <ArrowRight className="h-3.5 w-3.5" />}
+        </Button>
+        <p className="mt-2 truncate text-center font-mono text-[10px] text-muted-foreground">
+          #{starter.channelName}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function StarterRow({ label, body }: { label: string; body: string }) {
+  return (
+    <div className="grid grid-cols-[54px_1fr] gap-2 rounded-lg border border-border/70 bg-background/60 px-3 py-2">
+      <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="min-w-0 text-muted-foreground">{body}</span>
+    </div>
+  );
+}
+
+function RuntimeBoundaryPanel({
+  hasBridgeHere,
+  hasBridgeAgents,
+  onOpenWizard,
+}: {
+  hasBridgeHere: boolean;
+  hasBridgeAgents: boolean;
+  onOpenWizard: () => void;
+}) {
+  const needsBridge = !hasBridgeHere && hasBridgeAgents;
+  return (
+    <Card className="bg-surface/80">
+      <CardPanel className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-foreground">
+            {needsBridge ? "A local runtime is waiting to connect." : "Local runtime is optional."}
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            {needsBridge
+              ? "One of your agents runs from your machine. Connect the bridge so that workflow room can use local code, keys, and tools."
+              : "Cloud agents can start low-risk workflow rooms now. Connect your own runtime when a workflow touches code, secrets, or private customer context."}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant={needsBridge ? "default" : "outline"}
+          size="sm"
+          onClick={onOpenWizard}
+          className="w-full justify-center sm:w-auto"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          {needsBridge ? "Connect local runtime" : "Bring your agents"}
+        </Button>
       </CardPanel>
     </Card>
   );

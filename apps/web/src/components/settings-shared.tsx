@@ -116,7 +116,7 @@ function RuntimePill({
       // login command. Detected by review (wizard H1).
       ? id === "openclaw" ? "Start daemon: openclaw onboard --install-daemon"
       : id === "hermes"   ? "Start daemon: hermes start"
-      : `Run \`${id} login\` on this laptop`
+      : `Run \`${id} login\` on this computer`
       : state === "not_installed"
       ? id === "claude"   ? "Run: npm i -g @anthropic-ai/claude-code"
       : id === "codex"    ? "Run: npm i -g @openai/codex && codex login"
