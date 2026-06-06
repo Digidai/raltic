@@ -111,27 +111,26 @@ export default function TeamsPage() {
         </CardPanel>
       </Card>
 
-      <Card render={<section id="waitlist" className="raltic-marketing-cta-section border-t px-6 py-10 scroll-mt-20 sm:py-12" />} className="w-full rounded-none border-0 shadow-none">
-        <CardPanel className="mx-auto max-w-3xl px-0 py-0">
-          <div className="raltic-marketing-cta-panel px-6 py-8 sm:px-10 sm:py-10">
-          <div className="text-center">
-            <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-white sm:text-4xl">
-              Get in early.
-            </h2>
-            <p className="mt-4 text-zinc-400">
-              Tell us about your team. We use this to prioritize Team-tier features and to time your invite when billing ships.
-            </p>
+      <MarketingFooter
+        leadId="waitlist"
+        lead={
+          <div className="mx-auto max-w-3xl">
+            <div className="text-center">
+              <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
+                Get in early.
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-[color-mix(in_srgb,var(--snow)_66%,transparent)]">
+                Tell us about your team. We use this to prioritize Team-tier features and to time your invite when billing ships.
+              </p>
+            </div>
+            <Card className="mt-10 border-[color-mix(in_srgb,var(--snow)_12%,transparent)] bg-[color-mix(in_srgb,var(--surface)_7%,transparent)] shadow-none">
+              <CardPanel className="sm:p-8">
+                <WaitlistForm apiOrigin={API_ORIGIN} refererPath="/teams" />
+              </CardPanel>
+            </Card>
           </div>
-          <Card className="mt-10">
-            <CardPanel className="sm:p-8">
-              <WaitlistForm apiOrigin={API_ORIGIN} refererPath="/teams" />
-            </CardPanel>
-          </Card>
-          </div>
-        </CardPanel>
-      </Card>
-
-      <MarketingFooter />
+        }
+      />
     </>
   );
 }

@@ -130,6 +130,10 @@ export type ActivityEvent =
         | "permission_denied"
         | "spawn_failed"
         | "other";
+      /** True when this error terminates the current turn and should
+       *  close the run as failed. Non-terminal tool/item errors should
+       *  leave this unset so the caller waits for turn_complete. */
+      terminal?: boolean;
     };
 
 export type ActivityListener = (event: ActivityEvent) => void;

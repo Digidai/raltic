@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { api, ApiError, type Agent, type MessageRow } from "@/lib/api";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { api, ApiError, type Agent, type AgentRun, type MessageRow } from "@/lib/api";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { EditAgentDialog } from "@/components/edit-agent-dialog";
 import { AlertDialog, AlertDialogPopup, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogClose } from "@/components/heroui-pro/alert-dialog";
@@ -12,9 +12,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardPanel } from "@/compo
 import { Chip } from "@/components/heroui-pro/chip";
 import { Tabs, TabsList, TabsListContainer, TabsTrigger } from "@/components/heroui-pro/tabs";
 import { useAgentActivity } from "@/hooks/use-agent-activity";
-import { MessageSquare, Pencil, Trash2, Hash, ListChecks, Settings as SettingsIcon } from "lucide-react";
+import { Activity, ExternalLink, Hash, ListChecks, MessageSquare, Pencil, RefreshCw, Settings as SettingsIcon, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { notifyThrown, notifySuccess } from "@/lib/notify";
+import { sanitizeUserVisibleError } from "@raltic/protocol";
 
 /**
  * Collapsed-by-default system prompt viewer. The schema cap is 50KB —
@@ -65,11 +66,98 @@ const STATUS_LABEL: Record<string, { dot: string; text: string; color: "accent" 
   offline:  { dot: "bg-muted-foreground/70",           text: "Offline",   color: "default" },
 };
 
+const RUN_STATUS_META: Record<AgentRun["status"], { label: string; color: "accent" | "danger" | "success" | "warning" | "default"; dot: string }> = {
+  queued:        { label: "Queued",        color: "default", dot: "bg-muted-foreground/70" },
+  dispatched:    { label: "Dispatched",    color: "accent",  dot: "bg-[var(--accent)]" },
+  running:       { label: "Running",       color: "accent",  dot: "bg-[var(--accent)] animate-pulse" },
+  waiting_input: { label: "Waiting input", color: "warning", dot: "bg-[var(--warning)]" },
+  completed:     { label: "Completed",     color: "success", dot: "bg-[var(--success)]" },
+  failed:        { label: "Failed",        color: "danger",  dot: "bg-[var(--danger)]" },
+  cancelled:     { label: "Cancelled",     color: "default", dot: "bg-muted-foreground/70" },
+};
+
+const RUN_SOURCE_LABEL: Record<AgentRun["source"], string> = {
+  channel_mention: "Channel mention",
+  channel_message: "Channel message",
+  dm: "DM",
+  scheduled: "Scheduled",
+  agent_to_agent: "Agent to agent",
+  manual: "Manual",
+};
+
+const TAB_KEYS = ["chat", "runs", "tasks", "channels", "settings"] as const;
+type TabKey = typeof TAB_KEYS[number];
+
+function parseTab(value: string | null): TabKey {
+  return TAB_KEYS.includes(value as TabKey) ? value as TabKey : "chat";
+}
+
+function formatRunTime(value: string | null): string {
+  if (!value) return "Not started";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function formatRuntimeMode(mode: string): string {
+  if (mode === "bridge") return "Local Bridge";
+  if (mode === "raltic") return "Raltic Cloud";
+  return mode.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function formatRunDuration(run: AgentRun): string {
+  if (!run.startedAt) return "Not started";
+  const start = new Date(run.startedAt).getTime();
+  const end = new Date(run.completedAt ?? (isActiveRun(run) ? Date.now() : run.updatedAt)).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return "Unknown";
+  const seconds = Math.max(0, Math.round((end - start) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  if (minutes < 60) return rest ? `${minutes}m ${rest}s` : `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const minuteRest = minutes % 60;
+  return minuteRest ? `${hours}h ${minuteRest}m` : `${hours}h`;
+}
+
+function isActiveRun(run: AgentRun): boolean {
+  return run.status === "queued" || run.status === "dispatched" || run.status === "running" || run.status === "waiting_input";
+}
+
+function summarizeRunError(error: string): string {
+  const redacted = sanitizeUserVisibleError(error, 240) ?? "";
+  return redacted.length > 240 ? `${redacted.slice(0, 237)}...` : redacted;
+}
+
+type AgentTask = Awaited<ReturnType<typeof api.listTasks>>["tasks"][number];
+
+function mergeFocusedAgentTasks(base: AgentTask[], focused: AgentTask[]): AgentTask[] {
+  if (focused.length === 0) return base;
+  const seen = new Set(base.map((task) => task.id));
+  const missing = focused.filter((task) => !seen.has(task.id));
+  return missing.length === 0 ? base : [...missing, ...base];
+}
+
+function dedupeAgentRuns(runs: AgentRun[]): AgentRun[] {
+  const seen = new Set<string>();
+  const out: AgentRun[] = [];
+  for (const run of runs) {
+    if (seen.has(run.id)) continue;
+    seen.add(run.id);
+    out.push(run);
+  }
+  return out;
+}
+
 export default function AgentProfilePage() {
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slug = params.slug as string;
   const agentId = params.agentId as string;
+  const focusedRunId = searchParams.get("runId");
+  const focusedTaskId = searchParams.get("taskId");
 
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,20 +169,38 @@ export default function AgentProfilePage() {
   const [history, setHistory] = useState<MessageRow[] | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
 
-  // Tab state — held locally rather than in URL. Trade-off: simpler, no
-  // route shuffle, but tabs aren't bookmarkable. If/when individual tab
-  // pages grow heavy enough to warrant their own routes (Activity / Memory
-  // / Calendar etc per the competitive analysis), promote each tab into
-  // a real /agents/[id]/<tab>/page.tsx file.
-  type TabKey = "chat" | "tasks" | "channels" | "settings";
-  const [tab, setTab] = useState<TabKey>("chat");
+  // Tabs remain one client page, but URL params can target a specific
+  // evidence row (`?tab=runs&runId=...`, `?tab=tasks&taskId=...`).
+  // This keeps Multica-style audit navigation without adding route bloat.
+  const [tab, setTab] = useState<TabKey>(() => parseTab(searchParams.get("tab")));
 
   // Per-tab lazy-loaded data. Each tab fetches what it needs on first
   // mount; navigating away keeps the data so toggling tabs feels instant.
-  const [tasks, setTasks] = useState<Awaited<ReturnType<typeof api.listTasks>>["tasks"] | null>(null);
+  const [tasks, setTasks] = useState<AgentTask[] | null>(null);
+  const [tasksError, setTasksError] = useState<string | null>(null);
   const [channels, setChannels] = useState<Array<{ id: string; name: string; type: string; joinedAt: number }> | null>(null);
+  const [runs, setRuns] = useState<AgentRun[] | null>(null);
+  const [runsError, setRunsError] = useState<string | null>(null);
+  const [runsRefreshing, setRunsRefreshing] = useState(false);
+  const runsRequestId = useRef(0);
+  const focusedRunLookupRef = useRef<string | null>(null);
+  const focusedTaskLookupRef = useRef<string | null>(null);
 
   const live = useAgentActivity(agentId);
+
+  useEffect(() => {
+    setTab(parseTab(searchParams.get("tab")));
+  }, [searchParams]);
+
+  const selectTab = useCallback((nextTab: TabKey) => {
+    setTab(nextTab);
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("tab", nextTab);
+    if (nextTab !== "runs") next.delete("runId");
+    if (nextTab !== "tasks") next.delete("taskId");
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   // Cancel-aware reload — accepts a `live()` predicate from the caller so
   // a stale request landing after the user navigated away (or switched
@@ -125,7 +231,14 @@ export default function AgentProfilePage() {
     setHistory(null);
     setHistoryError(null);
     setTasks(null);
+    setTasksError(null);
+    focusedTaskLookupRef.current = null;
     setChannels(null);
+    runsRequestId.current += 1;
+    focusedRunLookupRef.current = null;
+    setRuns(null);
+    setRunsError(null);
+    setRunsRefreshing(false);
     reload(live).finally(() => { if (live()) setLoading(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,21 +263,44 @@ export default function AgentProfilePage() {
 
   // Lazy-load tab data: tasks where this agent is the assignee.
   useEffect(() => {
-    if (tab !== "tasks" || !agent || tasks !== null) return;
+    if (tab !== "tasks" || !agent) return;
+    const needsInitialLoad = tasks === null;
+    const needsFocusedLookup =
+      !!focusedTaskId &&
+      tasks !== null &&
+      !tasks.some((task) => task.id === focusedTaskId) &&
+      focusedTaskLookupRef.current !== focusedTaskId;
+    if (!needsInitialLoad && !needsFocusedLookup) return;
     let cancelled = false;
-    api.listTasks({ serverId: agent.serverId, assigneeId: agent.id }).then(d => {
+    setTasksError(null);
+    const scope = { serverId: agent.serverId, assigneeId: agent.id };
+    const baseTasks = tasks ?? [];
+    if (focusedTaskId) focusedTaskLookupRef.current = focusedTaskId;
+    let focusedError: unknown = null;
+    Promise.all([
+      needsInitialLoad ? api.listTasks(scope) : Promise.resolve({ tasks: baseTasks }),
+      focusedTaskId
+        ? api.listTasks({ ...scope, taskId: focusedTaskId, limit: 1 }).catch((e) => {
+          focusedError = e;
+          return null;
+        })
+        : Promise.resolve(null),
+    ]).then(([d, focused]) => {
       if (cancelled) return;
-      setTasks(d.tasks.filter((t) => t.assigneeType === "agent"));
+      const merged = focused ? mergeFocusedAgentTasks(d.tasks, focused.tasks) : d.tasks;
+      setTasks(merged.filter((t) => t.assigneeType === "agent"));
+      if (focusedError) {
+        notifyThrown("Couldn't load focused task", focusedError);
+        setTasksError(focusedError instanceof Error ? focusedError.message : String(focusedError));
+      }
     }).catch((e) => {
-      // Surface the failure rather than showing "no tasks" which would
-      // mislead the user. Empty array still ends up so the UI doesn't
-      // hang on Loading… forever; the toast tells the real story.
       if (cancelled) return;
       notifyThrown("Couldn't load tasks", e);
-      setTasks([]);
+      setTasksError(e instanceof Error ? e.message : String(e));
+      if (needsInitialLoad) setTasks([]);
     });
     return () => { cancelled = true; };
-  }, [tab, agent, tasks]);
+  }, [tab, agent, tasks, focusedTaskId]);
 
   // Lazy-load tab data: channels this agent is a member of. Derived from
   // the workspace channel list filtered to ones containing this agent.
@@ -201,6 +337,67 @@ export default function AgentProfilePage() {
     return () => { cancelled = true; };
   }, [tab, agent, channels, slug]);
 
+  const loadRuns = useCallback(async (targetAgent: Agent | null = agent) => {
+    if (!targetAgent) return;
+    const requestId = ++runsRequestId.current;
+    setRunsRefreshing(true);
+    setRunsError(null);
+    try {
+      const data = await api.listAgentRuns({
+        serverId: targetAgent.serverId,
+        agentId: targetAgent.id,
+        limit: 50,
+      });
+      let nextRuns = data.runs;
+      if (focusedRunId && !nextRuns.some((run) => run.id === focusedRunId)) {
+        focusedRunLookupRef.current = focusedRunId;
+        try {
+          const { run } = await api.getAgentRun(focusedRunId);
+          if (run.agentId === targetAgent.id && run.serverId === targetAgent.serverId) {
+            nextRuns = [run, ...nextRuns];
+          }
+        } catch {
+          // The focused row may be hidden, deleted, or from another agent.
+          // Keep the normal list usable and leave the missing focus silent.
+        }
+      }
+      if (runsRequestId.current !== requestId) return;
+      setRuns(dedupeAgentRuns(nextRuns));
+    } catch (e) {
+      if (runsRequestId.current !== requestId) return;
+      setRunsError(e instanceof ApiError ? e.message : String(e));
+      setRuns([]);
+    } finally {
+      if (runsRequestId.current === requestId) setRunsRefreshing(false);
+    }
+  }, [agent, focusedRunId]);
+
+  useEffect(() => {
+    if (tab !== "runs" || !agent || runs !== null) return;
+    void loadRuns(agent);
+  }, [tab, agent, runs, loadRuns]);
+
+  useEffect(() => {
+    if (tab !== "runs" || !agent || !focusedRunId || !runs) return;
+    if (runs.some((run) => run.id === focusedRunId)) return;
+    if (focusedRunLookupRef.current === focusedRunId) return;
+    void loadRuns(agent);
+  }, [agent, focusedRunId, loadRuns, runs, tab]);
+
+  useEffect(() => {
+    if (tab !== "runs" || !focusedRunId || !runs) return;
+    const el = document.querySelector<HTMLElement>(`[data-run-id="${CSS.escape(focusedRunId)}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [focusedRunId, runs, tab]);
+
+  useEffect(() => {
+    if (tab !== "tasks" || !focusedTaskId || !tasks) return;
+    const el = document.querySelector<HTMLElement>(`[data-agent-task-id="${CSS.escape(focusedTaskId)}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [focusedTaskId, tab, tasks]);
+
   async function handleDelete() {
     if (!agent) return;
     setDeleting(true);
@@ -221,6 +418,15 @@ export default function AgentProfilePage() {
     const parts = [`@${agent?.name ?? ""}`, agent?.model ?? ""].filter(Boolean);
     return parts.join(" · ");
   }, [agent?.name, agent?.model]);
+  const runSummary = useMemo(() => {
+    if (!runs) return null;
+    return {
+      total: runs.length,
+      active: runs.filter(isActiveRun).length,
+      completed: runs.filter((r) => r.status === "completed").length,
+      failed: runs.filter((r) => r.status === "failed").length,
+    };
+  }, [runs]);
 
   if (loading) {
     return <div className="flex h-full w-full flex-1 items-center justify-center text-sm text-muted-foreground">Loading…</div>;
@@ -249,13 +455,13 @@ export default function AgentProfilePage() {
           <GeneratedAvatar id={agent.id} name={agent.displayName} seed={agent.avatarSeed} size="xl" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold">{agent.displayName}</h1>
+              <h1 className="min-w-0 max-w-full truncate text-xl font-semibold">{agent.displayName}</h1>
               <Chip size="sm" variant="soft" color={statusInfo.color} className="gap-1 text-[11px]">
                 <span className={`h-1.5 w-1.5 rounded-full ${statusInfo.dot}`} />
                 {statusInfo.text}
               </Chip>
             </div>
-            <p className="text-xs text-muted-foreground">{headerSubtitle}</p>
+            <p className="min-w-0 max-w-full truncate text-xs text-muted-foreground" title={headerSubtitle}>{headerSubtitle}</p>
             {agent.description && <p className="mt-1 text-sm">{agent.description}</p>}
           </div>
           <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
@@ -298,13 +504,14 @@ export default function AgentProfilePage() {
           1px gray — visually "the top bar was a half / broken edge". */}
       <Tabs
         selectedKey={tab}
-        onSelectionChange={(key) => setTab(key as TabKey)}
+        onSelectionChange={(key) => selectTab(key as TabKey)}
         className="shrink-0 border-b border-border/70 bg-background/85 backdrop-blur"
       >
         <TabsListContainer className="mx-auto w-full max-w-5xl px-3 py-2 sm:px-6">
           <TabsList aria-label="Agent sections" className="flex w-full min-w-0 gap-1 rounded-[10px] border border-border/70 bg-[var(--surface-secondary)] p-1 shadow-xs">
           {([
             { key: "chat",     label: "Chat",     icon: MessageSquare },
+            { key: "runs",     label: "Runs",     icon: Activity },
             { key: "tasks",    label: "Tasks",    icon: ListChecks },
             { key: "channels", label: "Channels", icon: Hash },
             { key: "settings", label: "Settings", icon: SettingsIcon },
@@ -316,14 +523,14 @@ export default function AgentProfilePage() {
                 key={t.key}
                 id={t.key}
                 className={cn(
-                  "h-8 min-w-0 flex-1 justify-center gap-1 rounded-[8px] border border-transparent px-1.5 text-xs transition-[background-color,color,border-color,box-shadow] sm:gap-1.5 sm:px-3 sm:text-sm",
+                  "h-8 min-w-0 flex-1 justify-center gap-1 rounded-[8px] border border-transparent px-1 text-[11px] transition-[background-color,color,border-color,box-shadow] min-[420px]:px-1.5 min-[420px]:text-xs sm:gap-1.5 sm:px-3 sm:text-sm",
                   active
                     ? "border-accent/25 bg-[var(--accent-soft)] text-foreground shadow-xs"
                     : "text-muted-foreground hover:bg-background/80 hover:text-foreground",
                 )}
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                {t.label}
+                <span className="truncate">{t.label}</span>
               </TabsTrigger>
             );
           })}
@@ -371,6 +578,135 @@ export default function AgentProfilePage() {
             </>
           )}
 
+          {tab === "runs" && (
+            <Card>
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" /> Work log
+                  </CardTitle>
+                  <CardDescription>
+                    Recent work this agent started, completed, or could not finish.
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void loadRuns(agent)}
+                  loading={runsRefreshing}
+                  className="w-full sm:w-auto"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", runsRefreshing && "animate-spin")} />
+                  Refresh
+                </Button>
+              </CardHeader>
+              <CardPanel className="pt-0">
+                {runSummary && (
+                  <div className="mb-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                    {[
+                      ["Recent", runSummary.total],
+                      ["Active", runSummary.active],
+                      ["Completed", runSummary.completed],
+                      ["Failed", runSummary.failed],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-lg border border-border/70 bg-[var(--surface-secondary)] px-3 py-2">
+                        <div className="text-[11px] text-muted-foreground">{label}</div>
+                        <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {runsError && (
+                  <p className="mb-3 text-sm text-danger-text">{runsError}</p>
+                )}
+                {runs === null && (
+                  <p className="text-sm text-muted-foreground">Loading…</p>
+                )}
+                {runs && runs.length === 0 && !runsError && (
+                  <p className="text-sm text-muted-foreground">
+                    No work log yet. Mention this agent in a channel or open its DM to create a traceable run.
+                  </p>
+                )}
+                {runs && runs.length > 0 && (
+                  <ol className="divide-y divide-border/70 overflow-hidden rounded-lg border border-border/70">
+                    {runs.map((run) => {
+                      const meta = RUN_STATUS_META[run.status];
+                      const isDmRun = run.source === "dm";
+                      const channelHref = `/s/${slug}/${isDmRun ? "dm" : "channel"}/${run.channelId}`;
+                      return (
+                        <li
+                          key={run.id}
+                          data-run-id={run.id}
+                          className={cn(
+                            "bg-background p-3 text-sm transition-[background-color,box-shadow] hover:bg-[var(--surface-secondary)]",
+                            focusedRunId === run.id && "shadow-[inset_3px_0_0_var(--accent)]",
+                          )}
+                        >
+                          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                <Chip size="sm" variant="soft" color={meta.color} className="gap-1 text-[11px]">
+                                  <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                                  {meta.label}
+                                </Chip>
+                                <Chip size="sm" variant="soft" color="default" className="text-[11px]">
+                                  {RUN_SOURCE_LABEL[run.source]}
+                                </Chip>
+                                <Chip size="sm" variant="soft" color="default" className="text-[11px] capitalize">
+                                  {formatRuntimeMode(run.runtimeMode)}
+                                </Chip>
+                              </div>
+                              <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs text-muted-foreground sm:grid-cols-2">
+                                <div>
+                                  <span className="font-medium text-foreground">Created</span>{" "}
+                                  {formatRunTime(run.createdAt)}
+                                </div>
+                                <div>
+                                  <span className="font-medium text-foreground">Duration</span>{" "}
+                                  {formatRunDuration(run)}
+                                </div>
+                                {run.taskId && (
+                                  <div>
+                                    <span className="font-medium text-foreground">Task</span>{" "}
+                                    <Link
+                                      href={`/s/${encodeURIComponent(slug)}/tasks?taskId=${encodeURIComponent(run.taskId)}`}
+                                      className="underline-offset-2 hover:underline"
+                                    >
+                                      {run.taskId.slice(0, 8)}
+                                    </Link>
+                                  </div>
+                                )}
+                              </div>
+                              {run.inputPreview && (
+                                <p className="mt-2 min-w-0 whitespace-pre-wrap rounded-md bg-[var(--surface-secondary)] px-2.5 py-2 text-xs [overflow-wrap:anywhere]">
+                                  {run.inputPreview}
+                                </p>
+                              )}
+                              {run.error && (
+                                <p className="mt-2 min-w-0 whitespace-pre-wrap rounded-md border border-danger/30 bg-danger/10 px-2.5 py-2 text-xs text-danger-text [overflow-wrap:anywhere]">
+                                  {summarizeRunError(run.error)}
+                                </p>
+                              )}
+                            </div>
+                            <Button
+                              render={<Link href={channelHref} />}
+                              variant="ghost"
+                              size="xs"
+                              className="shrink-0 justify-center sm:justify-start"
+                            >
+                              {isDmRun ? "Open DM" : "Open channel"} <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </CardPanel>
+            </Card>
+          )}
+
           {tab === "tasks" && (
             <Card>
               <CardHeader>
@@ -383,33 +719,75 @@ export default function AgentProfilePage() {
               </CardHeader>
               <CardPanel>
                 {tasks === null && <p className="text-sm text-muted-foreground">Loading…</p>}
-                {tasks && tasks.length === 0 && (
+                {tasksError && (
+                  <p className="text-sm text-danger-text">Couldn&apos;t load tasks: {tasksError}</p>
+                )}
+                {tasks && tasks.length === 0 && !tasksError && (
                   <p className="text-sm text-muted-foreground">
                     No tasks assigned. Convert a message into a task and assign it to <span className="font-medium text-foreground">{agent.displayName}</span> to see it here.
                   </p>
                 )}
                 {tasks && tasks.length > 0 && (
                   <ul className="space-y-2">
-                    {tasks.map((t) => (
-                      <Card render={<li />} key={t.id} className="border-transparent bg-[var(--surface-secondary)] !shadow-none">
-                        <CardPanel className="flex flex-wrap items-center gap-3 p-3 text-sm">
-                        <span className={cn(
-                          "h-2 w-2 shrink-0 rounded-full",
-                          t.status === "done" ? "bg-[var(--success)]"
-                            : t.status === "in_progress" ? "bg-[var(--accent)]"
-                            : t.status === "in_review" ? "bg-[var(--warning)]"
-                            : "bg-muted-foreground/70",
-                        )} aria-hidden="true" />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium">{t.title ?? `#${t.taskNumber}`}</div>
-                          <div className="text-[11px] text-muted-foreground">
-                            #{t.taskNumber} · {t.status.replace(/_/g, " ")} ·{" "}
-                            updated {new Date(t.updatedAt).toLocaleDateString()}
+                    {tasks.map((t) => {
+                      const latestRun = t.latestRun?.agentId === agent.id ? t.latestRun : null;
+                      const otherAgentRun = !!t.latestRun && t.latestRun.agentId !== agent.id;
+                      return (
+                        <Card
+                          render={<li />}
+                          key={t.id}
+                          data-agent-task-id={t.id}
+                          className={cn(
+                            "border-transparent bg-[var(--surface-secondary)] !shadow-none transition-[border-color,box-shadow]",
+                            focusedTaskId === t.id && "border-accent/60 shadow-[0_0_0_2px_var(--accent-soft)]",
+                          )}
+                        >
+                          <CardPanel className="flex flex-wrap items-center gap-3 p-3 text-sm">
+                          <span className={cn(
+                            "h-2 w-2 shrink-0 rounded-full",
+                            t.status === "done" ? "bg-[var(--success)]"
+                              : t.status === "in_progress" ? "bg-[var(--accent)]"
+                              : t.status === "in_review" ? "bg-[var(--warning)]"
+                              : "bg-muted-foreground/70",
+                          )} aria-hidden="true" />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium">{t.title ?? `#${t.taskNumber}`}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              #{t.taskNumber} · {t.status.replace(/_/g, " ")} ·{" "}
+                              updated {new Date(t.updatedAt).toLocaleDateString()}
+                            </div>
                           </div>
-                        </div>
-                        </CardPanel>
-                      </Card>
-                    ))}
+                          {latestRun ? (
+                            <div className="flex w-full min-w-0 flex-wrap items-center gap-2 pl-5 text-[11px] text-muted-foreground sm:w-auto sm:justify-end sm:pl-0">
+                              <Chip size="sm" variant="soft" color={RUN_STATUS_META[latestRun.status].color}>
+                                {RUN_STATUS_META[latestRun.status].label}
+                              </Chip>
+                              <span className="min-w-0 truncate">
+                                {RUN_SOURCE_LABEL[latestRun.source]} · {formatRuntimeMode(latestRun.runtimeMode)}
+                              </span>
+                              {latestRun.error && (
+                                <span className="w-full min-w-0 truncate text-danger-text sm:max-w-64">
+                                  {summarizeRunError(latestRun.error)}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="w-full pl-5 sm:w-auto sm:pl-0">
+                              <Chip size="sm" variant="soft" color="default">
+                                {otherAgentRun ? "Run by other agent" : "Not started"}
+                              </Chip>
+                            </div>
+                          )}
+                          <Link
+                            href={`/s/${encodeURIComponent(slug)}/tasks?taskId=${encodeURIComponent(t.id)}`}
+                            className="w-full pl-5 text-[11px] font-medium text-primary underline-offset-2 hover:underline sm:w-auto sm:pl-0"
+                          >
+                            Open task
+                          </Link>
+                          </CardPanel>
+                        </Card>
+                      );
+                    })}
                   </ul>
                 )}
               </CardPanel>

@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
-import { messages, channelMembers, agents, channels, type Message } from "@raltic/db";
+import { messages, channelMembers, agents, channels, agentRuns, tasks, type Message } from "@raltic/db";
 import {
   type ClientMessage,
   type ServerMessage,
@@ -8,6 +8,8 @@ import {
   decodeClient,
   encode,
   PROTOCOL_VERSION,
+  type AgentRunSource,
+  sanitizeUserVisibleError,
 } from "@raltic/protocol";
 import { verifyWsToken, isTokenRevoked } from "@raltic/auth-core";
 
@@ -668,6 +670,7 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
     const byId = new Map(memberAgents.map(a => [a.id, a.id] as const));
     const byName = new Map(memberAgents.map(a => [a.name.toLowerCase(), a.id] as const));
     const mentioned = new Set<string>();
+    let source: AgentRunSource = "channel_mention";
     const uuidRe = /@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/g;
     let m: RegExpExecArray | null;
     while ((m = uuidRe.exec(input.text)) !== null) {
@@ -690,15 +693,47 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
       if (ch[0]?.type === "dm" && memberAgents.length === 1) {
         const onlyId = memberAgents[0]?.id;
         if (onlyId) mentioned.add(onlyId);
+        source = "dm";
       }
     }
     if (mentioned.size === 0) return;
+
+    const taskId = await resolveTaskIdForMessage(db, input.channelId, input.messageId);
 
     // Route to cloud-mode agents only. Bridge-mode agents will receive
     // this message via their own WS subscription to ChatRoom.
     for (const a of memberAgents) {
       if (!mentioned.has(a.id)) continue;
       if (a.runtimeMode !== "raltic") continue;
+      let runId: string | undefined;
+      try {
+        runId = crypto.randomUUID();
+        const now = new Date();
+        await db.insert(agentRuns).values({
+          id: runId,
+          serverId: a.serverId,
+          channelId: input.channelId,
+          agentId: a.id,
+          taskId,
+          source,
+          status: "dispatched",
+          runtimeMode: a.runtimeMode,
+          callerId: input.callerId,
+          callerType: "human",
+          triggerMessageId: input.messageId,
+          outputMessageId: null,
+          inputPreview: previewRunInput(input.text),
+          error: null,
+          metadata: null,
+          startedAt: null,
+          completedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        });
+      } catch (e) {
+        runId = undefined;
+        console.error(`[ChatRoom dispatch] run create failed for agent=${a.id}:`, e instanceof Error ? e.message : String(e));
+      }
       // Use loose typing — chat-room can't import @raltic/agent without a
       // circular dep (agent → db, chat-room → db, both → protocol).
       // The contract is enforced at the call site in api/lib/agent-dispatch.
@@ -707,19 +742,22 @@ export class ChatRoom extends DurableObject<ChatRoomEnv> {
       try {
         await stub.bind({ agentId: a.id, workspaceId: a.serverId, ownerId: a.ownerId });
         const result = await stub.onInvoke({
-          source: "channel_mention",
+          source,
           channelId: input.channelId,
           messageId: input.messageId,
           threadParentId: input.threadParentId,
           text: input.text,
           callerId: input.callerId,
           callerType: "human",
+          runId,
         });
         if (!result.ok) {
           console.error(`[ChatRoom dispatch] agent=${a.id} onInvoke error: ${result.error}`);
+          await markRunFailed(db, runId, result.error);
         }
       } catch (e) {
         console.error(`[ChatRoom dispatch] agent=${a.id} threw:`, e);
+        await markRunFailed(db, runId, e instanceof Error ? e.message : String(e));
       }
     }
   }
@@ -1033,6 +1071,37 @@ function toMessageRow(m: Message): MessageRow {
   };
 }
 
+function previewRunInput(text: string): string {
+  return text.trim().slice(0, 500);
+}
+
+async function resolveTaskIdForMessage(
+  db: ReturnType<typeof drizzle>,
+  channelId: string,
+  messageId: string,
+): Promise<string | null> {
+  const row = await db.select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.channelId, channelId), eq(tasks.messageId, messageId)))
+    .limit(1);
+  return row[0]?.id ?? null;
+}
+
+async function markRunFailed(
+  db: ReturnType<typeof drizzle>,
+  runId: string | undefined,
+  error: string,
+): Promise<void> {
+  if (!runId) return;
+  const now = new Date();
+  try {
+    await db.update(agentRuns)
+      .set({ status: "failed", error: sanitizeUserVisibleError(error), completedAt: now, updatedAt: now })
+      .where(eq(agentRuns.id, runId));
+  } catch (e) {
+    console.error(`[ChatRoom dispatch] run fail update failed run=${runId}:`, e instanceof Error ? e.message : String(e));
+  }
+}
 
 // drizzle-orm helpers — imported lazily here to avoid TS cycles
 import { and, eq, lt, desc, inArray } from "drizzle-orm";

@@ -245,9 +245,90 @@ export const listTasksQuery = z.object({
   channelId: z.string().optional(),
   status: z.enum(["todo", "in_progress", "in_review", "done"]).optional(),
   assigneeId: z.string().optional(),
+  taskId: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 export type ListTasksQuery = z.infer<typeof listTasksQuery>;
+
+// ---- GET /api/v1/agent-runs ----
+
+export const AGENT_RUN_STATUSES = [
+  "queued",
+  "dispatched",
+  "running",
+  "waiting_input",
+  "completed",
+  "failed",
+  "cancelled",
+] as const;
+export const agentRunStatus = z.enum(AGENT_RUN_STATUSES);
+export type AgentRunStatus = z.infer<typeof agentRunStatus>;
+
+export const AGENT_RUN_SOURCES = [
+  "channel_mention",
+  "channel_message",
+  "dm",
+  "scheduled",
+  "agent_to_agent",
+  "manual",
+] as const;
+export const agentRunSource = z.enum(AGENT_RUN_SOURCES);
+export type AgentRunSource = z.infer<typeof agentRunSource>;
+
+export const listAgentRunsQuery = z.object({
+  serverId: z.string().optional(),
+  channelId: z.string().optional(),
+  agentId: z.string().optional(),
+  taskId: z.string().optional(),
+  status: agentRunStatus.optional(),
+  source: agentRunSource.optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+export type ListAgentRunsQuery = z.infer<typeof listAgentRunsQuery>;
+
+export const agentRunRecord = z.object({
+  id: z.string(),
+  serverId: z.string(),
+  channelId: z.string(),
+  agentId: z.string(),
+  taskId: z.string().nullable(),
+  source: agentRunSource,
+  status: agentRunStatus,
+  runtimeMode: z.string(),
+  callerId: z.string().nullable(),
+  callerType: z.enum(["human", "agent", "system"]).nullable(),
+  triggerMessageId: z.string().nullable(),
+  outputMessageId: z.string().nullable(),
+  inputPreview: z.string().nullable(),
+  error: z.string().nullable(),
+  metadata: z.unknown().nullable(),
+  startedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type AgentRunRecord = z.infer<typeof agentRunRecord>;
+
+export const createAgentRunRequest = z.object({
+  channelId: z.string(),
+  agentId: z.string(),
+  source: agentRunSource,
+  status: z.enum(["queued", "dispatched"]).default("queued"),
+  callerId: z.string().optional(),
+  callerType: z.enum(["human", "agent"]).optional(),
+  triggerMessageId: z.string().nullable().optional(),
+  inputPreview: z.string().max(500).nullable().optional(),
+  metadata: z.unknown().nullable().optional(),
+});
+export type CreateAgentRunRequest = z.infer<typeof createAgentRunRequest>;
+
+export const updateAgentRunRequest = z.object({
+  status: z.enum(["running", "waiting_input", "completed", "failed", "cancelled"]),
+  outputMessageId: z.string().uuid().nullable().optional(),
+  error: z.string().max(2000).nullable().optional(),
+  metadata: z.unknown().nullable().optional(),
+});
+export type UpdateAgentRunRequest = z.infer<typeof updateAgentRunRequest>;
 
 // ---- POST /api/v1/invites ----
 

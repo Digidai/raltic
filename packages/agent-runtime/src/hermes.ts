@@ -349,6 +349,7 @@ class HermesSession implements RuntimeSession {
               kind: "error",
               message: stderrBuf.trim().slice(0, 500),
               reason: classifyError(stderrBuf),
+              terminal: true,
             }); } catch (e) { console.error("[hermes] activity listener threw:", e); }
           }
         }

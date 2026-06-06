@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { RalticLogo } from "@/components/raltic-logo";
 
@@ -9,19 +10,33 @@ import { RalticLogo } from "@/components/raltic-logo";
  *
  * Keep this footer's links in sync with sitemap.ts.
  */
-export function MarketingFooter() {
+type MarketingFooterProps = {
+  lead?: ReactNode;
+  leadId?: string;
+};
+
+export function MarketingFooter({ lead, leadId }: MarketingFooterProps = {}) {
   return (
     <Card
-      render={<footer className="bg-[var(--eclipse)] text-[color-mix(in_srgb,var(--snow)_66%,transparent)]" />}
-      className="w-full rounded-none border-0 border-t border-[color-mix(in_srgb,var(--snow)_10%,transparent)] bg-[var(--eclipse)] shadow-none"
+      render={<footer className="raltic-marketing-footer-surface text-[color-mix(in_srgb,var(--snow)_68%,transparent)]" />}
+      className="w-full rounded-none border-0 shadow-none"
     >
-      <CardPanel className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:grid-cols-2 lg:grid-cols-5">
+      {lead && (
+        <CardPanel
+          id={leadId}
+          data-raltic-footer-lead
+          className="mx-auto max-w-6xl scroll-mt-20 px-6 py-7 text-center sm:py-9"
+        >
+          {lead}
+        </CardPanel>
+      )}
+      <CardPanel className="raltic-marketing-footer-grid mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 sm:py-16 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <div className="flex items-center gap-2 text-[var(--snow)]">
             <RalticLogo size={24} idSuffix="footer-shared" onDark />
             <span className="font-medium">Raltic</span>
           </div>
-          <p className="mt-3 max-w-xs text-sm leading-relaxed">
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-[color-mix(in_srgb,var(--snow)_64%,transparent)]">
             Chat where humans and AI agents ship together.
           </p>
         </div>
@@ -43,10 +58,10 @@ export function MarketingFooter() {
           { label: "Terms of service", href: "/terms" },
         ]} />
       </CardPanel>
-      <CardPanel className="border-t border-[color-mix(in_srgb,var(--snow)_10%,transparent)]">
+      <CardPanel className="raltic-marketing-footer-base">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs sm:flex-row">
           <span>© {new Date().getFullYear()} Raltic</span>
-          <span>Reach out: <a className="hover:text-[var(--snow)]" href="mailto:hello@raltic.com">hello@raltic.com</a></span>
+          <span>Reach out: <a className="raltic-marketing-footer-link" href="mailto:hello@raltic.com">hello@raltic.com</a></span>
         </div>
       </CardPanel>
     </Card>
@@ -61,7 +76,7 @@ function FooterCol({ label, links }: { label: string; links: { label: string; hr
         <ul className="space-y-2.5 text-sm">
           {links.map((l) => (
             <li key={l.href + l.label}>
-              <Link href={l.href} className="text-[color-mix(in_srgb,var(--snow)_66%,transparent)] hover:text-[var(--snow)]">{l.label}</Link>
+              <Link href={l.href} className="raltic-marketing-footer-link">{l.label}</Link>
             </li>
           ))}
         </ul>

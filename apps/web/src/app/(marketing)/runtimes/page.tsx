@@ -24,7 +24,7 @@ const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
   cyan: "border-accent/30 bg-[var(--accent-soft)] text-[var(--accent)]",
   amber: "border-warning/30 bg-[var(--warning-soft)] text-[var(--warning)]",
   violet: "border-border bg-[var(--default-soft)] text-[var(--default-soft-foreground)]",
-  rose: "border-[color:var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]",
+  neutral: "border-[color-mix(in_srgb,var(--snow)_14%,transparent)] bg-[color-mix(in_srgb,var(--surface)_6%,transparent)] text-[color-mix(in_srgb,var(--snow)_76%,transparent)]",
 };
 
 export default function RuntimesHub() {

@@ -551,7 +551,7 @@ export function SetupWizard({
                           id="hermes"
                           title="Hermes Agent"
                           chip="Advanced"
-                          chipTone="danger"
+                          chipTone="default"
                           body="Nous Research's self-improving agent with persistent memory + auto skills. Install separately."
                           installHref="https://hermes-agent.nousresearch.com/"
                         />

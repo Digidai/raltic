@@ -18,7 +18,7 @@ import { mkdirSync, existsSync, writeFileSync, readFileSync, readdirSync, rmSync
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "node:module";
-import type { BridgeConnectResponse, MessageRow } from "@raltic/protocol";
+import { sanitizeUserVisibleError, type AgentRunSource, type BridgeConnectResponse, type MessageRow } from "@raltic/protocol";
 import { buildSystemPrompt } from "./system-prompt.js";
 import {
   buildRuntimeRegistry,
@@ -76,6 +76,7 @@ interface AgentSession {
 
 interface QueuedMessage {
   userMessage: string;
+  runId?: string;
   resolve: () => void;
   reject: (err: Error) => void;
 }
@@ -84,6 +85,8 @@ interface AgentEntry {
   runtime: AgentRuntime;
   session: RuntimeSession;
   busy: boolean;
+  currentRunId?: string;
+  currentRunError?: string;
   messageQueue: QueuedMessage[];
   /** Unsubscribe callbacks for the listeners we attached. */
   unsubs: Array<() => void>;
@@ -143,6 +146,7 @@ export class AgentManager {
   private spawning = new Map<string, Promise<AgentEntry>>();
   /** channelId → list of agentIds that should respond to messages in this channel */
   private channelToAgents = new Map<string, string[]>();
+  private channelTypes = new Map<string, BridgeConnectResponse["channels"][number]["type"]>();
   private apiUrl: string;
   private agentsDir: string;
   private boot: BridgeConnectResponse | null = null;
@@ -160,7 +164,11 @@ export class AgentManager {
   setBootContext(boot: BridgeConnectResponse): void {
     this.boot = boot;
     this.channelToAgents.clear();
-    for (const ch of boot.channels) this.channelToAgents.set(ch.id, ch.agentIds);
+    this.channelTypes.clear();
+    for (const ch of boot.channels) {
+      this.channelToAgents.set(ch.id, ch.agentIds);
+      this.channelTypes.set(ch.id, ch.type);
+    }
     for (const session of this.sessions.values()) this.writeCliTokenFile(session);
   }
 
@@ -221,7 +229,8 @@ export class AgentManager {
     if (!agentIds || agentIds.length === 0) return;
     const formatted = this.formatInboundForAgent(channelId, message);
     for (const agentId of agentIds) {
-      try { await this.sendToAgent(agentId, formatted); }
+      const runId = await this.createRun(agentId, channelId, message);
+      try { await this.sendToAgent(agentId, formatted, runId); }
       catch (e) { console.error(`[agent ${agentId}] dispatch failed:`, e); }
     }
   }
@@ -241,9 +250,16 @@ export class AgentManager {
     return `[target=${target} msg=${msgShort} time=${time} type=${m.senderType}] @${senderShort}: ${m.content}`;
   }
 
-  async sendToAgent(agentId: string, userMessage: string): Promise<void> {
+  async sendToAgent(agentId: string, userMessage: string, runId?: string): Promise<void> {
     const session = this.sessions.get(agentId);
     if (!session) throw new Error(`agent ${agentId} not initialized`);
+
+    const unavailable = this.runtimeUnavailableReason(session);
+    if (unavailable) {
+      this.broadcastActivity(agentId, "error", "Runtime unavailable", unavailable.slice(0, 120));
+      await this.updateRun(runId, "failed", { error: unavailable });
+      throw new Error(unavailable);
+    }
 
     let entry = this.entries.get(agentId);
     if (!entry) {
@@ -269,28 +285,45 @@ export class AgentManager {
         })();
         this.spawning.set(agentId, pending);
       }
-      entry = await pending;
+      try {
+        entry = await pending;
+      } catch (e) {
+        await this.updateRun(runId, "failed", {
+          error: e instanceof Error ? e.message : String(e),
+        });
+        throw e;
+      }
     }
 
     if (entry.busy) {
       console.log(`  [${session.displayName}] busy, queueing (${userMessage.length} chars; queue ${entry.messageQueue.length + 1})`);
-      return new Promise<void>((res, rej) => entry!.messageQueue.push({ userMessage, resolve: res, reject: rej }));
+      return new Promise<void>((res, rej) => entry!.messageQueue.push({ userMessage, runId, resolve: res, reject: rej }));
     }
 
     entry.busy = true;
-    void this._sendNow(agentId, session, entry, userMessage);
+    void this._sendNow(agentId, session, entry, userMessage, runId);
   }
 
   private async _sendNow(
-    agentId: string, session: AgentSession, entry: AgentEntry, userMessage: string,
+    agentId: string, session: AgentSession, entry: AgentEntry, userMessage: string, runId?: string,
   ): Promise<void> {
     console.log(`  [${session.displayName}] forwarding (${userMessage.length} chars)`);
+    entry.currentRunId = runId;
+    entry.currentRunError = undefined;
+    await this.updateRun(runId, "running");
     this.broadcastActivity(agentId, "working", "Working", "Message received");
     try {
       await entry.session.send(userMessage);
     } catch (e) {
       console.error(`  [${session.displayName}] send failed:`, e);
       this.broadcastActivity(agentId, "error", "Send failed", (e as Error).message.slice(0, 80));
+      await this.updateRun(runId, "failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      if (entry.currentRunId === runId) {
+        entry.currentRunId = undefined;
+        entry.currentRunError = undefined;
+      }
       entry.busy = false;
       this.drainQueue(agentId);
     }
@@ -304,7 +337,7 @@ export class AgentManager {
     if (!next) return;
     console.log(`  [${session.displayName}] draining queue (${entry.messageQueue.length} remaining)`);
     entry.busy = true;
-    this._sendNow(agentId, session, entry, next.userMessage).then(next.resolve, next.reject);
+    this._sendNow(agentId, session, entry, next.userMessage, next.runId).then(next.resolve, next.reject);
   }
 
   /** Spawn a new session for an agent via its declared runtime. Handles
@@ -362,6 +395,8 @@ export class AgentManager {
       runtime,
       session: rs,
       busy: false,
+      currentRunId: undefined,
+      currentRunError: undefined,
       messageQueue: [],
       unsubs: [],
     };
@@ -369,8 +404,15 @@ export class AgentManager {
     entry.unsubs.push(rs.on("activity", (ev) => this._onActivity(agentId, session, ev)));
     entry.unsubs.push(rs.on("exit", (code) => {
       console.log(`  [${session.displayName}] runtime exited code=${code}`);
+      const error = `runtime exited with code ${code ?? "unknown"}`;
+      if (entry.currentRunId) {
+        void this.updateRun(entry.currentRunId, "failed", { error });
+        entry.currentRunId = undefined;
+        entry.currentRunError = undefined;
+      }
       for (const queued of entry.messageQueue) {
-        queued.reject(new Error(`runtime exited with code ${code}`));
+        void this.updateRun(queued.runId, "failed", { error });
+        queued.reject(new Error(error));
       }
       entry.messageQueue = [];
       // Drop the entry so the next sendToAgent re-spawns fresh.
@@ -403,6 +445,13 @@ export class AgentManager {
         this.broadcastActivity(agentId, "idle", "Idle", "");
         const entry = this.entries.get(agentId);
         if (entry) {
+          const runId = entry.currentRunId;
+          const runError = entry.currentRunError;
+          entry.currentRunId = undefined;
+          entry.currentRunError = undefined;
+          if (runId) {
+            void this.updateRun(runId, runError ? "failed" : "completed", runError ? { error: runError } : undefined);
+          }
           entry.busy = false;
           console.log(`  [${session.displayName}] turn complete`);
           this.drainQueue(agentId);
@@ -415,6 +464,10 @@ export class AgentManager {
         return;
       case "error":
         this.broadcastActivity(agentId, "error", "Error", ev.message.slice(0, 120));
+        if (ev.terminal) {
+          const entry = this.entries.get(agentId);
+          if (entry?.currentRunId) entry.currentRunError = ev.message;
+        }
         if (process.env.RALTIC_BRIDGE_VERBOSE) {
           console.error(`  [${session.displayName}] runtime error (${ev.reason ?? "other"}):`, ev.message);
         }
@@ -495,7 +548,15 @@ export class AgentManager {
   }
 
   private async disposeEntry(entry: AgentEntry, reason: string): Promise<void> {
-    for (const queued of entry.messageQueue) queued.reject(new Error(reason));
+    if (entry.currentRunId) {
+      await this.updateRun(entry.currentRunId, "failed", { error: reason });
+      entry.currentRunId = undefined;
+      entry.currentRunError = undefined;
+    }
+    for (const queued of entry.messageQueue) {
+      void this.updateRun(queued.runId, "failed", { error: reason });
+      queued.reject(new Error(reason));
+    }
     entry.messageQueue = [];
     for (const unsub of entry.unsubs) try { unsub(); } catch { /* swallow */ }
     try { await entry.session.shutdown(); } catch { /* swallow */ }
@@ -565,6 +626,83 @@ export class AgentManager {
       }
     } catch (e) {
       if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("activity POST failed:", e);
+    }
+  }
+
+  private runSourceForChannel(channelId: string): AgentRunSource {
+    return this.channelTypes.get(channelId) === "dm" ? "dm" : "channel_message";
+  }
+
+  private runtimeUnavailableReason(session: AgentSession): string | null {
+    if (!this.detectedRuntimes) return null;
+    const rt = this.detectedRuntimes.find((r) => r.id === session.runtime);
+    if (!rt || !rt.detected) {
+      return `${session.runtime} CLI not installed on this laptop. Install ${session.runtime}, then restart the bridge.`;
+    }
+    if (rt.authed === false) {
+      return `${session.runtime} CLI not signed in. Run ${session.runtime} login, then restart the bridge.`;
+    }
+    return null;
+  }
+
+  private async createRun(agentId: string, channelId: string, message: MessageRow): Promise<string | undefined> {
+    if (!this.boot) return undefined;
+    try {
+      const res = await fetch(`${this.apiUrl}/api/v1/agent-runs`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer sy_bridge_${this.boot.token}`,
+        },
+        body: JSON.stringify({
+          agentId,
+          channelId,
+          source: this.runSourceForChannel(channelId),
+          status: "queued",
+          callerId: message.senderId,
+          callerType: message.senderType === "agent" ? "agent" : "human",
+          triggerMessageId: message.id,
+          inputPreview: String(message.content ?? "").trim().slice(0, 500),
+        }),
+      });
+      if (!res.ok) {
+        if (process.env.RALTIC_BRIDGE_VERBOSE) {
+          console.warn("agent run create failed:", res.status, await res.text().catch(() => ""));
+        }
+        return undefined;
+      }
+      const body = await res.json() as { run?: { id?: string } };
+      return body.run?.id;
+    } catch (e) {
+      if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("agent run create failed:", e);
+      return undefined;
+    }
+  }
+
+  private async updateRun(
+    runId: string | undefined,
+    status: "running" | "completed" | "failed" | "cancelled",
+    opts: { error?: string; outputMessageId?: string | null } = {},
+  ): Promise<void> {
+    if (!this.boot || !runId) return;
+    try {
+      const res = await fetch(`${this.apiUrl}/api/v1/agent-runs/${runId}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer sy_bridge_${this.boot.token}`,
+        },
+        body: JSON.stringify({
+          status,
+          error: opts.error === undefined ? undefined : sanitizeUserVisibleError(opts.error),
+          outputMessageId: opts.outputMessageId,
+        }),
+      });
+      if (!res.ok && process.env.RALTIC_BRIDGE_VERBOSE) {
+        console.warn("agent run update failed:", res.status, await res.text().catch(() => ""));
+      }
+    } catch (e) {
+      if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("agent run update failed:", e);
     }
   }
 

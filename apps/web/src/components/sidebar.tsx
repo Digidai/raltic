@@ -565,7 +565,7 @@ function RuntimeDot({ runtime }: { runtime: string }) {
     claude:   { bg: "bg-[var(--accent)]",  fg: "text-[var(--accent-foreground)]",  text: "C", shape: "rounded-sm",   label: "Claude" },
     codex:    { bg: "bg-[var(--warning)]", fg: "text-[var(--warning-foreground)]", text: "X", shape: "rounded-full", label: "Codex" },
     openclaw: { bg: "bg-[var(--default)]", fg: "text-[var(--default-foreground)]", text: "O", shape: "rounded-md",   label: "OpenClaw" },
-    hermes:   { bg: "bg-[var(--danger)]",  fg: "text-[var(--danger-foreground)]",  text: "H", shape: "rounded-sm",   label: "Hermes" },
+    hermes:   { bg: "bg-[var(--default)]", fg: "text-[var(--default-foreground)]", text: "H", shape: "rounded-sm",   label: "Hermes" },
   };
   const entry = palette[runtime] ?? {
     bg: "bg-muted-foreground/70",

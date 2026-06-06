@@ -18,8 +18,9 @@ import { Agent } from "agents";
 import { generateText, streamText, stepCountIs } from "ai";
 import type { ModelMessage } from "ai";
 import { drizzle } from "drizzle-orm/d1";
-import { eq } from "drizzle-orm";
-import { agents as agentsTable } from "@raltic/db";
+import { and, eq } from "drizzle-orm";
+import { agents as agentsTable, agentRuns, tasks as tasksTable } from "@raltic/db";
+import { sanitizeUserVisibleError } from "@raltic/protocol";
 import { SandboxClient } from "./sandbox-client.js";
 import { resolveModel } from "./ai-gateway.js";
 import { buildToolRegistry } from "./tools/registry.js";
@@ -106,12 +107,8 @@ export class RalticAgent extends Agent<AgentEnv, AgentState> {
 
   // ── Main entry: handle a message dispatched by ChatRoom DO ────────────
   async onInvoke(invocation: AgentInvocation): Promise<{ ok: true; messageId?: string } | { ok: false; error: string }> {
-    // Boot guard: AI Gateway URL is required; fail fast with a clear
-    // error message rather than crashing inside resolveModel.
-    if (!this.env.AI_GATEWAY_BASE) {
-      return { ok: false, error: "AI_GATEWAY_BASE not configured; set var in wrangler.jsonc" };
-    }
     if (!this.state.agentId) {
+      await this.markRunFailed(invocation.runId ?? undefined, "agent not bound — call bind() before onInvoke");
       return { ok: false, error: "agent not bound — call bind() before onInvoke" };
     }
     // Serialize across concurrent invokes (e.g. two @-mentions land
@@ -120,13 +117,23 @@ export class RalticAgent extends Agent<AgentEnv, AgentState> {
   }
 
   private async runInvocation(invocation: AgentInvocation): Promise<{ ok: true; messageId?: string } | { ok: false; error: string }> {
+    const runId = invocation.runId ?? await this.ensureAgentRun(invocation);
+    // Boot guard: AI Gateway URL is required; fail fast with a clear
+    // error message rather than crashing inside resolveModel.
+    if (!this.env.AI_GATEWAY_BASE) {
+      const error = "AI_GATEWAY_BASE not configured; set var in wrangler.jsonc";
+      await this.markRunFailed(runId, error);
+      return { ok: false, error };
+    }
     const policy = await this.loadPolicy();
     const agentConfig = await this.loadAgentConfig();
 
     // Quota check (D1) — short-circuit BEFORE hitting AI Gateway. Saves
     // round-trip + clearly distinguishes our 429 from provider 429.
     if (this.state.totalTokensThisPeriod >= policy.monthlyTokenQuota) {
-      return { ok: false, error: "monthly token quota exhausted; upgrade plan or wait for reset" };
+      const error = "monthly token quota exhausted; upgrade plan or wait for reset";
+      await this.markRunFailed(runId, error);
+      return { ok: false, error };
     }
 
     const userTurn: ChatTurn = {
@@ -136,6 +143,7 @@ export class RalticAgent extends Agent<AgentEnv, AgentState> {
     };
     const compactedHistory = await this.compactIfNeeded([...this.state.history, userTurn]);
 
+    await this.markRunRunning(runId);
     await this.setState({
       ...this.state,
       history: compactedHistory,
@@ -201,6 +209,7 @@ export class RalticAgent extends Agent<AgentEnv, AgentState> {
     let assistantText = "";
     let tokensUsed = 0;
     let partialChain = Promise.resolve();
+    let runFailure: string | undefined;
     try {
       const result = streamText({
         model,
@@ -227,6 +236,7 @@ export class RalticAgent extends Agent<AgentEnv, AgentState> {
       tokensUsed = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
+      runFailure = ac.signal.aborted ? `task timeout after ${policy.maxTaskSeconds}s` : message;
       // Task-timeout: tell the user gracefully instead of dropping.
       const final = ac.signal.aborted
         ? `_Task exceeded ${policy.maxTaskSeconds}s budget for ${policy.plan} plan and was paused. Ask me again to continue._`
@@ -244,6 +254,7 @@ export class RalticAgent extends Agent<AgentEnv, AgentState> {
       messageId = posted.messageId;
     } catch (e) {
       console.error("[raltic-agent] postFinal failed:", e);
+      runFailure = `postFinal failed: ${e instanceof Error ? e.message : String(e)}`;
     }
 
     // Re-read current state BEFORE final setState so any concurrent
@@ -303,7 +314,102 @@ export class RalticAgent extends Agent<AgentEnv, AgentState> {
       }));
     }
 
+    if (runFailure) {
+      await this.markRunFailed(runId, runFailure, messageId);
+    } else {
+      await this.markRunCompleted(runId, messageId);
+    }
+
     return messageId ? { ok: true, messageId } : { ok: true };
+  }
+
+  private async ensureAgentRun(invocation: AgentInvocation): Promise<string | undefined> {
+    if (invocation.runId) return invocation.runId;
+    if (!this.state.agentId || !this.state.workspaceId) return undefined;
+    const id = crypto.randomUUID();
+    const now = new Date();
+    try {
+      const db = drizzle(this.env.DB);
+      const taskId = invocation.messageId
+        ? await this.resolveTaskIdForMessage(db, invocation.channelId, invocation.messageId)
+        : null;
+      await db.insert(agentRuns).values({
+        id,
+        serverId: this.state.workspaceId,
+        channelId: invocation.channelId,
+        agentId: this.state.agentId,
+        taskId,
+        source: invocation.source,
+        status: "dispatched",
+        runtimeMode: this.state.runtime,
+        callerId: invocation.callerId,
+        callerType: invocation.callerType,
+        triggerMessageId: invocation.messageId,
+        outputMessageId: null,
+        inputPreview: invocation.text.trim().slice(0, 500),
+        error: null,
+        metadata: null,
+        startedAt: null,
+        completedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return id;
+    } catch (e) {
+      console.error("[raltic-agent] create agent run failed:", e);
+      return undefined;
+    }
+  }
+
+  private async resolveTaskIdForMessage(
+    db: ReturnType<typeof drizzle>,
+    channelId: string,
+    messageId: string,
+  ): Promise<string | null> {
+    const row = await db.select({ id: tasksTable.id })
+      .from(tasksTable)
+      .where(and(eq(tasksTable.channelId, channelId), eq(tasksTable.messageId, messageId)))
+      .limit(1);
+    return row[0]?.id ?? null;
+  }
+
+  private async markRunRunning(runId: string | undefined): Promise<void> {
+    if (!runId) return;
+    const now = new Date();
+    await this.updateRun(runId, { status: "running", startedAt: now, updatedAt: now });
+  }
+
+  private async markRunCompleted(runId: string | undefined, outputMessageId?: string): Promise<void> {
+    if (!runId) return;
+    const now = new Date();
+    await this.updateRun(runId, {
+      status: "completed",
+      outputMessageId: outputMessageId ?? null,
+      error: null,
+      completedAt: now,
+      updatedAt: now,
+    });
+  }
+
+  private async markRunFailed(runId: string | undefined, error: string, outputMessageId?: string): Promise<void> {
+    if (!runId) return;
+    const now = new Date();
+    await this.updateRun(runId, {
+      status: "failed",
+      outputMessageId: outputMessageId ?? null,
+      error: sanitizeUserVisibleError(error),
+      completedAt: now,
+      updatedAt: now,
+    });
+  }
+
+  private async updateRun(runId: string, patch: Partial<typeof agentRuns.$inferInsert>): Promise<void> {
+    try {
+      const db = drizzle(this.env.DB);
+      await db.update(agentRuns).set(patch).where(eq(agentRuns.id, runId));
+    } catch (e) {
+      console.error(`[raltic-agent] update run failed run=${runId}:`, e instanceof Error ? e.message : String(e));
+    }
   }
 
   /**

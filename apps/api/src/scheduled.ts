@@ -20,8 +20,8 @@
  */
 import * as Sentry from "@sentry/cloudflare";
 import { drizzle } from "drizzle-orm/d1";
-import { asc, inArray, isNull } from "drizzle-orm";
-import { messages as messagesTable } from "@raltic/db";
+import { and, asc, inArray, isNull, lt } from "drizzle-orm";
+import { agentRuns, messages as messagesTable } from "@raltic/db";
 import type { Env } from "./lib/env";
 
 const BACKUP_BUCKET = "raltic-backups"; // matches wrangler.jsonc R2 binding name
@@ -121,6 +121,26 @@ export async function scheduled(
           try { await Sentry.flush(2000); } catch { /* best-effort */ }
         }),
       );
+      // Same cadence — repair active agent runs that stopped receiving
+      // lifecycle updates. This is deliberately separate from vectorize
+      // so indexing failures cannot block operational run hygiene.
+      ctx.waitUntil(
+        runAgentRunSweeper(env).catch(async (err) => {
+          Sentry.captureException(err, {
+            tags: { source: "scheduled", cron: event.cron, job: "agent-run-sweeper" },
+          });
+          // eslint-disable-next-line no-console
+          console.error(JSON.stringify({
+            ts: new Date().toISOString(),
+            level: "error",
+            msg: "scheduled.job_failed",
+            cron: event.cron,
+            job: "agent-run-sweeper",
+            error: err instanceof Error ? { name: err.name, message: err.message } : String(err),
+          }));
+          try { await Sentry.flush(2000); } catch { /* best-effort */ }
+        }),
+      );
       break;
     default:
       // eslint-disable-next-line no-console
@@ -131,6 +151,74 @@ export async function scheduled(
         cron: event.cron,
       }));
   }
+}
+
+// ─── Agent run stale-state sweeper ──────────────────────────────────────────
+
+const STALE_AGENT_RUN_MS = 24 * 60 * 60 * 1000;
+const STALE_AGENT_RUN_BATCH = 200;
+const ACTIVE_AGENT_RUN_STATUSES = ["queued", "dispatched", "running", "waiting_input"] as const;
+
+export async function runAgentRunSweeper(
+  env: Env,
+  opts?: { now?: Date; staleAfterMs?: number },
+): Promise<{ failed: number; cutoff: string }> {
+  const now = opts?.now ?? new Date();
+  const staleAfterMs = opts?.staleAfterMs ?? STALE_AGENT_RUN_MS;
+  const staleAfterHours = Math.round(staleAfterMs / (60 * 60 * 1000));
+  const cutoff = new Date(now.getTime() - staleAfterMs);
+  const drizzleDb = drizzle(env.DB);
+
+  const stale = await drizzleDb
+    .select({
+      id: agentRuns.id,
+      status: agentRuns.status,
+      updatedAt: agentRuns.updatedAt,
+    })
+    .from(agentRuns)
+    .where(and(
+      inArray(agentRuns.status, ACTIVE_AGENT_RUN_STATUSES),
+      lt(agentRuns.updatedAt, cutoff),
+    ))
+    .orderBy(asc(agentRuns.updatedAt))
+    .limit(STALE_AGENT_RUN_BATCH);
+
+  if (stale.length === 0) {
+    // eslint-disable-next-line no-console
+    console.log(JSON.stringify({
+      ts: now.toISOString(),
+      level: "info",
+      msg: "agent_run_sweeper.done",
+      failed: 0,
+      cutoff: cutoff.toISOString(),
+    }));
+    return { failed: 0, cutoff: cutoff.toISOString() };
+  }
+
+  await drizzleDb
+    .update(agentRuns)
+    .set({
+      status: "failed",
+      error: `Marked failed by scheduled sweeper after ${staleAfterHours}h without a lifecycle update.`,
+      completedAt: now,
+      updatedAt: now,
+    })
+    .where(inArray(agentRuns.id, stale.map((r) => r.id)));
+
+  // eslint-disable-next-line no-console
+  console.log(JSON.stringify({
+    ts: now.toISOString(),
+    level: "info",
+    msg: "agent_run_sweeper.done",
+    failed: stale.length,
+    cutoff: cutoff.toISOString(),
+    oldest_updated_at: stale[0]?.updatedAt.toISOString(),
+    statuses: ACTIVE_AGENT_RUN_STATUSES.reduce<Record<string, number>>((acc, status) => {
+      acc[status] = stale.filter((r) => r.status === status).length;
+      return acc;
+    }, {}),
+  }));
+  return { failed: stale.length, cutoff: cutoff.toISOString() };
 }
 
 async function runDailyBackup(env: Env): Promise<void> {

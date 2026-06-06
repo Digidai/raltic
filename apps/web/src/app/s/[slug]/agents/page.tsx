@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { Cpu, MessageSquare, Pencil, Plus, ArrowRight } from "lucide-react";
-import { api, type Agent } from "@/lib/api";
+import { Activity, Cpu, MessageSquare, Pencil, Plus, ArrowRight } from "lucide-react";
+import { api, type Agent, type AgentRun } from "@/lib/api";
 import { notifyThrown } from "@/lib/notify";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { CreateAgentDialog } from "@/components/create-agent-dialog";
@@ -38,23 +38,49 @@ export default function AgentsIndexPage() {
   const activities = useAgentActivities();
   const [agents, setAgents] = useState<Agent[] | null>(null);
   const [serverId, setServerId] = useState<string | null>(null);
+  const [workByAgentId, setWorkByAgentId] = useState<Record<string, AgentWorkSummary> | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [workError, setWorkError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [opening, setOpening] = useState<string | null>(null);
+  const reloadRequestId = useRef(0);
 
   const reload = useCallback(async () => {
+    const requestId = ++reloadRequestId.current;
+    const live = () => reloadRequestId.current === requestId;
     try {
+      setLoadError(null);
+      setWorkError(null);
+      setAgents(null);
+      setServerId(null);
+      setWorkByAgentId(null);
       // Fetch in parallel: workspace metadata gives us the serverId for
       // create-dialog + DM open; agents list is the page's main payload.
       const [{ server }, { agents: all }] = await Promise.all([
         api.getServerBySlug(slug),
         api.listAgents(),
       ]);
+      if (!live()) return;
       setServerId(server.id);
       // listAgents returns cross-workspace; scope to current.
-      setAgents(all.filter((a) => a.serverId === server.id));
+      const workspaceAgents = all.filter((a) => a.serverId === server.id);
+      setAgents(workspaceAgents);
+      try {
+        const { runs } = await api.listAgentRuns({ serverId: server.id, limit: 200 });
+        if (!live()) return;
+        setWorkByAgentId(summarizeAgentRuns(runs));
+      } catch (e) {
+        if (!live()) return;
+        notifyThrown("Couldn't load agent work log", e);
+        setWorkError(e instanceof Error ? e.message : String(e));
+        setWorkByAgentId({});
+      }
     } catch (e) {
+      if (!live()) return;
       notifyThrown("Couldn't load agents", e);
+      setLoadError(e instanceof Error ? e.message : String(e));
       setAgents([]);
+      setWorkByAgentId({});
     }
   }, [slug]);
   useEffect(() => { reload(); }, [reload]);
@@ -100,7 +126,12 @@ export default function AgentsIndexPage() {
           {agents === null && (
             <p className="text-sm text-muted-foreground">Loading…</p>
           )}
-          {agents !== null && agents.length === 0 && (
+          {loadError && (
+            <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger-text">
+              Couldn&apos;t load agents: {loadError}
+            </div>
+          )}
+          {!loadError && agents !== null && agents.length === 0 && (
             <WorkspaceEmptyState
               icon={<Cpu className="h-8 w-8" />}
               tone="success"
@@ -118,10 +149,11 @@ export default function AgentsIndexPage() {
               )}
             />
           )}
-          {agents !== null && agents.length > 0 && (
+          {!loadError && agents !== null && agents.length > 0 && (
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {agents.map((a) => {
                 const act = activities[a.id];
+                const work = workByAgentId === null ? undefined : workByAgentId[a.id] ?? null;
                 return (
                   <Card render={<li />} key={a.id} className="border-border/60 bg-surface/80 !shadow-none transition-colors hover:border-accent/25">
                     <CardPanel className="p-3">
@@ -131,13 +163,13 @@ export default function AgentsIndexPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <Link
                             href={`/s/${slug}/agents/${a.id}`}
-                            className="truncate font-medium hover:underline"
+                            className="min-w-0 max-w-full truncate font-medium hover:underline"
                           >
                             {a.displayName}
                           </Link>
                           <RuntimeChip runtime={a.runtime} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="min-w-0 max-w-full truncate text-[11px] text-muted-foreground" title={`@${a.name} · ${a.model}`}>
                           <span className="font-mono">@{a.name}</span> · {a.model}
                         </p>
                         {a.description && (
@@ -147,6 +179,13 @@ export default function AgentsIndexPage() {
                           <StatusDot status={act?.status ?? (a.status === "online" ? "idle" : "offline")} />
                           {act?.label && <span className="truncate text-muted-foreground">{act.label}</span>}
                         </div>
+                        <AgentWorkSnapshot
+                          slug={slug}
+                          agentId={a.id}
+                          summary={work}
+                          loading={work === undefined}
+                          error={workError}
+                        />
                       </div>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center justify-end gap-1">
@@ -161,7 +200,7 @@ export default function AgentsIndexPage() {
                       <Button
                         type="button"
                         onClick={() => handleMessage(a)}
-                        disabled={opening === a.id}
+                        disabled={opening !== null}
                         variant="outline"
                         size="xs"
                         className="text-xs"
@@ -189,17 +228,133 @@ export default function AgentsIndexPage() {
   );
 }
 
+type AgentWorkSummary = {
+  latestRun: AgentRun;
+  active: number;
+  completed: number;
+  failed: number;
+  total: number;
+};
+
+const RUN_STATUS_META: Record<AgentRun["status"], { label: string; color: "accent" | "danger" | "success" | "warning" | "default" }> = {
+  queued: { label: "Queued", color: "default" },
+  dispatched: { label: "Dispatched", color: "accent" },
+  running: { label: "Running", color: "accent" },
+  waiting_input: { label: "Waiting", color: "warning" },
+  completed: { label: "Completed", color: "success" },
+  failed: { label: "Failed", color: "danger" },
+  cancelled: { label: "Cancelled", color: "default" },
+};
+
+function summarizeAgentRuns(runs: AgentRun[]): Record<string, AgentWorkSummary> {
+  const out: Record<string, AgentWorkSummary> = {};
+  for (const run of runs) {
+    const current = out[run.agentId];
+    const next: AgentWorkSummary = current ?? {
+      latestRun: run,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      total: 0,
+    };
+    next.total += 1;
+    if (isActiveRun(run)) next.active += 1;
+    if (run.status === "completed") next.completed += 1;
+    if (run.status === "failed") next.failed += 1;
+    if (new Date(run.updatedAt).getTime() > new Date(next.latestRun.updatedAt).getTime()) {
+      next.latestRun = run;
+    }
+    out[run.agentId] = next;
+  }
+  return out;
+}
+
+function isActiveRun(run: AgentRun): boolean {
+  return run.status === "queued" || run.status === "dispatched" || run.status === "running" || run.status === "waiting_input";
+}
+
+function formatRelativeTime(iso: string): string {
+  const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) return "";
+  const delta = Date.now() - ts;
+  if (delta < 60_000) return "Just now";
+  if (delta < 60 * 60_000) return `${Math.max(1, Math.floor(delta / 60_000))}m ago`;
+  if (delta < 24 * 60 * 60_000) return `${Math.floor(delta / (60 * 60_000))}h ago`;
+  return `${Math.floor(delta / (24 * 60 * 60_000))}d ago`;
+}
+
+function AgentWorkSnapshot({
+  slug,
+  agentId,
+  summary,
+  loading,
+  error,
+}: {
+  slug: string;
+  agentId: string;
+  summary: AgentWorkSummary | null | undefined;
+  loading: boolean;
+  error: string | null;
+}) {
+  if (loading) {
+    return <div className="mt-2 h-6 w-44 animate-pulse rounded-md bg-muted/60" aria-hidden="true" />;
+  }
+  if (error) {
+    return (
+      <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-danger-text">
+        <Activity className="h-3 w-3 shrink-0" aria-hidden="true" />
+        <span className="min-w-0 truncate" title={error}>Work log unavailable</span>
+      </div>
+    );
+  }
+  if (!summary) {
+    return (
+      <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Activity className="h-3 w-3 shrink-0" aria-hidden="true" />
+        <span>No work in latest sample</span>
+      </div>
+    );
+  }
+  const latest = summary.latestRun;
+  const meta = RUN_STATUS_META[latest.status];
+  return (
+    <Link
+      href={`/s/${encodeURIComponent(slug)}/agents/${encodeURIComponent(agentId)}?tab=runs&runId=${encodeURIComponent(latest.id)}`}
+      className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5 rounded-md border border-border/60 bg-background/60 px-2 py-1.5 text-[11px] transition-colors hover:border-accent/30 hover:bg-background"
+    >
+      <Activity className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <span className="min-w-0 truncate text-muted-foreground">Work log</span>
+      <Chip size="sm" variant="soft" color={meta.color} className="h-5 px-1.5 text-[10px]">
+        {meta.label}
+      </Chip>
+      <span className="min-w-0 truncate text-muted-foreground">
+        {formatRelativeTime(latest.updatedAt)}
+      </span>
+      {summary.active > 0 && (
+        <Chip size="sm" variant="soft" color="accent" className="h-5 px-1.5 text-[10px]">
+          {summary.active} active
+        </Chip>
+      )}
+      {summary.failed > 0 && (
+        <Chip size="sm" variant="soft" color="danger" className="h-5 px-1.5 text-[10px]">
+          {summary.failed} failed
+        </Chip>
+      )}
+    </Link>
+  );
+}
+
 function RuntimeChip({ runtime }: { runtime: string }) {
   // Accept `string` (not RuntimeId) because agents.runtime is plain TEXT
   // post-S2 and the server may pass through legacy "gemini"/"copilot"
   // values from pre-removal rows. Fall through to a neutral zinc tone
   // for unknown runtimes — never throw, never white-screen. Detected
   // by review (backcompat H1).
-  const tone: Record<string, "accent" | "warning" | "default" | "danger"> = {
+  const tone: Record<string, "accent" | "warning" | "default"> = {
     claude:   "accent",
     codex:    "warning",
     openclaw: "default",
-    hermes:   "danger",
+    hermes:   "default",
   };
   return (
     <Chip size="sm" variant="soft" color={tone[runtime] ?? "default"} className="text-[9px] uppercase tracking-wider">

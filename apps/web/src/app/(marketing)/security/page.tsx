@@ -159,23 +159,24 @@ export default function SecurityPage() {
             </CardPanel>
           </Card>
 
-          <Card render={<section className="raltic-marketing-cta-section border-t px-6 py-10 sm:py-12" />} className="w-full rounded-none border-0 shadow-none">
-            <CardPanel className="mx-auto max-w-3xl px-0 py-0">
-              <div className="raltic-marketing-cta-panel px-6 py-8 text-center sm:px-10 sm:py-10">
-              <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-white sm:text-4xl">
-                Try Raltic with your real code.
-              </h2>
-              <p className="mt-4 text-zinc-400">Local-first by default. Your code never crosses our servers.</p>
-              <div className="mt-7 flex justify-center">
-                <MarketingButton href="/signup">
-                  Start free <ArrowRight className="h-4 w-4" />
-                </MarketingButton>
-              </div>
-              </div>
-            </CardPanel>
-          </Card>
       </main>
-      <MarketingFooter />
+      <MarketingFooter
+        lead={
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
+              Try Raltic with your real code.
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-[color-mix(in_srgb,var(--snow)_66%,transparent)]">
+              Local-first by default. Your code never crosses our servers.
+            </p>
+            <div className="mt-7 flex justify-center">
+              <MarketingButton href="/signup">
+                Start free <ArrowRight className="h-4 w-4" />
+              </MarketingButton>
+            </div>
+          </div>
+        }
+      />
     </>
   );
 }

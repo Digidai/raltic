@@ -150,7 +150,7 @@ class ClaudeSession implements RuntimeSession {
           : err.code === "EACCES" || err.code === "EPERM"
           ? `claude binary not executable (${err.code}): ${err.message}`
           : `claude spawn failed: ${err.message}`;
-      this._emit({ kind: "error", message, reason });
+      this._emit({ kind: "error", message, reason, terminal: true });
       // Synthesize an exit so AgentManager's queue can drain instead of
       // dispatch waiting forever for a process that never started.
       for (const cb of this.listeners.exit) {

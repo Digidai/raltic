@@ -328,6 +328,19 @@ serversRoutes.get("/api/v1/servers/by-slug/:slug", requireAuth, async (c) => {
     .where(inArray(messages.channelId, channelIds))
     .groupBy(messages.channelId);
   const maxSeqByChannel = new Map(seqRows.map(r => [r.channelId, Number(r.maxSeq ?? 0)]));
+  const agentMemberRows = channelIds.length === 0 ? [] : await db
+    .select({ channelId: channelMembers.channelId, agentId: channelMembers.memberId })
+    .from(channelMembers)
+    .where(and(
+      inArray(channelMembers.channelId, channelIds),
+      eq(channelMembers.memberType, "agent"),
+    ));
+  const agentIdsByChannel = new Map<string, string[]>();
+  for (const row of agentMemberRows) {
+    const ids = agentIdsByChannel.get(row.channelId) ?? [];
+    ids.push(row.agentId);
+    agentIdsByChannel.set(row.channelId, ids);
+  }
   // For DM channels: resolve the OTHER party so the client can render
   // "Olivia" instead of channel.name (which is just a stable identifier
   // — for human↔human DMs it's the peerId hex prefix, never a real name).
@@ -423,6 +436,9 @@ serversRoutes.get("/api/v1/servers/by-slug/:slug", requireAuth, async (c) => {
       // Phase E — null = not starred. Sidebar sorts starred above
       // non-starred within the same section + shows a ⭐ marker.
       starredAt: starred instanceof Date ? starred.getTime() : (starred ?? null),
+      // Used by task quick-add to offer only agents that can actually
+      // receive work in this channel. Backend still validates membership.
+      agentIds: agentIdsByChannel.get(c.id) ?? [],
     };
   });
 

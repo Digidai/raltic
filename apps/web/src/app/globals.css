@@ -983,21 +983,31 @@ textarea:-webkit-autofill {
   color: currentColor;
   stroke: currentColor;
 }
-.raltic-marketing-cta-section {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--eclipse) 92%, var(--accent) 8%) 0%, var(--eclipse) 100%);
-  border-color: color-mix(in srgb, var(--snow) 10%, transparent);
-}
-.raltic-marketing-cta-panel {
+.raltic-marketing-footer-surface {
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--snow) 12%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--snow) 10%, transparent);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 16%, var(--eclipse) 84%) 0%, color-mix(in srgb, var(--eclipse) 90%, var(--accent) 10%) 100%);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--snow) 10%, transparent),
-    0 24px 80px -48px color-mix(in srgb, var(--accent) 40%, transparent);
+    linear-gradient(180deg, color-mix(in srgb, var(--eclipse) 92%, var(--accent) 8%) 0%, color-mix(in srgb, var(--eclipse) 96%, var(--surface) 4%) 46%, var(--eclipse) 100%);
+}
+.raltic-marketing-footer-surface [data-raltic-footer-lead] {
+  border-bottom: 1px solid color-mix(in srgb, var(--snow) 10%, transparent);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.raltic-marketing-footer-grid,
+.raltic-marketing-footer-base {
+  border-color: color-mix(in srgb, var(--snow) 10%, transparent);
+}
+.raltic-marketing-footer-base {
+  border-top: 1px solid color-mix(in srgb, var(--snow) 10%, transparent);
+}
+.raltic-marketing-footer-link {
+  color: color-mix(in srgb, var(--snow) 68%, transparent);
+  text-underline-offset: 4px;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+.raltic-marketing-footer-link:hover {
+  color: var(--snow);
 }
 
 .prose-message mark {

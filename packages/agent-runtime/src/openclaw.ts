@@ -396,6 +396,7 @@ class OpenClawSession implements RuntimeSession {
               kind: "error",
               message: stderrBuf.trim().slice(0, 500),
               reason: classifyError(stderrBuf),
+              terminal: true,
             }); } catch (e) { console.error("[openclaw] activity listener threw:", e); }
           }
         }

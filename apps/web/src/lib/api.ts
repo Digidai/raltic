@@ -10,6 +10,8 @@ import type {
   CreateChannelRequest,
   CreateMachineKeyRequest,
   CreateMachineKeyResponse,
+  AgentRunRecord,
+  ListAgentRunsQuery,
   SendMessageRequest,
   MessageRow,
 } from "@raltic/protocol";
@@ -216,6 +218,8 @@ export interface Channel {
   archivedBy?: string | null;
   /** Phase E — per-user star/pin. Sidebar sorts starred above peers. */
   starredAt?: number | null;
+  /** Agent member ids in this channel. Present on /servers/by-slug. */
+  agentIds?: string[];
   unread?: number; maxSeq?: number; lastReadSeq?: number;
   /** Per-user mute timestamp (Phase A). Null = not muted. Sidebar
    *  uses this to suppress unread badge + bold weight for muted channels. */
@@ -266,6 +270,24 @@ export interface Agent {
    *  when the agent is created. May be null for agents created before the
    *  auto-DM feature shipped (legacy onboarding rows). */
   dmChannelId?: string | null;
+}
+export type AgentRun = AgentRunRecord;
+export type TaskLatestRun = Pick<
+  AgentRunRecord,
+  "id" | "agentId" | "status" | "source" | "runtimeMode" | "error" | "createdAt" | "updatedAt" | "completedAt"
+>;
+export interface TaskRow {
+  id: string;
+  channelId: string;
+  messageId: string | null;
+  taskNumber: number;
+  title?: string;
+  status: "todo" | "in_progress" | "in_review" | "done";
+  assigneeId: string | null;
+  assigneeType: "human" | "agent" | null;
+  createdAt: number;
+  updatedAt: number;
+  latestRun: TaskLatestRun | null;
 }
 
 /** Snapshot returned per-machine inside listMachineKeys() — populated
@@ -520,6 +542,24 @@ export const api = {
       viewerCanAddMembers: boolean;
     }>(`/api/v1/channels/${encodeURIComponent(id)}`),
   listAgents: () => call<{ agents: Agent[] }>("/api/v1/agents"),
+  listAgentRuns: (opts?: Partial<Pick<
+    ListAgentRunsQuery,
+    "serverId" | "channelId" | "agentId" | "taskId" | "status" | "source" | "limit"
+  >>) => {
+    const q = new URLSearchParams();
+    if (opts?.serverId) q.set("serverId", opts.serverId);
+    if (opts?.channelId) q.set("channelId", opts.channelId);
+    if (opts?.agentId) q.set("agentId", opts.agentId);
+    if (opts?.taskId) q.set("taskId", opts.taskId);
+    if (opts?.status) q.set("status", opts.status);
+    if (opts?.source) q.set("source", opts.source);
+    if (opts?.limit != null) q.set("limit", String(opts.limit));
+    const query = q.toString();
+    const suffix = query ? `?${query}` : "";
+    return call<{ runs: AgentRun[] }>(`/api/v1/agent-runs${suffix}`);
+  },
+  getAgentRun: (id: string) =>
+    call<{ run: AgentRun }>(`/api/v1/agent-runs/${encodeURIComponent(id)}`),
   mintWsToken: (channelId: string) =>
     call<{ token: string; wsUrl: string }>("/api/v1/ws/token", {
       method: "POST", body: JSON.stringify({ channelId }),
@@ -608,13 +648,15 @@ export const api = {
     call<{ ok: true }>(`/api/v1/machine-keys/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   // ---- tasks ----
-  listTasks: (opts?: { serverId?: string; channelId?: string; status?: string; assigneeId?: string }) => {
+  listTasks: (opts?: { serverId?: string; channelId?: string; status?: string; assigneeId?: string; taskId?: string; limit?: number }) => {
     const q = new URLSearchParams();
     if (opts?.serverId) q.set("serverId", opts.serverId);
     if (opts?.channelId) q.set("channelId", opts.channelId);
     if (opts?.status) q.set("status", opts.status);
     if (opts?.assigneeId) q.set("assigneeId", opts.assigneeId);
-    return call<{ tasks: Array<{ id: string; channelId: string; messageId: string | null; taskNumber: number; title?: string; status: "todo" | "in_progress" | "in_review" | "done"; assigneeId: string | null; assigneeType: "human" | "agent" | null; createdAt: number; updatedAt: number }> }>(`/api/v1/tasks?${q}`);
+    if (opts?.taskId) q.set("taskId", opts.taskId);
+    if (opts?.limit != null) q.set("limit", String(opts.limit));
+    return call<{ tasks: TaskRow[] }>(`/api/v1/tasks?${q}`);
   },
 
   createTask: (body: { channelId: string; title: string; assigneeId?: string; assigneeType?: "human" | "agent" }) =>

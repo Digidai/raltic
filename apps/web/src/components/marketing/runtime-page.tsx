@@ -13,19 +13,19 @@ const ACCENT_TEXT: Record<RuntimeDoc["accent"], string> = {
   cyan: "text-[var(--accent)]",
   amber: "text-[var(--warning)]",
   violet: "text-[var(--default-soft-foreground)]",
-  rose: "text-[var(--danger)]",
+  neutral: "text-[color-mix(in_srgb,var(--snow)_88%,var(--accent)_12%)]",
 };
 const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
   cyan: "border-accent/30 bg-[var(--accent-soft)] text-[var(--accent)]",
   amber: "border-warning/30 bg-[var(--warning-soft)] text-[var(--warning)]",
   violet: "border-border bg-[var(--default-soft)] text-[var(--default-soft-foreground)]",
-  rose: "border-[color:var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]",
+  neutral: "border-[color-mix(in_srgb,var(--snow)_14%,transparent)] bg-[color-mix(in_srgb,var(--surface)_7%,transparent)] text-[color-mix(in_srgb,var(--snow)_78%,transparent)]",
 };
 const ACCENT_GLOW: Record<RuntimeDoc["accent"], string> = {
   cyan: "color-mix(in srgb, var(--accent) 16%, transparent)",
   amber: "color-mix(in srgb, var(--warning) 16%, transparent)",
   violet: "color-mix(in srgb, var(--default) 12%, transparent)",
-  rose: "color-mix(in srgb, var(--danger) 16%, transparent)",
+  neutral: "color-mix(in srgb, var(--accent) 7%, transparent)",
 };
 
 const DARK_SECTION = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] bg-[var(--eclipse)] text-[var(--snow)]";
@@ -35,6 +35,8 @@ const DARK_SURFACE = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] b
 const DARK_SURFACE_SOFT = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] bg-[color-mix(in_srgb,var(--white)_5%,transparent)]";
 const LIGHT_SECTION = "bg-[var(--white)] text-[var(--eclipse)]";
 const LIGHT_SURFACE = "border-border bg-[var(--surface-secondary)]";
+const LIGHT_MUTED = "text-[color-mix(in_srgb,var(--eclipse)_64%,var(--white)_36%)]";
+const LIGHT_BODY = "text-[var(--eclipse)]";
 
 /**
  * Shared template for /runtimes/[id]. Renders the per-runtime hero,
@@ -145,12 +147,12 @@ function InstallStrip({ doc }: { doc: RuntimeDoc }) {
         <div className="mx-auto mt-10 max-w-3xl">
           <Card className={`rounded-xl ${LIGHT_SURFACE}`}>
             <CardPanel className="flex items-center gap-3 px-4 py-3">
-              <Terminal className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <Terminal className={`h-4 w-4 shrink-0 ${LIGHT_MUTED}`} aria-hidden />
               <code className="raltic-inline-token flex-1 truncate">{doc.installCmd}</code>
             </CardPanel>
           </Card>
-          <p className="mt-4 text-center text-[12px] text-muted-foreground">
-            Then sign up and pick <span className="font-medium text-foreground">{doc.shortName}</span> when creating your first agent.
+          <p className={`mt-4 text-center text-[12px] ${LIGHT_MUTED}`}>
+            Then sign up and pick <span className={`font-medium ${LIGHT_BODY}`}>{doc.shortName}</span> when creating your first agent.
           </p>
         </div>
       </CardPanel>

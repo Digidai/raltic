@@ -349,6 +349,41 @@ export const tasks = sqliteTable("tasks", {
   index("ix_tasks_status").on(t.channelId, t.status),
 ]);
 
+export const agentRuns = sqliteTable("agent_runs", {
+  id: text("id").primaryKey(),
+  serverId: text("server_id").notNull().references(() => servers.id, { onDelete: "cascade" }),
+  channelId: text("channel_id").notNull().references(() => channels.id, { onDelete: "cascade" }),
+  agentId: text("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+  taskId: text("task_id").references(() => tasks.id, { onDelete: "set null" }),
+  source: text("source", {
+    enum: ["channel_mention", "channel_message", "dm", "scheduled", "agent_to_agent", "manual"],
+  }).notNull(),
+  status: text("status", {
+    enum: ["queued", "dispatched", "running", "waiting_input", "completed", "failed", "cancelled"],
+  }).notNull().default("queued"),
+  runtimeMode: text("runtime_mode").notNull(),
+  callerId: text("caller_id"),
+  callerType: text("caller_type", { enum: ["human", "agent", "system"] }),
+  // ChatRoom persists messages asynchronously through its DO write buffer.
+  // These ids are provenance pointers, not hard FKs.
+  triggerMessageId: text("trigger_message_id"),
+  outputMessageId: text("output_message_id"),
+  inputPreview: text("input_preview"),
+  error: text("error"),
+  metadata: text("metadata", { mode: "json" }),
+  startedAt: integer("started_at", { mode: "timestamp_ms" }),
+  completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
+}, (t) => [
+  index("ix_agent_runs_server_status_created").on(t.serverId, t.status, desc(t.createdAt)),
+  index("ix_agent_runs_channel_created").on(t.channelId, desc(t.createdAt)),
+  index("ix_agent_runs_agent_status_created").on(t.agentId, t.status, desc(t.createdAt)),
+  index("ix_agent_runs_trigger_message").on(t.triggerMessageId),
+  index("ix_agent_runs_task_created").on(t.taskId, desc(t.createdAt)),
+  index("ix_agent_runs_status_updated").on(t.status, t.updatedAt),
+]);
+
 export const invites = sqliteTable("invites", {
   id: text("id").primaryKey(),                                    // public token in URL
   serverId: text("server_id").notNull().references(() => servers.id, { onDelete: "cascade" }),
@@ -568,6 +603,7 @@ export type Channel = typeof channels.$inferSelect;
 export type ChannelMember = typeof channelMembers.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
+export type AgentRun = typeof agentRuns.$inferSelect;
 export type MachineKey = typeof machineKeys.$inferSelect;
 export type WaitlistSignup = typeof waitlistSignups.$inferSelect;
 export type NewsletterSignup = typeof newsletterSignups.$inferSelect;

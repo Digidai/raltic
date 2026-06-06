@@ -298,7 +298,7 @@ class CodexSession implements RuntimeSession {
       // queue drains and the user sees the failure.
       const err = ev.error as { message?: string } | undefined;
       const msg = err?.message ?? String(ev.message ?? "turn failed");
-      this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg) });
+      this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg), terminal: true });
       return this._emit({ kind: "turn_complete", sessionId: this.threadId ?? "" });
     }
     if (ev.type === "error" || ev.type === "stream.error") {
@@ -315,7 +315,7 @@ class CodexSession implements RuntimeSession {
 
   private _classifyError(e: unknown) {
     const msg = String((e as Error)?.message ?? e);
-    this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg) });
+    this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg), terminal: true });
     // After an error mid-turn, also emit turn_complete so AgentManager's
     // queue drains and the agent isn't stuck "busy" forever.
     this._emit({ kind: "turn_complete", sessionId: this.threadId ?? "" });

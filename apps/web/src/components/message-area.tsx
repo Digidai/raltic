@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Chip } from "@/components/heroui-pro/chip";
 import { Card } from "@/components/heroui-pro/card";
@@ -18,7 +19,7 @@ import remarkGfm from "remark-gfm";
 import { api, type Channel, type ChannelMember, type Agent, ApiError } from "@/lib/api";
 import { notifyThrown } from "@/lib/notify";
 import { useChannelSocket } from "@/hooks/use-channel-socket";
-import { useGateway, useWorkspacePresence } from "@/hooks/use-agent-activity";
+import { useAgentActivities, useGateway, useWorkspacePresence, type AgentActivity } from "@/hooks/use-agent-activity";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import type { MessageRow } from "@raltic/protocol";
@@ -43,6 +44,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
   const params = useParams<{ slug?: string }>();
   const serverSlug = params?.slug ?? "";
   const { bumpRead, seedChannel } = useGateway();
+  const agentActivities = useAgentActivities();
 
   const [channel, setChannel] = useState<Channel | null>(null);
   // Cached viewer-can-manage flag from api.getChannel — drives the
@@ -474,6 +476,23 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     },
   });
 
+  const channelAgents = useMemo(() => {
+    if (channel?.type !== "public" && channel?.type !== "private") return [];
+    const agentMemberIds = new Set(
+      members
+        .filter((m) => m.memberType === "agent")
+        .map((m) => m.memberId),
+    );
+    return agents.filter((agent) => agentMemberIds.has(agent.id));
+  }, [agents, channel?.type, members]);
+
+  const composerAgentLabel = useMemo(() => {
+    if (dmAgent) return dmAgent.displayName;
+    if (channelAgents.length === 1) return channelAgents[0]?.displayName ?? "Agent in room";
+    if (channelAgents.length > 1) return `${channelAgents.length} agents in room`;
+    return "Channel";
+  }, [channelAgents, dmAgent]);
+
   const bringComposerIntoView = useCallback(() => {
     requestAnimationFrame(() => {
       const footer = document.querySelector<HTMLElement>("[data-testid='message-composer-footer']");
@@ -744,6 +763,11 @@ export function MessageArea({ channelId }: MessageAreaProps) {
             </div>
           </Navbar.Brand>
           <Navbar.Content className="ml-auto min-w-fit shrink-0 justify-end gap-1.5 sm:gap-2">
+            <ChannelAgentStrip
+              agents={channelAgents}
+              activities={agentActivities}
+              serverSlug={serverSlug}
+            />
             <PresencePill
               channel={channel}
               channelPeer={channelPeer}
@@ -938,7 +962,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
                   aria-label="Conversation agent"
                   className="inline-flex max-w-[150px] items-center gap-1.5 rounded-full bg-default px-3 py-1.5 text-xs font-medium text-default-foreground sm:max-w-[220px]"
                 >
-                  <span className="truncate">{dmAgent ? dmAgent.displayName : "Raltic Agent"}</span>
+                  <span className="truncate">{composerAgentLabel}</span>
                 </span>
               </div>
               <Input
@@ -1268,6 +1292,72 @@ function safeUrl(url: string): string {
   if (trimmed.startsWith("mailto:") || trimmed.startsWith("tel:")) return url;
   if (trimmed.startsWith("/") || trimmed.startsWith("#") || trimmed.startsWith("?")) return url;
   return "#";
+}
+
+function ChannelAgentStrip({
+  agents,
+  activities,
+  serverSlug,
+}: {
+  agents: Agent[];
+  activities: Record<string, AgentActivity>;
+  serverSlug: string;
+}) {
+  if (agents.length === 0 || !serverSlug) return null;
+  const visibleAgents = agents.slice(0, 3);
+  const overflow = agents.length - visibleAgents.length;
+  return (
+    <>
+      <div
+        className="hidden max-w-[300px] min-w-0 items-center gap-1 rounded-full border border-border/70 bg-surface/80 px-1.5 py-1 sm:flex"
+        aria-label="Agents in this channel"
+      >
+        {visibleAgents.map((agent) => (
+          <Link
+            key={agent.id}
+            href={`/s/${encodeURIComponent(serverSlug)}/agents/${encodeURIComponent(agent.id)}`}
+            className="group flex min-w-0 items-center gap-1 rounded-full px-1 py-0.5 transition-colors hover:bg-background"
+            title={agent.displayName}
+            aria-label={`Open ${agent.displayName} profile`}
+          >
+            <span className="relative shrink-0">
+              <GeneratedAvatar id={agent.id} name={agent.displayName} seed={agent.avatarSeed} size="xs" />
+              <span
+                className={cn(
+                  "absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-background",
+                  agentActivityDot(activities[agent.id]?.status ?? (agent.status === "online" ? "idle" : "offline")),
+                )}
+                aria-hidden="true"
+              />
+            </span>
+            <span className="hidden max-w-20 truncate text-[11px] text-muted-foreground group-hover:text-foreground md:block">
+              {agent.displayName}
+            </span>
+          </Link>
+        ))}
+        {overflow > 0 && (
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            +{overflow}
+          </span>
+        )}
+      </div>
+      <Link
+        href={`/s/${encodeURIComponent(serverSlug)}/agents`}
+        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-surface/80 px-2 py-1 text-[11px] text-muted-foreground sm:hidden"
+        aria-label={`${agents.length} agents in this channel`}
+      >
+        <AtSign className="h-3 w-3" aria-hidden="true" />
+        <span>{agents.length} agents</span>
+      </Link>
+    </>
+  );
+}
+
+function agentActivityDot(status: AgentActivity["status"] | "offline"): string {
+  if (status === "thinking" || status === "working") return "bg-[var(--accent)] animate-pulse";
+  if (status === "error") return "bg-[var(--danger)]";
+  if (status === "idle") return "bg-[var(--success)]";
+  return "bg-muted-foreground/70";
 }
 
 /**

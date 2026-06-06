@@ -7,7 +7,8 @@
  */
 import { drizzle } from "drizzle-orm/d1";
 import { eq, inArray, and } from "drizzle-orm";
-import { agents, channelMembers } from "@raltic/db";
+import { agents, agentRuns, channelMembers, tasks } from "@raltic/db";
+import { sanitizeUserVisibleError, type AgentRunSource } from "@raltic/protocol";
 import type { RalticAgent } from "@raltic/agent";
 import type { Env } from "./env";
 
@@ -18,6 +19,7 @@ interface DispatchInput {
   text: string;
   callerId: string;
   callerType: "human" | "agent";
+  source: Extract<AgentRunSource, "channel_mention" | "dm" | "agent_to_agent">;
   /** Set of agentIds @-mentioned in the message (extracted by the caller). */
   mentionedAgentIds: string[];
 }
@@ -44,6 +46,7 @@ export async function dispatchToAgents(env: Env, input: DispatchInput): Promise<
     return;
   }
   const db = drizzle(env.DB);
+  const taskId = await resolveTaskIdForMessage(db, input.channelId, input.messageId);
   const rows = await db.select({
     id: agents.id,
     serverId: agents.serverId,
@@ -54,6 +57,35 @@ export async function dispatchToAgents(env: Env, input: DispatchInput): Promise<
 
   for (const a of rows) {
     if (a.runtimeMode !== "raltic") continue;   // bridge / sidecar handled elsewhere
+    let runId: string | undefined;
+    try {
+      runId = crypto.randomUUID();
+      const now = new Date();
+      await db.insert(agentRuns).values({
+        id: runId,
+        serverId: a.serverId,
+        channelId: input.channelId,
+        agentId: a.id,
+        taskId,
+        source: input.source,
+        status: "dispatched",
+        runtimeMode: a.runtimeMode,
+        callerId: input.callerId,
+        callerType: input.callerType,
+        triggerMessageId: input.messageId,
+        outputMessageId: null,
+        inputPreview: preview(input.text),
+        error: null,
+        metadata: null,
+        startedAt: null,
+        completedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    } catch (e) {
+      runId = undefined;
+      console.error(`[agent-dispatch] run create failed for agent=${a.id}:`, e instanceof Error ? e.message : String(e));
+    }
     // Use Workers DO native RPC (direct method call) rather than fetch()
     // — the CF Agents SDK base class doesn't auto-route arbitrary URL
     // paths, so the prior fetch("/bind") and fetch("/invoke") landed on
@@ -72,21 +104,56 @@ export async function dispatchToAgents(env: Env, input: DispatchInput): Promise<
       //    losing them to a dropped fetch promise. The DO posts the
       //    actual reply via ChatRoom internal/send during this call.
       const result = await stub.onInvoke({
-        source: "channel_mention",
+        source: input.source,
         channelId: input.channelId,
         messageId: input.messageId,
         threadParentId: input.threadParentId,
         text: input.text,
         callerId: input.callerId,
         callerType: input.callerType,
+        runId,
       });
       console.log(`[agent-dispatch] agent=${a.id} onInvoke result=${JSON.stringify(result)}`);
       if (!result.ok) {
         console.error(`[agent-dispatch] agent=${a.id} onInvoke returned error: ${result.error}`);
+        await markRunFailed(db, runId, result.error);
       }
     } catch (e) {
       console.error(`[agent-dispatch] agent=${a.id} dispatch failed:`, e instanceof Error ? `${e.message}\n${e.stack}` : String(e));
+      await markRunFailed(db, runId, e instanceof Error ? e.message : String(e));
     }
+  }
+}
+
+async function resolveTaskIdForMessage(
+  db: ReturnType<typeof drizzle>,
+  channelId: string,
+  messageId: string,
+): Promise<string | null> {
+  const row = await db.select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.channelId, channelId), eq(tasks.messageId, messageId)))
+    .limit(1);
+  return row[0]?.id ?? null;
+}
+
+function preview(text: string): string {
+  return text.trim().slice(0, 500);
+}
+
+async function markRunFailed(
+  db: ReturnType<typeof drizzle>,
+  runId: string | undefined,
+  error: string,
+): Promise<void> {
+  if (!runId) return;
+  const now = new Date();
+  try {
+    await db.update(agentRuns)
+      .set({ status: "failed", error: sanitizeUserVisibleError(error), completedAt: now, updatedAt: now })
+      .where(eq(agentRuns.id, runId));
+  } catch (e) {
+    console.error(`[agent-dispatch] run fail update failed run=${runId}:`, e instanceof Error ? e.message : String(e));
   }
 }
 

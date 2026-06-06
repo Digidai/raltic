@@ -26,7 +26,7 @@ export interface RuntimeDoc {
   /** "Verified" → indexable. "Experimental" → noindex + banner. Codex H2. */
   verification: "verified" | "experimental";
   /** Brand accent palette key — matches RuntimeDot/RuntimeChip. */
-  accent: "cyan" | "amber" | "violet" | "rose";
+  accent: "cyan" | "amber" | "violet" | "neutral";
   /** Hero tag line — one sentence, ≤14 words. */
   tagline: string;
   /** Short body under the tagline — 2-3 sentences max. */
@@ -137,7 +137,7 @@ export const RUNTIME_DOCS: Record<RuntimeKey, RuntimeDoc> = {
     shortName: "Hermes",
     lifecycle: "external_daemon",
     verification: "experimental",
-    accent: "rose",
+    accent: "neutral",
     tagline: "Nous Research's self-improving agent, channel-native.",
     hero: "Hermes Agent runs as a persistent daemon on your machine with its own memory and skills. Raltic wraps a team chat around it so the agent's wins (and its memory) accrue where the team can see and steer them.",
     whatItIs: "Hermes Agent is Nous Research's locally-installable agent with built-in persistent memory and a skill system. You install it via the project's curl-bash one-liner; the daemon manages its own routing.",

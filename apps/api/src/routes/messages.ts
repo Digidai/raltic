@@ -163,6 +163,7 @@ messagesRoutes.post("/api/v1/messages", requireAuth, async (c) => {
         //      auto-dispatches (no @-mention required). DM with an
         //      agent = private chat with that agent.
         let mentioned = extractAgentMentions(body.content, candidates);
+        let source: "channel_mention" | "dm" = "channel_mention";
         if (mentioned.length === 0) {
           const db = drizzle(c.env.DB);
           const ch = await db.select({ type: channels.type })
@@ -171,6 +172,7 @@ messagesRoutes.post("/api/v1/messages", requireAuth, async (c) => {
             .limit(1);
           if (ch[0]?.type === "dm" && candidates.length === 1) {
             mentioned = [candidates[0]!.id];
+            source = "dm";
           }
         }
         if (mentioned.length > 0) {
@@ -181,6 +183,7 @@ messagesRoutes.post("/api/v1/messages", requireAuth, async (c) => {
             text: body.content,
             callerId: senderId,
             callerType: senderType,
+            source,
             mentionedAgentIds: mentioned,
           });
         }

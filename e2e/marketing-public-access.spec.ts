@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { contrast, parseRgb } from "./helpers/heroui-workspace";
 
 type MarketingRoute = {
   path: string;
@@ -80,7 +81,7 @@ test.describe("marketing public access", () => {
         page.locator(headingSelector).filter({ hasText: route.heading }).first(),
       ).toBeVisible();
 
-      const footer = page.locator("footer");
+      const footer = page.locator("footer .raltic-marketing-footer-grid");
       await expect(footer.getByRole("link", { name: /privacy policy/i })).toBeVisible();
       await expect(footer.getByRole("link", { name: /terms of service/i })).toBeVisible();
 
@@ -152,6 +153,50 @@ test.describe("marketing public access", () => {
     expect(mobileMetrics.documentOverflowX).toBe(false);
   });
 
+  test("/runtimes keeps experimental Hermes neutral instead of danger red", async ({ page }) => {
+    await page.goto("/runtimes", { waitUntil: "domcontentloaded" });
+
+    const hermesCard = page.locator('a[href="/runtimes/hermes"]');
+    await expect(hermesCard).toBeVisible();
+    const cardMetrics = await hermesCard.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        className: el.getAttribute("class") ?? "",
+        borderColor: style.borderColor,
+        backgroundColor: style.backgroundColor,
+      };
+    });
+    expect(cardMetrics.className, `Hermes card should not use danger/rose classes: ${JSON.stringify(cardMetrics)}`).not.toMatch(/danger|rose/);
+    expect(cardMetrics.borderColor, `Hermes card border should not be danger red: ${JSON.stringify(cardMetrics)}`).not.toContain("222, 54, 92");
+
+    await hermesCard.click();
+    await expect(page).toHaveURL(/\/runtimes\/hermes$/);
+    const heroPill = page.locator("section").first().locator("span.inline-flex").first();
+    const pillClass = await heroPill.getAttribute("class");
+    expect(pillClass ?? "", "Hermes detail pill should not use danger/rose classes").not.toMatch(/danger|rose/);
+
+    const installHint = page.getByText(/Then sign up and pick Hermes/i);
+    await expect(installHint).toBeVisible();
+    const hintMetrics = await installHint.evaluate((el) => {
+      const runtimeName = el.querySelector("span");
+      const section = el.closest("section");
+      const runtimeStyle = runtimeName instanceof HTMLElement ? getComputedStyle(runtimeName) : null;
+      const sectionStyle = section instanceof HTMLElement ? getComputedStyle(section) : null;
+      return {
+        runtimeName: runtimeName?.textContent ?? "",
+        runtimeColor: runtimeStyle?.color ?? "",
+        sectionBackground: sectionStyle?.backgroundColor ?? "",
+      };
+    });
+    const foreground = parseRgb(hintMetrics.runtimeColor);
+    const background = parseRgb(hintMetrics.sectionBackground);
+    expect(hintMetrics.runtimeName).toBe("Hermes");
+    expect(
+      foreground && background ? contrast(foreground, background) : 0,
+      `install hint runtime name contrast ${JSON.stringify(hintMetrics)}`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
   test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 844 });
     await page.route("**/api/v1/marketing/newsletter", (route) => route.fulfill({
@@ -165,7 +210,7 @@ test.describe("marketing public access", () => {
       body: JSON.stringify({ error: { message: "Newsletter service unavailable" } }),
     }));
 
-    await page.goto("/indie", { waitUntil: "domcontentloaded" });
+    await page.goto("/indie", { waitUntil: "networkidle" });
     await page.getByLabel("Your email address").fill("gene@example.com");
     await page.getByRole("button", { name: /Keep me in the loop/ }).click();
 
@@ -210,7 +255,7 @@ test.describe("marketing public access", () => {
       body: JSON.stringify({ error: { message: "Waitlist service unavailable" } }),
     }));
 
-    await page.goto("/teams", { waitUntil: "domcontentloaded" });
+    await page.goto("/teams", { waitUntil: "networkidle" });
     await page.getByLabel("Your name").fill("Gene");
     await page.getByLabel("Work email").fill("gene@example.com");
     await page.getByRole("button", { name: /Request access/ }).click();

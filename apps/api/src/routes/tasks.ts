@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { drizzle } from "drizzle-orm/d1";
 import { requirePolicy, policy } from "@raltic/auth-core";
-import { createTaskRequest, updateTaskRequest, listTasksQuery } from "@raltic/protocol";
-import { channelMembers, channels, messages, tasks } from "@raltic/db";
-import { and, desc, eq, inArray, like, or } from "drizzle-orm";
+import { createTaskRequest, updateTaskRequest, listTasksQuery, sanitizeUserVisibleError } from "@raltic/protocol";
+import { agentRuns, channelMembers, channels, messages, tasks } from "@raltic/db";
+import { and, desc, eq, inArray, isNull, like, or } from "drizzle-orm";
 import type { Env, Variables } from "../lib/env";
 import { requireAuth, ctxFor } from "../lib/auth";
 import { rateLimit } from "../lib/rate-limit";
@@ -33,6 +33,7 @@ tasksRoutes.get("/api/v1/tasks", requireAuth, async (c) => {
     const conds = [eq(tasks.channelId, q.channelId)];
     if (q.status) conds.push(eq(tasks.status, q.status));
     if (q.assigneeId) conds.push(eq(tasks.assigneeId, q.assigneeId));
+    if (q.taskId) conds.push(eq(tasks.id, q.taskId));
     const rows = await db
       .select({ t: tasks, content: messages.content })
       .from(tasks)
@@ -40,7 +41,12 @@ tasksRoutes.get("/api/v1/tasks", requireAuth, async (c) => {
       .where(and(...conds))
       .orderBy(desc(tasks.createdAt))
       .limit(q.limit);
-    return c.json({ tasks: rows.map(r => ({ ...r.t, title: titleFromMessage(r.content) })) });
+    const listed = rows.map(r => ({ ...r.t, title: titleFromMessage(r.content) }));
+    return c.json({ tasks: await attachLatestRunEvidence(
+      c.env.DB,
+      listed,
+      subject.kind === "bridge" ? { agentIds: subject.agentIds } : undefined,
+    ) });
   }
 
   // No channel filter → list across channels visible to subject's agents/self.
@@ -71,10 +77,16 @@ tasksRoutes.get("/api/v1/tasks", requireAuth, async (c) => {
       q.serverId ? eq(channels.serverId, q.serverId) : undefined,
       subject.kind === "bridge" ? inArray(channelMembers.memberId, subject.agentIds) : undefined,
       q.assigneeId ? eq(tasks.assigneeId, q.assigneeId) : undefined,
+      q.taskId ? eq(tasks.id, q.taskId) : undefined,
     ))
     .orderBy(desc(tasks.createdAt))
     .limit(q.limit);
-  return c.json({ tasks: rows.map(r => ({ ...r.t, title: titleFromMessage(r.content) })) });
+  const listed = dedupeListedTasks(rows.map(r => ({ ...r.t, title: titleFromMessage(r.content) })));
+  return c.json({ tasks: await attachLatestRunEvidence(
+    c.env.DB,
+    listed,
+    subject.kind === "bridge" ? { agentIds: subject.agentIds } : undefined,
+  ) });
 });
 
 tasksRoutes.post("/api/v1/tasks", requireAuth, async (c) => {
@@ -101,6 +113,16 @@ tasksRoutes.post("/api/v1/tasks", requireAuth, async (c) => {
     senderId,
     senderType,
   }));
+  const assignee = normalizeAssignee(body.assigneeId, body.assigneeType);
+  if ("error" in assignee) return c.json({ error: assignee.error }, 400);
+  if (assignee.assigneeId && assignee.assigneeType) {
+    const ok = await isChannelMember(db, body.channelId, assignee.assigneeId, assignee.assigneeType);
+    if (!ok) {
+      return c.json({
+        error: { code: "INVALID_ASSIGNEE", message: "task assignee must be a member of the task channel" },
+      }, 400);
+    }
+  }
 
   // 1. Allocate task_number atomically via INSERT-then-retry on UNIQUE
   //    collision. Row is inserted with messageId=null; the DO send happens
@@ -119,8 +141,8 @@ tasksRoutes.post("/api/v1/tasks", requireAuth, async (c) => {
       await db.insert(tasks).values({
         id, messageId: null, channelId: body.channelId,
         taskNumber, status: "todo",
-        assigneeId: body.assigneeId ?? null,
-        assigneeType: body.assigneeType ?? null,
+        assigneeId: assignee.assigneeId,
+        assigneeType: assignee.assigneeType,
         createdAt: now, updatedAt: now,
       });
       inserted = true;
@@ -160,8 +182,14 @@ tasksRoutes.post("/api/v1/tasks", requireAuth, async (c) => {
   }
   const messageRes = await sendRes.json() as { ok: boolean; seq: number; messageId: string };
 
-  // 3. Backfill the messageId so the UI can link task ↔ message.
-  await db.update(tasks).set({ messageId: messageRes.messageId }).where(eq(tasks.id, id));
+  // 3. Backfill the messageId so the UI can link task ↔ message, then
+  // attach any bridge run that raced in between ChatRoom broadcast and
+  // task.messageId persistence.
+  await backfillTaskMessageAndRunLinks(db, {
+    taskId: id,
+    channelId: body.channelId,
+    messageId: messageRes.messageId,
+  });
 
   return c.json({ id, taskNumber, messageId: messageRes.messageId, seq: messageRes.seq });
 });
@@ -187,8 +215,23 @@ tasksRoutes.patch("/api/v1/tasks/:id", requireAuth, async (c) => {
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
   if (body.status !== undefined) patch.status = body.status;
-  if (body.assigneeId !== undefined) patch.assigneeId = body.assigneeId;
-  if (body.assigneeType !== undefined) patch.assigneeType = body.assigneeType;
+  if (body.assigneeId !== undefined || body.assigneeType !== undefined) {
+    const assignee = normalizeAssignee(
+      body.assigneeId !== undefined ? body.assigneeId : existing.assigneeId,
+      body.assigneeType !== undefined ? body.assigneeType : existing.assigneeType,
+    );
+    if ("error" in assignee) return c.json({ error: assignee.error }, 400);
+    if (assignee.assigneeId && assignee.assigneeType) {
+      const ok = await isChannelMember(db, existing.channelId, assignee.assigneeId, assignee.assigneeType);
+      if (!ok) {
+        return c.json({
+          error: { code: "INVALID_ASSIGNEE", message: "task assignee must be a member of the task channel" },
+        }, 400);
+      }
+    }
+    patch.assigneeId = assignee.assigneeId;
+    patch.assigneeType = assignee.assigneeType;
+  }
   await db.update(tasks).set(patch).where(eq(tasks.id, existing.id));
   return c.json({ ok: true });
 });
@@ -216,7 +259,8 @@ async function resolveTaskRef(
     candidates.push(...await db.select().from(tasks)
       .where(eq(tasks.taskNumber, Number(trimmed)))
       .limit(20));
-  } else if (trimmed.length >= 4) {
+  }
+  if (trimmed.length >= 4) {
     candidates.push(...await db.select().from(tasks)
       .where(or(
         like(tasks.id, `${trimmed}%`),
@@ -236,4 +280,160 @@ async function resolveTaskRef(
   if (visible.length === 0) return { status: "not_found" };
   if (visible.length > 1) return { status: "ambiguous" };
   return { status: "ok", task: visible[0] };
+}
+
+type DB = ReturnType<typeof drizzle>;
+type ListedTask = typeof tasks.$inferSelect & { title: string };
+type Assignee = {
+  assigneeId: string | null;
+  assigneeType: "human" | "agent" | null;
+};
+type LatestTaskRun = {
+  id: string;
+  agentId: string;
+  status: string;
+  source: string;
+  runtimeMode: string;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+};
+
+function normalizeAssignee(
+  assigneeId: string | null | undefined,
+  assigneeType: "human" | "agent" | null | undefined,
+): Assignee | { error: { code: string; message: string } } {
+  if (assigneeId == null || assigneeId === "") {
+    if (assigneeType && assigneeType !== null) {
+      return { error: { code: "INVALID_ASSIGNEE", message: "assigneeType requires assigneeId" } };
+    }
+    return { assigneeId: null, assigneeType: null };
+  }
+  return { assigneeId, assigneeType: assigneeType ?? "agent" };
+}
+
+async function isChannelMember(
+  db: DB,
+  channelId: string,
+  memberId: string,
+  memberType: "human" | "agent",
+): Promise<boolean> {
+  const rows = await db.select({ memberId: channelMembers.memberId })
+    .from(channelMembers)
+    .where(and(
+      eq(channelMembers.channelId, channelId),
+      eq(channelMembers.memberId, memberId),
+      eq(channelMembers.memberType, memberType),
+    ))
+    .limit(1);
+  return rows.length > 0;
+}
+
+export async function backfillTaskMessageAndRunLinks(
+  db: DB,
+  input: { taskId: string; channelId: string; messageId: string },
+): Promise<void> {
+  await db.update(tasks)
+    .set({ messageId: input.messageId })
+    .where(eq(tasks.id, input.taskId));
+  await db.update(agentRuns)
+    .set({ taskId: input.taskId })
+    .where(and(
+      eq(agentRuns.channelId, input.channelId),
+      eq(agentRuns.triggerMessageId, input.messageId),
+      isNull(agentRuns.taskId),
+    ));
+}
+
+function dedupeListedTasks(listed: ListedTask[]): ListedTask[] {
+  const seen = new Set<string>();
+  const out: ListedTask[] = [];
+  for (const task of listed) {
+    if (seen.has(task.id)) continue;
+    seen.add(task.id);
+    out.push(task);
+  }
+  return out;
+}
+
+async function attachLatestRunEvidence(
+  d1: D1Database,
+  listed: ListedTask[],
+  opts?: { agentIds?: string[] },
+): Promise<Array<ListedTask & { latestRun: LatestTaskRun | null }>> {
+  const taskIds = listed.map((task) => task.id);
+  if (taskIds.length === 0) return listed.map((task) => ({ ...task, latestRun: null }));
+  if (opts?.agentIds && opts.agentIds.length === 0) {
+    return listed.map((task) => ({ ...task, latestRun: null }));
+  }
+
+  const placeholders = taskIds.map(() => "?").join(",");
+  const agentIds = opts?.agentIds ?? [];
+  const agentPlaceholders = agentIds.map(() => "?").join(",");
+  const outerAgentFilter = agentIds.length > 0 ? `AND ar.agent_id IN (${agentPlaceholders})` : "";
+  const innerAgentFilter = agentIds.length > 0 ? `AND ar2.agent_id IN (${agentPlaceholders})` : "";
+  const runRows = await d1.prepare(`
+    SELECT
+      ar.id,
+      ar.task_id AS taskId,
+      ar.agent_id AS agentId,
+      ar.status,
+      ar.source,
+      ar.runtime_mode AS runtimeMode,
+      ar.error,
+      ar.created_at AS createdAt,
+      ar.updated_at AS updatedAt,
+      ar.completed_at AS completedAt
+    FROM agent_runs ar
+    WHERE ar.task_id IN (${placeholders})
+      ${outerAgentFilter}
+      AND ar.id = (
+        SELECT ar2.id
+        FROM agent_runs ar2
+        WHERE ar2.task_id = ar.task_id
+          ${innerAgentFilter}
+        ORDER BY ar2.created_at DESC, ar2.id DESC
+        LIMIT 1
+      )
+  `).bind(...taskIds, ...agentIds, ...agentIds).all<{
+    id: string;
+    taskId: string | null;
+    agentId: string;
+    status: string;
+    source: string;
+    runtimeMode: string;
+    error: string | null;
+    createdAt: number | string | null;
+    updatedAt: number | string | null;
+    completedAt: number | string | null;
+  }>();
+
+  const latestByTaskId = new Map<string, LatestTaskRun>();
+  for (const row of runRows.results ?? []) {
+    if (!row.taskId || latestByTaskId.has(row.taskId)) continue;
+    latestByTaskId.set(row.taskId, {
+      id: row.id,
+      agentId: row.agentId,
+      status: row.status,
+      source: row.source,
+      runtimeMode: row.runtimeMode,
+      error: sanitizeUserVisibleError(row.error),
+      createdAt: dateToIso(row.createdAt) ?? new Date(0).toISOString(),
+      updatedAt: dateToIso(row.updatedAt) ?? new Date(0).toISOString(),
+      completedAt: dateToIso(row.completedAt),
+    });
+  }
+
+  return listed.map((task) => ({
+    ...task,
+    latestRun: latestByTaskId.get(task.id) ?? null,
+  }));
+}
+
+function dateToIso(value: Date | number | string | null): string | null {
+  if (value == null) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "number") return new Date(value).toISOString();
+  return new Date(value).toISOString();
 }

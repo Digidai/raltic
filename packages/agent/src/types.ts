@@ -52,6 +52,9 @@ export interface AgentEnv {
 
 /** Incoming dispatch from ChatRoom DO (or scheduler). */
 export interface AgentInvocation {
+  /** Durable execution row. Dispatchers create this before invoking.
+   *  Scheduled/self-invoked runs may omit it; RalticAgent will create one. */
+  runId?: string | null;
   /** Trigger source — affects how we treat the input. */
   source: "channel_mention" | "dm" | "scheduled" | "agent_to_agent";
   channelId: string;

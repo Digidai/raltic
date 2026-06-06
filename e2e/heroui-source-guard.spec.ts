@@ -167,6 +167,8 @@ test("workspace fallbacks and overlays do not regress to legacy raw shells", () 
     ["legacy homepage comparison default status chip", /function ComparisonCell[\s\S]*color=["']default["'] className=["']h-6 w-6 justify-center p-0/],
     ["legacy oversized homepage final CTA black band", /function FinalCta[\s\S]*bg-black px-6 py-28 sm:py-36/],
     ["legacy secondary marketing final CTA black band", /border-t border-zinc-900 bg-black px-6 py-24/],
+    ["legacy marketing CTA section detached from footer", /raltic-marketing-cta-section/],
+    ["legacy marketing CTA panel detached from footer", /raltic-marketing-cta-panel/],
   ];
   const violations: string[] = [];
 
@@ -237,6 +239,27 @@ test("marketing shared surfaces use Raltic tokens instead of legacy hue atom cla
   const violations: string[] = [];
 
   for (const file of files) {
+    const source = stripComments(fs.readFileSync(file, "utf8"));
+    if (forbidden.test(source)) violations.push(toRel(file));
+  }
+
+  expect(violations).toEqual([]);
+});
+
+test("experimental runtimes avoid danger semantics in visual chrome", () => {
+  const checks: Array<[string, RegExp]> = [
+    ["components/marketing/runtime-data.ts", /accent:\s*["']rose["']/],
+    ["app/(marketing)/page.tsx", /dot=["']rose["']|hermes:\s*\{[^}]*rose/],
+    ["app/(marketing)/runtimes/page.tsx", /rose:\s*["'][^"']*danger|--danger/],
+    ["components/marketing/runtime-page.tsx", /rose:\s*["'][^"']*danger|--danger/],
+    ["components/setup-wizard.tsx", /id=["']hermes["'][\s\S]{0,240}chipTone=["']danger["']/],
+    ["app/s/[slug]/agents/page.tsx", /hermes:\s*["']danger["']/],
+    ["components/sidebar.tsx", /hermes:\s*\{[^}]*--danger/],
+  ];
+  const violations: string[] = [];
+
+  for (const [rel, forbidden] of checks) {
+    const file = path.join(WEB_SRC, rel);
     const source = stripComments(fs.readFileSync(file, "utf8"));
     if (forbidden.test(source)) violations.push(toRel(file));
   }
