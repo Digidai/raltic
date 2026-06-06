@@ -118,7 +118,7 @@ export function WorkflowPreview(): React.ReactElement {
                 key={scenario.key}
                 type="button"
                 aria-pressed={selected}
-                onClick={() => setActiveKey(scenario.key)}
+                onPress={() => setActiveKey(scenario.key)}
                 variant="ghost"
                 size="sm"
                 className={cn(
