@@ -27,7 +27,7 @@ interface Props {
   onOpenChange: (next: boolean) => void;
   // Called AFTER a DM is successfully opened (find-or-create) so the
   // sidebar can refetch its channels list — otherwise a brand-new DM
-  // doesn't appear in the Direct messages section until a hard reload.
+  // doesn't appear in the Messages section until a hard reload.
   onOpened?: () => void;
 }
 

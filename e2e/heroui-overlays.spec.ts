@@ -349,7 +349,7 @@ test("setup wizard runtime picker uses one HeroUI radio selected surface", async
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
   const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
   await expect(dialog).toBeVisible({ timeout: 15_000 });
-  await expect(dialog.getByText("Which runtime should power local workflow rooms?")).toBeVisible();
+  await expect(dialog.getByText("Which runtime should power local workflows?")).toBeVisible();
 
   await assertSelectedRadioOwnsSingleSurface(
     dialog.getByRole("radio", { name: /Claude Code/ }),
@@ -412,11 +412,11 @@ test("mobile sidebar-launched dialogs render above the sidebar overlay", async (
   await openMockChannel(page);
 
   await page.getByRole("button", { name: "Open workspace navigation" }).click();
-  await clickVisible(page, 'button[aria-label="Create workflow room"]');
-  assertOverlayMetrics(await overlayMetrics(page, /Create workflow room/));
-  await assertDialogFooterReachable(page, /Create workflow room/);
+  await clickVisible(page, 'button[aria-label="Start workflow"]');
+  assertOverlayMetrics(await overlayMetrics(page, /Start workflow/));
+  await assertDialogFooterReachable(page, /Start workflow/);
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: /Create workflow room/ })).toBeHidden();
+  await expect(page.getByRole("dialog", { name: /Start workflow/ })).toBeHidden();
 
   await page.keyboard.press("Escape").catch(() => {});
   await page.getByRole("button", { name: "Open workspace navigation" }).click();

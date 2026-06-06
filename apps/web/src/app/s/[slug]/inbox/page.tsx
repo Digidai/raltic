@@ -13,7 +13,7 @@ import { Chip } from "@/components/heroui-pro/chip";
 import { WorkspaceEmptyState, WorkspacePage } from "@/components/workspace-page";
 
 /**
- * Unified inbox — answers "what's waiting for me right now".
+ * Work queue — answers "what needs me right now".
  *
  * Aggregates unread DMs + open task assignments for the current
  * workspace. Mentions land in a Phase 2 expansion (needs a schema column
@@ -66,8 +66,8 @@ export default function InboxPage() {
 
   return (
     <WorkspacePage
-      title="Inbox"
-      description={<>Direct messages and tasks waiting on you in {server.name}.</>}
+      title="Work queue"
+      description={<>Tasks, approvals, and direct messages waiting on you in {server.name}.</>}
       icon={<InboxIcon className="h-5 w-5" aria-hidden="true" />}
       tone="accent"
       contentClassName="flex flex-col gap-3"
@@ -100,7 +100,7 @@ export default function InboxPage() {
               title="You're caught up."
               description={
                 <>
-                No unread DMs and no open tasks assigned to you. Nice.
+                No unread DMs and no open tasks assigned to you.
                 </>
               }
             />

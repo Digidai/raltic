@@ -139,7 +139,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
         <DialogBackdrop />
         <DialogPopup className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create workflow room</DialogTitle>
+            <DialogTitle>Start workflow</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogPanel>
@@ -164,7 +164,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                     />
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground">
-                    This becomes the room URL and sidebar label. Use lowercase letters, numbers, dashes, or underscores.
+                    This becomes the workflow URL and sidebar label. Use lowercase letters, numbers, dashes, or underscores.
                   </p>
                 </Field>
                 <Field>
@@ -174,7 +174,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                     aria-label="Room description"
                     value={description}
                     onChange={(e) => setDescription((e.target as HTMLInputElement).value)}
-                    placeholder="What workflow does this room own?"
+                    placeholder="What business workflow does this own?"
                     maxLength={2000}
                   />
                 </Field>
@@ -198,8 +198,8 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                         </div>
                         <div className={`mt-0.5 text-[11px] ${type === t ? "text-foreground/80" : "text-muted-foreground"}`}>
                           {t === "public"
-                            ? "Anyone in the workspace can find and join this room."
-                            : "Only invited members can see this room."}
+                            ? "Anyone in the workspace can find and join this workflow."
+                            : "Only invited members can see this workflow."}
                         </div>
                       </Radio>
                     ))}
@@ -301,7 +301,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                   )}
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     {myUserId
-                      ? "You'll be added automatically. Add others now or invite them later from room settings."
+                      ? "You'll be added automatically. Add others now or invite them later from workflow settings."
                       : "You'll be added automatically."}
                   </p>
                 </Field>
@@ -315,7 +315,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
             </DialogPanel>
             <DialogFooter className="flex justify-end gap-2">
               <DialogClose render={<Button variant="outline" type="button">Cancel</Button>} />
-              <Button type="submit" loading={loading}>Create room</Button>
+              <Button type="submit" loading={loading}>Start workflow</Button>
             </DialogFooter>
           </form>
         </DialogPopup>

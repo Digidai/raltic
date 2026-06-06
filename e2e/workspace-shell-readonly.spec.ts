@@ -45,13 +45,20 @@ test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (sk
     expect(workspaceMatch, "login should land on a workspace route").toBeTruthy();
     const slug = workspaceMatch?.[1];
 
-    for (const item of ["Inbox", "Tasks", "Agents", "People"]) {
-      const link = nav.getByRole("link", { name: item });
-      await expect(link, `${item} should remain a real link`).toBeVisible();
-      await expect(link).toHaveAttribute("href", new RegExp(`/s/${slug}/${item.toLowerCase()}`));
+    const destinations = [
+      { label: "Start", href: `/s/${slug}` },
+      { label: "Work queue", href: `/s/${slug}/inbox` },
+      { label: "Workflows", href: `/s/${slug}/channels` },
+      { label: "Tasks", href: `/s/${slug}/tasks` },
+      { label: "Agent Work", href: `/s/${slug}/agents` },
+    ];
+    for (const item of destinations) {
+      const link = nav.getByRole("link", { name: item.label, exact: true });
+      await expect(link, `${item.label} should remain a real link`).toBeVisible();
+      await expect(link).toHaveAttribute("href", item.href);
     }
 
-    await nav.getByRole("link", { name: "Inbox" }).click();
+    await nav.getByRole("link", { name: "Work queue", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/s/${slug}/inbox$`), { timeout: 15000 });
     await waitForWorkspaceMainReady(page);
     await expect(page.getByRole("navigation", { name: "Workspace navigation" })).toBeVisible();

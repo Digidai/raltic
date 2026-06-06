@@ -52,14 +52,14 @@ async function openAgentsIndex(page: Page) {
   await page.goto("/s/demo/agents", { waitUntil: "domcontentloaded" });
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Agent Work" })).toBeVisible();
 }
 
 async function openSettingsAgents(page: Page) {
   await page.goto("/s/demo/settings/agents", { waitUntil: "domcontentloaded" });
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }).catch(() => {});
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Rooms & agents" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Workflows & agents" })).toBeVisible();
 }
 
 async function assertFocusedControlKeepsIosSafeFontSize(page: Page) {

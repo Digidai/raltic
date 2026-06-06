@@ -42,9 +42,9 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
 
   test("create → members → rename → leave full flow", async ({ page }) => {
     // Sidebar — the workspace landing redirects to the user's default
-    // workspace after login. Wait for the "Create workflow room" button so
+    // workspace after login. Wait for the "Start workflow" button so
     // we know the sidebar has hydrated.
-    const createBtn = page.getByRole("button", { name: "Create workflow room" });
+    const createBtn = page.getByRole("button", { name: "Start workflow" });
     await expect(createBtn).toBeVisible({ timeout: 15000 });
 
     const channelName = `ch-rt-${Date.now().toString(36)}`;
@@ -56,7 +56,7 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
     await expect(dialog).toBeVisible();
     await dialog.getByLabel(/^name$/i).fill(channelName);
     // Create PRIVATE so the leave step at the end actually removes
-    // the room from the sidebar. Public rooms stay visible
+    // the workflow from the sidebar. Public workflows stay visible
     // even after leave (by design — discovery via /channels page).
     await dialog.locator('[data-slot="radio"]').filter({ hasText: /Private/i }).click();
     // Skip member picker — pure self-create exercises the new

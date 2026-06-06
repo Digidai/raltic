@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Hash, Cpu, MessageSquare, Pencil, Trash2, Lock, Plus, ArrowRight } from "lucide-react";
+import { Workflow, Cpu, MessageSquare, Pencil, Trash2, Lock, Plus, ArrowRight } from "lucide-react";
 import { api, type Agent, type Channel } from "@/lib/api";
 import { notifySuccess, notifyThrown } from "@/lib/notify";
 import { Card, CardHeader, CardTitle, CardDescription, CardPanel } from "@/components/heroui-pro/card";
@@ -71,26 +71,26 @@ export default function ChannelsAgentsPage() {
   }
 
   // Channels excluded from this list: DM channels. They live in the
-  // sidebar's "Direct messages" section and are auto-created per agent;
+  // sidebar's "Messages" section and are auto-created per agent;
   // surfacing them here would double-count and clutter.
   const manageableChannels = channels.filter((c) => c.type !== "dm");
 
   return (
-    <SettingsSection title="Rooms & agents" description="Workflow rooms and the AI teammates that join them.">
+    <SettingsSection title="Workflows & agents" description="Workflows and the AI teammates that join them.">
       {/* ── Channels ─────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <CardTitle className="flex items-center gap-2"><Hash className="h-4 w-4" /> Workflow rooms</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Workflow className="h-4 w-4" /> Workflows</CardTitle>
               <CardDescription>
                 {manageableChannels.length === 0
-                  ? "No workflow rooms yet."
-                  : `${manageableChannels.length} ${manageableChannels.length === 1 ? "room" : "rooms"} in this workspace.`}
+                  ? "No workflows yet."
+                  : `${manageableChannels.length} ${manageableChannels.length === 1 ? "workflow" : "workflows"} in this workspace.`}
               </CardDescription>
             </div>
             <Button onClick={() => setOpenChannel(true)} size="sm" className="shrink-0">
-              <Plus className="me-1 h-3.5 w-3.5" /> New room
+              <Plus className="me-1 h-3.5 w-3.5" /> Start workflow
             </Button>
           </div>
         </CardHeader>
@@ -113,7 +113,7 @@ export default function ChannelsAgentsPage() {
               <CardTitle className="flex items-center gap-2"><Cpu className="h-4 w-4" /> Agents</CardTitle>
               <CardDescription>
                 {agents.length === 0
-                  ? "No agents yet. Add your first one to bring AI teammates into workflow rooms."
+                  ? "No agents yet. Add your first one to bring AI teammates into workflows."
                   : "AI teammates that run in Raltic Cloud or through a local runtime."}
               </CardDescription>
             </div>
@@ -174,7 +174,7 @@ export default function ChannelsAgentsPage() {
         open={!!deleteTarget}
         onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
         title={deleteTarget ? `Delete ${deleteTarget.displayName}?` : "Delete agent?"}
-        description="This removes the agent and its direct message room. The local runtime will stop spawning a process for it. Past messages it sent stay in shared rooms."
+        description="This removes the agent and its direct message thread. The local runtime will stop spawning a process for it. Past messages it sent stay in shared workflows."
         confirmLabel="Delete agent"
         onConfirm={confirmDeleteAgent}
       />
@@ -188,7 +188,7 @@ export default function ChannelsAgentsPage() {
 // ---------------------------------------------------------------------------
 
 function ChannelRow({ channel, slug }: { channel: Channel; slug: string }) {
-  const Icon = channel.type === "private" ? Lock : Hash;
+  const Icon = channel.type === "private" ? Lock : Workflow;
   return (
     <Card render={<li />} className="border-transparent bg-[var(--surface-secondary)] !shadow-none transition-colors hover:border-accent/25">
       <CardPanel className="flex flex-wrap items-center gap-3 p-3 text-sm">
@@ -316,7 +316,7 @@ function RestoreOnboardingRow({ serverId, onRestored }: { serverId: string; onRe
         <div className="min-w-0">
           <p className="text-sm font-medium">No Onboarding Assistant in this workspace.</p>
           <p className="text-xs text-muted-foreground">
-            Re-create the starter agent + welcome rooms (#onboarding + DM).
+            Re-create the starter agent, onboarding workflow, and DM.
           </p>
         </div>
         <Button onClick={handleRestore} loading={restoring} variant="outline" size="sm" className="w-full shrink-0 sm:w-auto">

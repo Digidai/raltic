@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { Sidebar as HeroSidebar, useSidebar } from "@heroui-pro/react/sidebar";
 import { Sheet } from "@heroui-pro/react/sheet";
-import { api, type Channel, type Agent } from "@/lib/api";
-import { BellOff, Hash, Lock, MessageSquare, Plus, ListTodo, Inbox as InboxIcon, Cpu, Star, Users } from "lucide-react";
+import { api, type Channel, type Agent, type AgentRun, type TaskRow } from "@/lib/api";
+import { Activity, BellOff, Lock, MessageSquare, Plus, ListTodo, Cpu, Star, Workflow, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CreateChannelDialog } from "./create-channel-dialog";
 import { NewDmDialog } from "./new-dm-dialog";
@@ -30,6 +30,8 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
   const pathname = usePathname();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadedServerSlug, setLoadedServerSlug] = useState<string | null>(null);
   const activeChannelId = params.channelId as string | undefined;
@@ -49,10 +51,16 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
     async function load() {
       try {
         const data = await api.getServerBySlug(serverSlug);
-        const agentData = await api.listAgents().catch(() => null);
+        const [agentData, taskData, runData] = await Promise.all([
+          api.listAgents().catch(() => null),
+          api.listTasks({ serverId: data.server.id, limit: 200 }).catch(() => ({ tasks: [] as TaskRow[] })),
+          api.listAgentRuns({ serverId: data.server.id, limit: 200 }).catch(() => ({ runs: [] as AgentRun[] })),
+        ]);
         if (cancelled) return;
         setChannels(data.channels);
         setAgents((agentData?.agents ?? data.agents).filter((a) => a.serverId === data.server.id));
+        setTasks(taskData.tasks);
+        setAgentRuns(runData.runs);
         // Phase F HIGH (codex G2) — publish muted channel set to the
         // gateway so the channel_new Notification gate suppresses
         // toasts for channels the user has muted.
@@ -72,6 +80,8 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
         if (cancelled) return;
         setChannels([]);
         setAgents([]);
+        setTasks([]);
+        setAgentRuns([]);
         setMutedChannelIds(new Set());
         setLoadedServerSlug(serverSlug);
       } finally {
@@ -91,19 +101,27 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
     return () => window.removeEventListener("raltic:channels-changed", onChanged);
   }, [reloadChannels]);
 
-  // Phase E — within each section, starred channels sort first
-  // (most recently starred → least). Non-starred follow in their
-  // existing order. Single source of truth so no other component
-  // has to re-do the sort.
+  // Phase E — within low-signal ties, starred channels sort first
+  // (most recently starred → least). Workflow urgency now wins first:
+  // needs-review / running / failed / open-task workflows should surface
+  // before quiet starred workflows in the work cockpit.
   const sortStarredFirst = (a: Channel, b: Channel) => {
     const aS = a.starredAt ?? 0;
     const bS = b.starredAt ?? 0;
     if (aS !== bS) return bS - aS;
     return 0; // preserve original order otherwise
   };
-  const publicChannels = channels.filter((c) => c.type === "public").sort(sortStarredFirst);
+  const workflowSummaryByChannel = useMemo(
+    () => buildWorkflowSummaryByChannel(channels, tasks, agentRuns),
+    [channels, tasks, agentRuns],
+  );
+  const sortWorkflowFirst = (a: Channel, b: Channel) => {
+    const signal = workflowPriority(workflowSummaryByChannel.get(a.id)) - workflowPriority(workflowSummaryByChannel.get(b.id));
+    if (signal !== 0) return signal;
+    return sortStarredFirst(a, b);
+  };
+  const workflowChannels = channels.filter((c) => c.type !== "dm").sort(sortWorkflowFirst);
   const dmChannels = channels.filter((c) => c.type === "dm").sort(sortStarredFirst);
-  const privateChannels = channels.filter((c) => c.type === "private").sort(sortStarredFirst);
   const existingDmPeers = new Set<string>([
     ...dmChannels.flatMap((c) => c.peer ? [`${c.peer.type}:${c.peer.id}`] : []),
     ...agents.filter((a) => a.dmChannelId).map((a) => `agent:${a.id}`),
@@ -123,8 +141,8 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
 
   const sidebarContent = () => (
     <>
-      <HeroSidebar.Header className="!flex-row !items-center !gap-2 !px-3 !pb-2 !pt-3">
-        <div className="flex-1 min-w-0">
+      <HeroSidebar.Header className="!flex-col !items-stretch !gap-2 !px-3 !pb-2 !pt-3">
+        <div className="min-w-0">
           <Link
             href={`/s/${serverSlug}`}
             aria-label="Raltic workspace home"
@@ -139,14 +157,16 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
         </div>
         <Button
           type="button"
-          onClick={openCreateDialog}
+          onPress={openCreateDialog}
           variant="outline"
-          size="icon-sm"
-          className="h-8 w-8 shrink-0 rounded-[8px] border-border bg-surface text-muted-foreground hover:border-accent/25 hover:bg-surface-secondary hover:text-foreground"
-          title="New workflow room"
-          aria-label="Create workflow room"
+          size="sm"
+          fullWidth
+          className="h-9 justify-start rounded-[8px] border-border bg-surface px-2.5 text-sm font-medium text-foreground hover:border-accent/25 hover:bg-surface-secondary"
+          title="Start workflow"
+          aria-label="Start workflow"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 text-[var(--accent-soft-foreground)]" />
+          Start workflow
         </Button>
       </HeroSidebar.Header>
 
@@ -159,15 +179,28 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
             <p className="rounded-xl border border-border bg-default px-3 py-2 text-xs text-muted-foreground">Loading...</p>
           ) : (
             <>
-              {/* Top-level destination — sibling of Channels / DMs / Agents,
-                  rendered as a single row (no section header) since there's
-                  only one item under "Tasks". */}
+              {/* Work cockpit destinations. Chat remains available below,
+                  but the primary rail starts from work: where to begin,
+                  what needs attention, what is running, and where agent
+                  execution is visible. */}
               <HeroSidebar.Menu className="!gap-0.5 space-y-0" aria-label="Workspace destinations">
                 <TopLevelLink
+                  href={`/s/${serverSlug}`}
+                  icon={<PlayCircle className="h-4 w-4" />}
+                  label="Start"
+                  active={pathname === `/s/${serverSlug}`}
+                />
+                <TopLevelLink
                   href={`/s/${serverSlug}/inbox`}
-                  icon={<InboxIcon className="h-4 w-4" />}
-                  label="Inbox"
+                  icon={<Activity className="h-4 w-4" />}
+                  label="Work queue"
                   active={pathname === `/s/${serverSlug}/inbox`}
+                />
+                <TopLevelLink
+                  href={`/s/${serverSlug}/channels`}
+                  icon={<Workflow className="h-4 w-4" />}
+                  label="Workflows"
+                  active={pathname === `/s/${serverSlug}/channels`}
                 />
                 <TopLevelLink
                   href={`/s/${serverSlug}/tasks`}
@@ -178,31 +211,20 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                 <TopLevelLink
                   href={`/s/${serverSlug}/agents`}
                   icon={<Cpu className="h-4 w-4" />}
-                  label="Agents"
+                  label="Agent Work"
                   active={pathname === `/s/${serverSlug}/agents` || pathname.startsWith(`/s/${serverSlug}/agents/`)}
-                />
-                <TopLevelLink
-                  href={`/s/${serverSlug}/people`}
-                  icon={<Users className="h-4 w-4" />}
-                  label="People"
-                  active={pathname === `/s/${serverSlug}/people` || pathname.startsWith(`/s/${serverSlug}/people/`)}
-                />
-                <TopLevelLink
-                  href={`/s/${serverSlug}/channels`}
-                  icon={<Hash className="h-4 w-4" />}
-                  label="Rooms"
-                  active={pathname === `/s/${serverSlug}/channels`}
                 />
               </HeroSidebar.Menu>
               <ChannelGroup
-                label="Workflow rooms"
-                icon={<Hash className="h-3.5 w-3.5" />}
-                channels={publicChannels}
+                label="Active workflows"
+                icon={<Workflow className="h-3.5 w-3.5" />}
+                channels={workflowChannels}
                 activeId={activeChannelId}
                 serverSlug={serverSlug}
                 serverId={serverId}
-                // "+" reveals on group hover (same pattern as Direct
-                // messages). Click → workspace's create-channel dialog if
+                summaries={workflowSummaryByChannel}
+                // "+" reveals on group hover (same pattern as Messages).
+                // Click → workspace's create-channel dialog if
                 // admin, else routes to /s/{slug}/channels for browse +
                 // join. Keeps the discovery path visible without taking
                 // permanent sidebar real estate.
@@ -213,15 +235,15 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                       "ml-1 inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground/60 transition-all hover:bg-default hover:text-foreground focus-visible:opacity-100",
                       isMobile ? "opacity-100" : "opacity-0 group-hover/group:opacity-100",
                     )}
-                    title="Browse all rooms"
-                    aria-label="Browse all public rooms"
+                    title="Browse workflows"
+                    aria-label="Browse workflows"
                   >
-                    <Hash className="h-3 w-3" />
+                    <Workflow className="h-3 w-3" />
                   </Link>
                 }
               />
               <ChannelGroup
-                label="Direct messages"
+                label="Messages"
                 icon={<MessageSquare className="h-3.5 w-3.5" />}
                 channels={dmChannels}
                 activeId={activeChannelId}
@@ -256,10 +278,6 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                   </p>
                 }
               />
-              {privateChannels.length > 0 && (
-                <ChannelGroup label="Private" icon={<Lock className="h-3.5 w-3.5" />}
-                  channels={privateChannels} activeId={activeChannelId} serverSlug={serverSlug} serverId={serverId} />
-              )}
             </>
           )}
         </nav>
@@ -353,10 +371,8 @@ const SIDEBAR_LINK_CLASS =
 /** Map each section name to a brand-tinted dot — visual rhythm that says
  *  "this is Raltic" without printing the logo on every group label. */
 const GROUP_DOT: Record<string, string> = {
-  "Workflow rooms": "bg-[var(--accent)]",
-  "Direct messages": "bg-[var(--warning)]",
-  Private: "bg-[var(--default-soft-foreground)]",
-  Agents: "bg-[var(--accent)]",
+  "Active workflows": "bg-[var(--accent)]",
+  Messages: "bg-[var(--warning)]",
 };
 
 function SidebarGroup({
@@ -383,9 +399,9 @@ function SidebarGroup({
 }
 
 /** Sibling of section labels — a single nav destination like Tasks or
- *  Threads that lives at the same hierarchy as Channels / DMs / Agents
- *  but doesn't expand into a list. Uses the same row rhythm as channel
- *  rows so the cyan accent + hover treatment match. */
+ *  Threads that lives at the same hierarchy as workflow and message
+ *  lists. Uses the same row rhythm as channel rows so the cyan accent +
+ *  hover treatment match. */
 function TopLevelLink({ href, icon, label, active }: {
   href: string; icon: React.ReactNode; label: string; active: boolean;
 }) {
@@ -416,8 +432,8 @@ function TopLevelLink({ href, icon, label, active }: {
   );
 }
 
-function ChannelLink({ channel, activeId, serverSlug, serverId, icon }: {
-  channel: Channel; activeId?: string; serverSlug: string; serverId: string; icon: React.ReactNode;
+function ChannelLink({ channel, activeId, serverSlug, serverId, icon, summary }: {
+  channel: Channel; activeId?: string; serverSlug: string; serverId: string; icon: React.ReactNode; summary?: WorkflowSummary;
 }) {
   const live = useChannelUnread(channel.id);
   const liveUnread = activeId === channel.id ? 0 : live;
@@ -444,6 +460,7 @@ function ChannelLink({ channel, activeId, serverSlug, serverId, icon }: {
       : channel.name;
   const href = `/s/${serverSlug}/${channel.type === "dm" ? "dm" : "channel"}/${channel.id}`;
   const { isMobile, setMobileOpen } = useSidebar();
+  const isWorkflow = channel.type !== "dm";
 
   return (
     <HeroSidebar.MenuItem
@@ -467,6 +484,7 @@ function ChannelLink({ channel, activeId, serverSlug, serverId, icon }: {
         data-current={isActive ? "true" : undefined}
         className={cn(
           SIDEBAR_LINK_CLASS,
+          isWorkflow && "h-auto min-h-10 items-start py-1.5",
           unread > 0 && "font-semibold",
           isMuted && !isActive && "text-muted-foreground",
         )}
@@ -475,12 +493,23 @@ function ChannelLink({ channel, activeId, serverSlug, serverId, icon }: {
         }}
       >
         <HeroSidebar.MenuIcon className="shrink-0 text-current">{icon}</HeroSidebar.MenuIcon>
-        <HeroSidebar.MenuLabel className="min-w-0 flex-1 truncate !text-current [&_[data-slot=sidebar-menu-label-text]]:!text-current">{displayName}</HeroSidebar.MenuLabel>
+        <HeroSidebar.MenuLabel className="min-w-0 flex-1 !text-current [&_[data-slot=sidebar-menu-label-text]]:!text-current">
+          <span className="block min-w-0 truncate">{displayName}</span>
+          {isWorkflow && summary && (
+            <span className="mt-0.5 flex min-w-0 items-center gap-1.5 truncate text-[10.5px] font-normal leading-4 text-muted-foreground">
+              <WorkflowStatusDot tone={summary.tone} />
+              <span className="truncate">{summary.meta}</span>
+            </span>
+          )}
+        </HeroSidebar.MenuLabel>
         {channel.type !== "dm" && channel.starredAt != null && (
           <Star className="h-3 w-3 shrink-0 fill-current text-[var(--warning)]" aria-label="Starred" />
         )}
         {channel.type !== "dm" && isMuted && (
           <BellOff className="h-3 w-3 shrink-0 text-muted-foreground" aria-label="Muted" />
+        )}
+        {isWorkflow && summary && (
+          <WorkflowStatusChip summary={summary} />
         )}
         {/* For human DMs: success dot if peer's online, muted dot if seen
             recently, none if never connected. Real workspace presence —
@@ -520,7 +549,7 @@ function ChannelLink({ channel, activeId, serverSlug, serverId, icon }: {
 }
 
 function ChannelGroup({
-  label, icon, channels, activeId, serverSlug, serverId, headerAction, emptyHint,
+  label, icon, channels, activeId, serverSlug, serverId, headerAction, emptyHint, summaries,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -536,6 +565,7 @@ function ChannelGroup({
   // we want the group to render at all. Without this, the group hides
   // (the legacy behavior — channels.length === 0 returns null below).
   emptyHint?: React.ReactNode;
+  summaries?: Map<string, WorkflowSummary>;
 }) {
   if (channels.length === 0 && !emptyHint) return null;
   return (
@@ -545,12 +575,159 @@ function ChannelGroup({
       ) : (
         <HeroSidebar.Menu className="!gap-0.5 space-y-0" aria-label={label}>
           {channels.map((c) => (
-            <ChannelLink key={c.id} channel={c} activeId={activeId} serverSlug={serverSlug} serverId={serverId} icon={icon} />
+            <ChannelLink
+              key={c.id}
+              channel={c}
+              activeId={activeId}
+              serverSlug={serverSlug}
+              serverId={serverId}
+              icon={iconForChannel(c, icon)}
+              summary={summaries?.get(c.id)}
+            />
           ))}
         </HeroSidebar.Menu>
       )}
     </SidebarGroup>
   );
+}
+
+type WorkflowTone = "accent" | "warning" | "danger" | "success" | "default";
+
+interface WorkflowSummary {
+  openTasks: number;
+  reviewTasks: number;
+  activeRuns: number;
+  failedRuns: number;
+  agentCount: number;
+  label: string;
+  meta: string;
+  tone: WorkflowTone;
+}
+
+function buildWorkflowSummaryByChannel(
+  channels: Channel[],
+  tasks: TaskRow[],
+  runs: AgentRun[],
+): Map<string, WorkflowSummary> {
+  const map = new Map<string, WorkflowSummary>();
+  for (const channel of channels) {
+    if (channel.type === "dm") continue;
+    const channelTasks = tasks.filter((task) => task.channelId === channel.id);
+    const channelRuns = runs.filter((run) => run.channelId === channel.id);
+    const openTasks = channelTasks.filter((task) => task.status !== "done").length;
+    const reviewTasks = channelTasks.filter((task) => task.status === "in_review").length;
+    const activeRuns = channelRuns.filter((run) => isActiveRunStatus(run.status)).length;
+    const failedRuns = channelRuns.filter((run) => run.status === "failed").length;
+    const agentCount = channel.agentIds?.length ?? 0;
+    map.set(channel.id, summarizeWorkflow({ openTasks, reviewTasks, activeRuns, failedRuns, agentCount }));
+  }
+  return map;
+}
+
+function summarizeWorkflow(input: Pick<WorkflowSummary, "openTasks" | "reviewTasks" | "activeRuns" | "failedRuns" | "agentCount">): WorkflowSummary {
+  const { openTasks, reviewTasks, activeRuns, failedRuns, agentCount } = input;
+  if (reviewTasks > 0) {
+    return {
+      ...input,
+      label: "Review",
+      meta: `${reviewTasks} needs review${openTasks > reviewTasks ? ` · ${openTasks} open` : ""}`,
+      tone: "warning",
+    };
+  }
+  if (activeRuns > 0) {
+    return {
+      ...input,
+      label: "Running",
+      meta: `${activeRuns} agent run${activeRuns === 1 ? "" : "s"} active${openTasks > 0 ? ` · ${openTasks} open` : ""}`,
+      tone: "accent",
+    };
+  }
+  if (failedRuns > 0) {
+    return {
+      ...input,
+      label: "Failed",
+      meta: `${failedRuns} failed run${failedRuns === 1 ? "" : "s"}${openTasks > 0 ? ` · ${openTasks} open` : ""}`,
+      tone: "danger",
+    };
+  }
+  if (openTasks > 0) {
+    return {
+      ...input,
+      label: "Open",
+      meta: `${openTasks} open task${openTasks === 1 ? "" : "s"}${agentCount > 0 ? ` · ${agentCount} agent${agentCount === 1 ? "" : "s"}` : ""}`,
+      tone: "default",
+    };
+  }
+  if (agentCount > 0) {
+    return {
+      ...input,
+      label: "Ready",
+      meta: `${agentCount} agent${agentCount === 1 ? "" : "s"} ready`,
+      tone: "success",
+    };
+  }
+  return {
+    ...input,
+    label: "Ready",
+    meta: "brief, run, approve",
+    tone: "default",
+  };
+}
+
+function isActiveRunStatus(status: AgentRun["status"]): boolean {
+  return status === "queued" || status === "dispatched" || status === "running" || status === "waiting_input";
+}
+
+function workflowPriority(summary: WorkflowSummary | undefined): number {
+  if (!summary) return 10;
+  if (summary.reviewTasks > 0) return 0;
+  if (summary.activeRuns > 0) return 1;
+  if (summary.failedRuns > 0) return 2;
+  if (summary.openTasks > 0) return 3;
+  if (summary.agentCount > 0) return 4;
+  return 5;
+}
+
+function WorkflowStatusChip({ summary }: { summary: WorkflowSummary }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-5 shrink-0 items-center rounded-md px-1.5 text-[9.5px] font-semibold uppercase tracking-wide",
+        workflowToneClass(summary.tone),
+      )}
+    >
+      {summary.label}
+    </span>
+  );
+}
+
+function WorkflowStatusDot({ tone }: { tone: WorkflowTone }) {
+  return <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", workflowDotClass(tone))} aria-hidden />;
+}
+
+function workflowToneClass(tone: WorkflowTone): string {
+  switch (tone) {
+    case "accent": return "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]";
+    case "warning": return "bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)]";
+    case "danger": return "bg-[var(--danger-soft)] text-[var(--danger-soft-foreground)]";
+    case "success": return "bg-[var(--success-soft)] text-[var(--success-soft-foreground)]";
+    default: return "bg-[var(--default-soft)] text-[var(--default-soft-foreground)]";
+  }
+}
+
+function workflowDotClass(tone: WorkflowTone): string {
+  switch (tone) {
+    case "accent": return "bg-[var(--accent)]";
+    case "warning": return "bg-[var(--warning)]";
+    case "danger": return "bg-[var(--danger)]";
+    case "success": return "bg-[var(--success)]";
+    default: return "bg-muted-foreground/70";
+  }
+}
+
+function iconForChannel(channel: Channel, fallback: React.ReactNode): React.ReactNode {
+  if (channel.type === "private") return <Lock className="h-3.5 w-3.5" aria-label="Private workflow" />;
+  return fallback;
 }
 
 /** Tiny runtime indicator next to the agent name. Color + letter glyph

@@ -355,7 +355,7 @@ export default function WorkspaceSettingsPage() {
         open={leaveOpen}
         onOpenChange={setLeaveOpen}
         title="Leave this workspace?"
-        description={`You'll lose access to ${server.name} immediately. Rooms you posted in will keep your messages, but you won't see them.`}
+        description={`You'll lose access to ${server.name} immediately. Workflows you posted in will keep your messages, but you won't see them.`}
         confirmLabel="Leave workspace"
         onConfirm={async () => {
           if (await handleLeave()) setLeaveOpen(false);

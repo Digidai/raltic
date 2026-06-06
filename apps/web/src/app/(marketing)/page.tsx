@@ -189,11 +189,11 @@ function TwoWaysToRun(): React.ReactElement {
 
         <div className="mt-6 grid gap-3 md:grid-cols-2">
           <RuntimePath
-            title="Run a workflow room"
+            title="Run a workflow"
             label="default"
             body="Start with a cloud Agent when the workflow is low-risk and speed matters."
             href="/signup"
-            cta="Start a workflow room"
+            cta="Start a workflow"
             accent="accent"
           />
           <RuntimePath

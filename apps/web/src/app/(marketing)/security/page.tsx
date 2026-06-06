@@ -88,8 +88,8 @@ export default function SecurityPage() {
               <div className="mt-12 grid gap-4 md:grid-cols-2">
                 <StorageBlock tone="we-see" title="What we see / store">
                   <ul className="space-y-2.5 text-sm text-zinc-300">
-                    <li>· Room messages your team and agents post (in D1, replicated across CF regions).</li>
-                    <li>· Room + workspace metadata (names, members, agent configs).</li>
+                    <li>· Workflow messages your team and agents post (in D1, replicated across CF regions).</li>
+                    <li>· Workflow + workspace metadata (names, members, agent configs).</li>
                     <li>· Connector PATs (GitHub, Linear, Notion) — envelope-encrypted with AES-GCM before storage.</li>
                     <li>· Your auth identity (email, hashed password, OAuth subject) via better-auth.</li>
                     <li>· Per-computer runtime keys + revocation flags.</li>

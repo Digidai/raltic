@@ -226,7 +226,7 @@ export default function ServerHomePage() {
       window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
       router.push(`/s/${slug}/channel/${res.id}?starter=${starter.key}`);
     } catch (e) {
-      notifyThrown("Couldn't start workflow room", e);
+      notifyThrown("Couldn't start workflow", e);
     } finally {
       setStartingWorkflow(null);
     }
@@ -248,7 +248,7 @@ export default function ServerHomePage() {
                     Workflow command center
                   </Chip>
                   <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                    Start a workflow room.
+                    Start a workflow.
                   </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
                     Pick a real business process, let agents run the work, keep human approval visible,
@@ -262,7 +262,7 @@ export default function ServerHomePage() {
 
               <div className="mt-6 grid gap-2 sm:grid-cols-2">
                 <Stat label="Agents" value={stats.agentCount} />
-                <Stat label="Rooms" value={stats.roomCount} />
+                <Stat label="Workflows" value={stats.roomCount} />
               </div>
             </CardPanel>
           </Card>
@@ -327,7 +327,7 @@ export default function ServerHomePage() {
               <div>
                 <h2 className="text-sm font-semibold text-foreground">You joined this workspace.</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Start from an existing room, or create a workflow room for the work you own here.
+                  Start from an existing workflow, or create one for the work you own here.
                 </p>
               </div>
               {personal && hasBridgeInPersonal === false && (
@@ -454,11 +454,11 @@ function WorkflowStarterCard({
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}
-          {loading ? "Starting..." : existing ? "Open room" : runtimePending ? "Create room first" : "Start room"}
+          {loading ? "Starting..." : existing ? "Open workflow" : runtimePending ? "Create workflow first" : "Start workflow"}
           {!loading && <ArrowRight className="h-3.5 w-3.5" />}
         </Button>
         <p className="mt-2 truncate text-center font-mono text-[10px] text-muted-foreground">
-          #{starter.channelName}
+          {starter.channelName}
         </p>
       </div>
     </article>
@@ -493,8 +493,8 @@ function RuntimeBoundaryPanel({
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             {needsBridge
-              ? "One of your agents runs from your machine. Connect the bridge so that workflow room can use local code, keys, and tools."
-              : "Cloud agents can start low-risk workflow rooms now. Connect your own runtime when a workflow touches code, secrets, or private customer context."}
+              ? "One of your agents runs from your machine. Connect the bridge so that workflow can use local code, keys, and tools."
+              : "Cloud agents can start low-risk workflows now. Connect your own runtime when a workflow touches code, secrets, or private customer context."}
           </p>
         </div>
         <Button

@@ -381,11 +381,10 @@ test("sidebar destination pages fill the workspace main column and keep navigati
   await setupMockWorkspace(page, context);
 
   const destinations = [
-    { path: "/s/demo/inbox", nav: "Inbox", heading: "Inbox" },
+    { path: "/s/demo/inbox", nav: "Work queue", heading: "Work queue" },
+    { path: "/s/demo/channels", nav: "Workflows", heading: "Workflows" },
     { path: "/s/demo/tasks", nav: "Tasks", heading: "Tasks" },
-    { path: "/s/demo/agents", nav: "Agents", heading: "Agents" },
-    { path: "/s/demo/people", nav: "People", heading: "People" },
-    { path: "/s/demo/channels", nav: "Rooms", heading: "Rooms" },
+    { path: "/s/demo/agents", nav: "Agent Work", heading: "Agent Work" },
   ];
 
   for (const destination of destinations) {
@@ -395,7 +394,7 @@ test("sidebar destination pages fill the workspace main column and keep navigati
     await expect(
       page
         .getByRole("navigation", { name: "Workspace navigation" })
-        .getByRole("link", { name: "Inbox", exact: true }),
+        .getByRole("link", { name: "Work queue", exact: true }),
     ).toBeVisible();
     await expect(
       page
@@ -418,7 +417,7 @@ test("sidebar destination pages fill the workspace main column and keep navigati
       const active = document.querySelector<HTMLElement>("[data-testid='workspace-sidebar'] [aria-current='page']");
       const activeContent = active?.closest<HTMLElement>(".sidebar__menu-item-content") ?? null;
       const topDestinationLinks = Array.from(document.querySelectorAll<HTMLElement>("[data-testid='workspace-sidebar'] nav a"))
-        .filter((el) => ["Inbox", "Tasks", "Agents", "People", "Rooms"].includes(el.textContent?.trim() ?? ""))
+        .filter((el) => ["Start", "Work queue", "Workflows", "Tasks", "Agent Work"].includes(el.textContent?.trim() ?? ""))
         .map((el) => {
           const box = el.getBoundingClientRect();
           return { top: box.top, bottom: box.bottom, height: box.height };
@@ -482,13 +481,23 @@ test("sidebar destination pages fill the workspace main column and keep navigati
   }
 });
 
-test("workspace home carries the workflow-room activation narrative", async ({ page, context }) => {
+test("workspace home carries the workflow activation narrative", async ({ page, context }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await setupMockWorkspace(page, context, { hasConnectedBridge: false });
 
   await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Start a workflow room." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Start a workflow." })).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Workspace navigation" })
+      .getByRole("link", { name: "Start", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  const sidebar = page.getByTestId("workspace-sidebar");
+  await expect(sidebar.getByText(/active workflows/i)).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: /onboarding.*1 needs review.*review/i })).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: /research.*1 agent run active.*1 open.*running/i })).toBeVisible();
+  await expect(sidebar.getByText(/messages/i)).toBeVisible();
   for (const label of ["Brief", "Agents", "Approval", "Memory"]) {
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }
@@ -498,7 +507,7 @@ test("workspace home carries the workflow-room activation narrative", async ({ p
   await expect(page.getByText("Local runtime is optional.")).toBeVisible();
 
   const launchStarter = page.getByRole("article", { name: /Launch readiness workflow starter/ });
-  await launchStarter.getByRole("button", { name: /Start room/ }).click();
+  await launchStarter.getByRole("button", { name: /Start workflow/ }).click();
   await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-new\?starter=launch-readiness$/);
   await expect(page.getByRole("heading", { name: "launch-readiness" })).toBeVisible();
   await expect(page.getByText("Starter brief")).toBeVisible();
@@ -513,7 +522,7 @@ test("settings sections expose every destination and keep the active state in on
   const sections = [
     { path: "/s/demo/settings/workspace", nav: "Workspace", heading: "Workspace" },
     { path: "/s/demo/settings/members", nav: "Members & invites", heading: "Members & invites" },
-    { path: "/s/demo/settings/agents", nav: "Rooms & agents", heading: "Rooms & agents" },
+    { path: "/s/demo/settings/agents", nav: "Workflows & agents", heading: "Workflows & agents" },
     { path: "/s/demo/settings/keys", nav: "Runtimes", heading: "Runtimes" },
     { path: "/s/demo/settings/connectors", nav: "Connectors", heading: "Connectors" },
     { path: "/s/demo/settings/account", nav: "Account", heading: "Account" },
@@ -553,7 +562,7 @@ test("settings sections expose every destination and keep the active state in on
       };
     });
 
-    expect(navMetrics.allLinks).toEqual(["Workspace", "Members & invites", "Rooms & agents", "Runtimes", "Connectors", "Account"]);
+    expect(navMetrics.allLinks).toEqual(["Workspace", "Members & invites", "Workflows & agents", "Runtimes", "Connectors", "Account"]);
     expect(navMetrics.active?.height, `${section.nav} active row height`).toBeCloseTo(32, 1);
     expect(navMetrics.active?.borderRadius, `${section.nav} active row radius`).not.toBe("0px");
     expect(navMetrics.active?.borderLeftWidth, `${section.nav} active row should not use a legacy left rail`).not.toBe("2px");
@@ -1093,7 +1102,7 @@ test("mobile settings navigation keeps every destination visible without horizon
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
   const settingsNav = page.getByRole("navigation", { name: "Settings sections" });
 
-  for (const label of ["Workspace", "Members & invites", "Rooms & agents", "Runtimes", "Connectors", "Account"]) {
+  for (const label of ["Workspace", "Members & invites", "Workflows & agents", "Runtimes", "Connectors", "Account"]) {
     await expect(settingsNav.getByRole("link", { name: label })).toBeVisible();
   }
 
@@ -1194,7 +1203,7 @@ test("user account menu opens from the agents page without crashing the workspac
 
   await page.goto("/s/demo/agents", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Agent Work" })).toBeVisible();
 
   await page.getByTestId("user-pill-trigger").click();
   await expect(page.getByRole("menuitem", { name: "Account settings" })).toBeVisible();
@@ -1213,7 +1222,7 @@ test("workspace controls live in the settings menu instead of the sidebar brand 
 
   await page.goto("/s/demo/agents", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Agents" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Agent Work" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Raltic workspace home" })).toBeVisible();
   await expect(page.getByTestId("workspace-switcher-trigger")).toHaveCount(0);
 
@@ -1223,7 +1232,7 @@ test("workspace controls live in the settings menu instead of the sidebar brand 
   await expect(menu.getByText("Gene's Workspace", { exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Workspace settings" })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Members & invites" })).toBeVisible();
-  await expect(menu.getByRole("menuitem", { name: "Browse rooms" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Browse workflows" })).toBeVisible();
   await expect(menu.getByText("Switch workspace", { exact: true })).toBeVisible();
   await expect(menu.getByText("No other workspaces.", { exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Sign out" })).toBeVisible();

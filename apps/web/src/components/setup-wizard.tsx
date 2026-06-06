@@ -433,7 +433,7 @@ export function SetupWizard({
   const wizardTitle = hasExistingBridge
     ? "Connect another local runtime"
     : flavor === "invite"
-    ? "Bring YOUR agents into workflow rooms"
+    ? "Bring YOUR agents into workflows"
     : "Connect a local runtime";
   return (
     <Dialog open onOpenChange={(next) => { if (!next) handleDismiss(); }}>
@@ -462,12 +462,12 @@ export function SetupWizard({
                   You joined{" "}
                   <strong>{inviterWorkspaceName ?? "another workspace"}</strong>{" "}
                   — their agents are already online (their bridge handles those).
-                  To run agents <em>of your own</em> in workflow rooms, connect your local runtime here.
+                  To run agents <em>of your own</em> in workflows, connect your local runtime here.
                 </>
               ) : (
                 <>
                   Use this when a workflow needs local code, keys, or private tools.
-                  Cloud agents can work without this; local agents join rooms through your bridge.
+                  Cloud agents can work without this; local agents join workflows through your bridge.
                 </>
               )}
             </CardDescription>
@@ -507,7 +507,7 @@ export function SetupWizard({
                       runtime set). */}
                   {!hasExistingBridge && (
                     <div>
-                      <p className="font-medium">Which runtime should power local workflow rooms?</p>
+                      <p className="font-medium">Which runtime should power local workflows?</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         Pick the agent runtime that can safely touch local code, keys, or tools. You can change per-agent later.
                       </p>
@@ -820,7 +820,7 @@ export function SetupWizard({
                 <div className="space-y-3 text-sm">
                   <p className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[var(--success-soft-foreground)]" />
-                    Your bridge is connected. Local agents can now join workflow rooms from this machine.
+                    Your bridge is connected. Local agents can now join workflows from this machine.
                   </p>
 
                   {/* Per-computer runtime detection strip. Refreshes every

@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardPanel } from "@/compo
 import { Chip } from "@/components/heroui-pro/chip";
 import { Tabs, TabsList, TabsListContainer, TabsTrigger } from "@/components/heroui-pro/tabs";
 import { useAgentActivity } from "@/hooks/use-agent-activity";
-import { Activity, ExternalLink, Hash, ListChecks, MessageSquare, Pencil, RefreshCw, Settings as SettingsIcon, Trash2 } from "lucide-react";
+import { Activity, ExternalLink, ListChecks, MessageSquare, Pencil, RefreshCw, Settings as SettingsIcon, Trash2, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { notifyThrown, notifySuccess } from "@/lib/notify";
 import { sanitizeUserVisibleError } from "@raltic/protocol";
@@ -77,8 +77,8 @@ const RUN_STATUS_META: Record<AgentRun["status"], { label: string; color: "accen
 };
 
 const RUN_SOURCE_LABEL: Record<AgentRun["source"], string> = {
-  channel_mention: "Room mention",
-  channel_message: "Room message",
+  channel_mention: "Workflow mention",
+  channel_message: "Workflow message",
   dm: "DM",
   scheduled: "Scheduled",
   agent_to_agent: "Agent to agent",
@@ -330,7 +330,7 @@ export default function AgentProfilePage() {
         );
       } catch (e) {
         if (cancelled) return;
-        notifyThrown("Couldn't load rooms", e);
+        notifyThrown("Couldn't load workflows", e);
         setChannels([]);
       }
     })();
@@ -513,7 +513,7 @@ export default function AgentProfilePage() {
             { key: "chat",     label: "Chat",     icon: MessageSquare },
             { key: "runs",     label: "Runs",     icon: Activity },
             { key: "tasks",    label: "Tasks",    icon: ListChecks },
-            { key: "channels", label: "Rooms", icon: Hash },
+            { key: "channels", label: "Workflows", icon: Workflow },
             { key: "settings", label: "Settings", icon: SettingsIcon },
           ] as const).map((t) => {
             const active = tab === t.key;
@@ -695,7 +695,7 @@ export default function AgentProfilePage() {
                               size="xs"
                               className="shrink-0 justify-center sm:justify-start"
                             >
-                              {isDmRun ? "Open DM" : "Open room"} <ExternalLink className="h-3 w-3" />
+                              {isDmRun ? "Open DM" : "Open workflow"} <ExternalLink className="h-3 w-3" />
                             </Button>
                           </div>
                         </li>
@@ -798,10 +798,10 @@ export default function AgentProfilePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Hash className="h-4 w-4" /> Member of
+                  <Workflow className="h-4 w-4" /> Member of
                 </CardTitle>
                 <CardDescription>
-                  Workflow rooms this agent listens in. To add or remove it,
+                  Workflows this agent listens in. To add or remove it,
                   open the room and edit its member list.
                 </CardDescription>
               </CardHeader>
@@ -891,8 +891,8 @@ export default function AgentProfilePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {agent.displayName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the agent and its DM room. Past
-              messages in shared rooms are preserved but the agent will
+              This permanently removes the agent and its DM thread. Past
+              messages in shared workflows are preserved but the agent will
               no longer respond.
             </AlertDialogDescription>
           </AlertDialogHeader>

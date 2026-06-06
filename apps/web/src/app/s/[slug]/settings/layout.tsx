@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
-import { Building2, Users, Hash, KeyRound, Plug, User as UserIcon } from "lucide-react";
+import { Building2, Users, Workflow, KeyRound, Plug, User as UserIcon } from "lucide-react";
 import { api, type Server } from "@/lib/api";
 import { notifyThrown } from "@/lib/notify";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export function useSettings(): SettingsContextValue {
 const TABS = [
   { slug: "workspace", label: "Workspace",         Icon: Building2 },
   { slug: "members",   label: "Members & invites", Icon: Users },
-  { slug: "agents",    label: "Rooms & agents",     Icon: Hash },
+  { slug: "agents",    label: "Workflows & agents", Icon: Workflow },
   // "Runtimes" reframes the per-computer bridge concept around what
   // actually matters to the user: the compute environment that runs
   // their agents (Claude/Codex/Gemini/Copilot CLIs on a machine). The

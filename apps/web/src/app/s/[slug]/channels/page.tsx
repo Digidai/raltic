@@ -12,10 +12,10 @@ import { Chip } from "@/components/heroui-pro/chip";
 import { WorkspaceEmptyState, WorkspaceIconFrame, WorkspacePage } from "@/components/workspace-page";
 
 /**
- * Browse + join public channels in this workspace.
+ * Browse + join public workflows in this workspace.
  *
- * Sibling to /agents and /people in the top-level nav. Solves the
- * discovery gap: previously a workspace invitee could only see channels
+ * Sibling to /agents and /tasks in the top-level nav. Solves the
+ * discovery gap: previously a workspace invitee could only see workflows
  * they were explicitly added to — there was no surface to find #general
  * or #design unless someone @-mentioned them in one.
  *
@@ -39,7 +39,7 @@ export default function ChannelsBrowsePage() {
       // to the end so the directory order doesn't shift on every visit.
       setRows([...channels].sort((a, b) => a.createdAt - b.createdAt));
     } catch (e) {
-      notifyThrown("Couldn't load rooms", e);
+      notifyThrown("Couldn't load workflows", e);
       setRows([]);
     }
   }, [slug]);
@@ -50,7 +50,7 @@ export default function ChannelsBrowsePage() {
     setJoining(row.id);
     try {
       const res = await api.joinChannel(row.id);
-      notifySuccess(res.alreadyMember ? "Already a member" : `Joined #${row.name}`);
+      notifySuccess(res.alreadyMember ? "Already a member" : `Joined ${row.name}`);
       // Update local row to flip isMember without a full reload.
       setRows((prev) => prev?.map((r) => r.id === row.id ? { ...r, isMember: true } : r) ?? null);
       // Tell the sidebar to re-fetch this workspace's channels so the
@@ -60,7 +60,7 @@ export default function ChannelsBrowsePage() {
       // from layout/sidebar — no prop drilling through the Next route layer.
       window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
     } catch (e) {
-      notifyThrown("Couldn't join room", e);
+      notifyThrown("Couldn't join workflow", e);
     } finally {
       setJoining(null);
     }
@@ -68,8 +68,8 @@ export default function ChannelsBrowsePage() {
 
   return (
     <WorkspacePage
-      title="Rooms"
-      description={<>Public workflow rooms in this workspace. Click <em>Join</em> to add one to your sidebar.</>}
+      title="Workflows"
+      description={<>Public workflows in this workspace. Click <em>Join</em> to add one to your active workflow list.</>}
       icon={<Hash className="h-5 w-5" aria-hidden="true" />}
       tone="accent"
     >
@@ -80,10 +80,10 @@ export default function ChannelsBrowsePage() {
             <WorkspaceEmptyState
               icon={<Hash className="h-8 w-8" />}
               tone="accent"
-              title="No public rooms yet."
+              title="No public workflows yet."
               description={
                 <>
-                Admins can create workflow rooms from the sidebar or Settings.
+                Admins can start workflows from the sidebar or Settings.
                 </>
               }
             />
@@ -101,7 +101,7 @@ export default function ChannelsBrowsePage() {
                       href={`/s/${slug}/channel/${r.id}`}
                       className="truncate font-medium hover:underline"
                     >
-                      #{r.name}
+                      {r.name}
                     </Link>
                     {r.description && (
                       <p className="truncate text-[11px] text-muted-foreground">{r.description}</p>

@@ -43,9 +43,9 @@ test.describe("homepage full section render", () => {
     await gotoHome(page);
 
     const section = page.locator("section", { hasText: /Start from the workflow/i });
-    await expect(section.getByRole("heading", { name: "Run a workflow room" })).toBeVisible();
+    await expect(section.getByRole("heading", { name: "Run a workflow" })).toBeVisible();
     await expect(section.getByRole("heading", { name: "Bring your agents" })).toBeVisible();
-    await expect(section.getByRole("link", { name: /Start a workflow room/i })).toBeVisible();
+    await expect(section.getByRole("link", { name: /Start a workflow/i })).toBeVisible();
     await expect(section.getByRole("link", { name: /Connect a local runtime/i })).toBeVisible();
   });
 

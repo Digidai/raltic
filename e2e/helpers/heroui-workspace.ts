@@ -27,6 +27,7 @@ export const onboardingChannel = {
   maxSeq: 2,
   lastReadSeq: 2,
   mutedAt: null,
+  agentIds: ["agent-onboard", "agent-cloud"],
 };
 
 export const researchChannel = {
@@ -36,6 +37,7 @@ export const researchChannel = {
   description: "Research channel",
   maxSeq: 1,
   lastReadSeq: 1,
+  agentIds: ["agent-cloud"],
 };
 
 export const starterWorkflowChannel = {
@@ -65,6 +67,102 @@ export const dmChannel = {
   mutedAt: null,
   peer: { name: "Cloud Test Agent", type: "agent", id: "agent-cloud", runtime: "claude", avatarSeed: null },
 };
+
+const nowIso = new Date().toISOString();
+
+export const mockTasks = [
+  {
+    id: "task-onboarding-review",
+    channelId: "ch-onboarding",
+    messageId: "msg-review",
+    taskNumber: 7,
+    title: "Review onboarding handoff",
+    status: "in_review",
+    assigneeId: "u1",
+    assigneeType: "human",
+    createdAt: Date.now() - 5_000,
+    updatedAt: Date.now() - 1_000,
+    latestRun: {
+      id: "run-onboarding-waiting",
+      agentId: "agent-onboard",
+      status: "waiting_input",
+      source: "channel_mention",
+      runtimeMode: "raltic",
+      error: null,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      completedAt: null,
+    },
+  },
+  {
+    id: "task-research-running",
+    channelId: "ch-research",
+    messageId: "msg-running",
+    taskNumber: 8,
+    title: "Collect research notes",
+    status: "in_progress",
+    assigneeId: "agent-cloud",
+    assigneeType: "agent",
+    createdAt: Date.now() - 4_000,
+    updatedAt: Date.now() - 500,
+    latestRun: {
+      id: "run-research-active",
+      agentId: "agent-cloud",
+      status: "running",
+      source: "channel_mention",
+      runtimeMode: "raltic",
+      error: null,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      completedAt: null,
+    },
+  },
+];
+
+export const mockAgentRuns = [
+  {
+    id: "run-onboarding-waiting",
+    serverId: "srv-demo",
+    channelId: "ch-onboarding",
+    agentId: "agent-onboard",
+    taskId: "task-onboarding-review",
+    source: "channel_mention",
+    status: "waiting_input",
+    runtimeMode: "raltic",
+    callerId: "u1",
+    callerType: "human",
+    triggerMessageId: "msg-review",
+    outputMessageId: null,
+    inputPreview: "Review onboarding handoff",
+    error: null,
+    metadata: null,
+    startedAt: nowIso,
+    completedAt: null,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+  {
+    id: "run-research-active",
+    serverId: "srv-demo",
+    channelId: "ch-research",
+    agentId: "agent-cloud",
+    taskId: "task-research-running",
+    source: "channel_mention",
+    status: "running",
+    runtimeMode: "raltic",
+    callerId: "u1",
+    callerType: "human",
+    triggerMessageId: "msg-running",
+    outputMessageId: null,
+    inputPreview: "Collect research notes",
+    error: null,
+    metadata: null,
+    startedAt: nowIso,
+    completedAt: null,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
+];
 
 export const agents = [
   {
@@ -397,7 +495,8 @@ export async function setupMockWorkspace(
       hasConnectedBridge,
     }));
     if (path === "/api/v1/inbox") return route.fulfill(json({ items: [], count: 0 }));
-    if (path === "/api/v1/tasks" && method === "GET") return route.fulfill(json({ tasks: [] }));
+    if (path === "/api/v1/tasks" && method === "GET") return route.fulfill(json({ tasks: mockTasks }));
+    if (path === "/api/v1/agent-runs" && method === "GET") return route.fulfill(json({ runs: mockAgentRuns }));
     if (path === "/api/v1/servers/srv-demo/channels/browse") return route.fulfill(json({
       channels: [
         { id: onboardingChannel.id, name: onboardingChannel.name, description: onboardingChannel.description, createdAt: onboardingChannel.createdAt, isMember: true },

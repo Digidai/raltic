@@ -61,7 +61,7 @@ test.describe("landing — workflow-room framing (post-rewrite)", () => {
 
   test("TwoWaysToRun explicitly names the two workflow paths", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Run a workflow room/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Run a workflow/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Bring your agents/i })).toBeVisible();
   });
 

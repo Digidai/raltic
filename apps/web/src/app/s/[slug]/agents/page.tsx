@@ -16,18 +16,18 @@ import { useAgentActivities } from "@/hooks/use-agent-activity";
 import { cn } from "@/lib/utils";
 
 /**
- * Workspace-level agents directory. Sibling to /inbox, /tasks, /people —
+ * Workspace-level agent work surface. Sibling to /inbox, /tasks, /channels —
  * accessible from the sidebar top-level nav.
  *
  * Replaces the old "Agents" sidebar SECTION which listed every agent
- * inline (alongside the parallel "Direct messages" list that had the
+ * inline (alongside the parallel "Messages" list that had the
  * same agents in DM form — two parallel lists of the same entities).
- * The dedicated page lets us show richer context per agent (runtime,
- * status, description, last activity) without consuming permanent
+ * The dedicated page lets us show richer execution context per agent (runtime,
+ * status, description, last activity, latest runs) without consuming permanent
  * sidebar real estate.
  *
  * What this page does NOT do (delegates intentionally):
- *   - CRUD lifecycle (rename/delete) → Settings → Rooms & agents.
+ *   - CRUD lifecycle (rename/delete) → Settings → Workflows & agents.
  *   - Per-agent profile / chat history → /s/{slug}/agents/{id}.
  *   - DM with the agent → click the "Message" affordance, which uses
  *     api.openDm to find-or-create the DM channel and routes there.
@@ -105,8 +105,8 @@ export default function AgentsIndexPage() {
 
   return (
     <WorkspacePage
-      title="Agents"
-      description="AI teammates in this workspace. Click to view profile; Message opens a direct thread."
+      title="Agent Work"
+      description="AI teammates, runtime health, and recent execution across this workspace."
       icon={<Cpu className="h-5 w-5" aria-hidden="true" />}
       tone="success"
       actions={
@@ -136,7 +136,7 @@ export default function AgentsIndexPage() {
               icon={<Cpu className="h-8 w-8" />}
               tone="success"
               title="No agents yet."
-              description="Create your first AI teammate to start collaborating in workflow rooms."
+              description="Create your first AI teammate to start collaborating in workflows."
               action={serverId && (
                 <Button
                   type="button"

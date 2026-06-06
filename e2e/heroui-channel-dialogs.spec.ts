@@ -134,15 +134,15 @@ async function assertMembersTextSamplesReadable(page: Page) {
 }
 
 test.describe("HeroUI Pro channel dialogs", () => {
-  test("create workflow room dialog keeps overlay contrast and footer reachable above the mobile keyboard", async ({ page, context }) => {
+  test("start workflow dialog keeps overlay contrast and footer reachable above the mobile keyboard", async ({ page, context }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await setupMockWorkspace(page, context);
     await openMockChannel(page);
 
     await openMobileSidebar(page);
-    await clickVisible(page, 'button[aria-label="Create workflow room"]');
+    await clickVisible(page, 'button[aria-label="Start workflow"]');
 
-    assertOverlayMetrics(await overlayMetrics(page, /Create workflow room/));
+    assertOverlayMetrics(await overlayMetrics(page, /Start workflow/));
     await expect(page.getByRole("textbox", { name: "Room name" })).toHaveCSS("font-size", /16px/);
     const publicVisibility = page.getByRole("radio", { name: /Public/ });
     const privateVisibility = page.getByRole("radio", { name: /Private/ });
@@ -153,7 +153,7 @@ test.describe("HeroUI Pro channel dialogs", () => {
     await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Olivia/ }), "create channel member picker");
     await page.locator('[data-slot="checkbox"]').filter({ hasText: "Cloud Test Agent" }).click();
     await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Cloud Test Agent/ }), "create channel agent picker");
-    const createDialog = page.getByRole("dialog", { name: /Create workflow room/ });
+    const createDialog = page.getByRole("dialog", { name: /Start workflow/ });
     for (const label of ["Olivia", "Cloud Test Agent"]) {
       const chip = createDialog.locator("[data-slot='chip']").filter({ hasText: label });
       await expect(chip).toBeVisible();
@@ -161,10 +161,10 @@ test.describe("HeroUI Pro channel dialogs", () => {
       expect(chipClassName, `${label} selected chip should not use page-level cyan background`).not.toContain("bg-cyan");
       expect(chipClassName, `${label} selected chip should not use page-level cyan text`).not.toContain("text-cyan");
     }
-    await assertDialogFooterWithinVisualViewport(page, /Create workflow room/);
+    await assertDialogFooterWithinVisualViewport(page, /Start workflow/);
 
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: /Create workflow room/ })).toBeHidden();
+    await expect(page.getByRole("dialog", { name: /Start workflow/ })).toBeHidden();
   });
 
   test("start direct message opens above the mobile sidebar drawer without clipping the picker", async ({ page, context }) => {
