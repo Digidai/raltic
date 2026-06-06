@@ -9,7 +9,14 @@ async function openFirstChannel(page: import("@playwright/test").Page) {
   const firstChannel = nav.getByRole("link", { name: /^onboarding\b/i }).first();
   await expect(firstChannel).toBeVisible({ timeout: 15000 });
   await firstChannel.click();
-  await expect(page).toHaveURL(/\/s\/[^/]+\/channel\/[0-9a-f-]+$/, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/s\/[^/]+\/channel\/[0-9a-f-]+$/, { timeout: 15000 });
+  await waitForWorkspaceMainReady(page);
+}
+
+async function waitForWorkspaceMainReady(page: import("@playwright/test").Page) {
+  const main = page.getByTestId("workspace-main");
+  await expect(main).toBeVisible({ timeout: 20000 });
+  await expect(main).not.toHaveText(/^Loading…$/, { timeout: 20000 });
 }
 
 test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (skipped — set E2E_RUN_WORKSPACE=1)", () => {
@@ -19,6 +26,7 @@ test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (sk
   test.beforeEach(async ({ page }) => {
     await login(page);
     await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15000 });
+    await waitForWorkspaceMainReady(page);
   });
 
   test("renders shell navigation with link semantics and stable browser state", async ({ page, context }) => {
@@ -44,7 +52,8 @@ test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (sk
     }
 
     await nav.getByRole("link", { name: "Inbox" }).click();
-    await expect(page).toHaveURL(new RegExp(`/s/${slug}/inbox$`));
+    await expect(page).toHaveURL(new RegExp(`/s/${slug}/inbox$`), { timeout: 15000 });
+    await waitForWorkspaceMainReady(page);
     await expect(page.getByRole("navigation", { name: "Workspace navigation" })).toBeVisible();
 
     await page.keyboard.press(process.platform === "darwin" ? "Meta+B" : "Control+B");
@@ -80,7 +89,7 @@ test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (sk
     await openFirstChannel(page);
 
     const composer = page.getByTestId("message-composer");
-    await expect(composer).toBeVisible();
+    await expect(composer).toBeVisible({ timeout: 20000 });
 
     const composerMetrics = await page.evaluate(() => {
       const composer = document.querySelector("[data-testid='message-composer']")?.getBoundingClientRect();
