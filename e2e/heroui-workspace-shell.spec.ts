@@ -1387,6 +1387,7 @@ test("active channel, unread count, online status, and runtime badge do not shif
   await expect(research.getByText("3", { exact: true }), "seeded unread badge should render").toBeVisible();
   await expect(onlineBadge, "user online badge should render").toBeVisible();
   await expect(page.getByLabel("Runtime: Claude")).toBeVisible();
+  await expect(page.getByTestId("message-composer-footer")).toBeVisible();
 
   const initialMetrics = await shellMetrics(page);
   const onboardingBox = await visibleLinkBox(page, /onboarding/i);
@@ -1397,6 +1398,7 @@ test("active channel, unread count, online status, and runtime badge do not shif
   await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-research$/);
   await expect(research).toHaveAttribute("aria-current", "page");
   await expect(onlineBadge, "user online badge should survive channel navigation").toBeVisible();
+  await expect(page.getByTestId("message-composer-footer")).toBeVisible();
 
   const afterChannelChange = await shellMetrics(page);
   assertNoDocumentOverflow(afterChannelChange);
@@ -1409,6 +1411,7 @@ test("active channel, unread count, online status, and runtime badge do not shif
   await expect(page).toHaveURL(/\/s\/demo\/dm\/dm-agent$/);
   await expect(page.getByRole("heading", { name: "Cloud Test Agent" })).toBeVisible();
   await expect(page.getByLabel("Runtime: Claude")).toBeVisible();
+  await expect(page.getByTestId("message-composer-footer")).toBeVisible();
 
   const afterDmChange = await shellMetrics(page);
   assertNoDocumentOverflow(afterDmChange);

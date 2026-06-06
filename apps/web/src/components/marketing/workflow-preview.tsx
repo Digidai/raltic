@@ -13,6 +13,7 @@ import {
   MessageSquare,
   ShieldCheck,
 } from "lucide-react";
+import { Button } from "@/components/heroui-pro/button";
 import { Chip } from "@/components/heroui-pro/chip";
 import { cn } from "@/lib/utils";
 
@@ -113,14 +114,16 @@ export function WorkflowPreview(): React.ReactElement {
           {SCENARIOS.map((scenario) => {
             const selected = scenario.key === active.key;
             return (
-              <button
+              <Button
                 key={scenario.key}
                 type="button"
                 role="tab"
                 aria-selected={selected}
                 onClick={() => setActiveKey(scenario.key)}
+                variant="ghost"
+                size="sm"
                 className={cn(
-                  "inline-flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-medium transition",
+                  "h-8 min-w-0 justify-center gap-1.5 rounded-md border-0 px-2 text-[11px] font-medium shadow-none transition",
                   selected
                     ? "bg-cyan-400 text-zinc-950"
                     : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
@@ -129,7 +132,7 @@ export function WorkflowPreview(): React.ReactElement {
                 {scenario.icon}
                 <span className="hidden truncate sm:inline">{scenario.label}</span>
                 <span className="sm:hidden">{scenario.shortLabel}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
