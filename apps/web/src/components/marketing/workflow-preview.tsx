@@ -13,8 +13,8 @@ import {
   MessageSquare,
   ShieldCheck,
 } from "lucide-react";
+import { Button } from "@/components/heroui-pro/button";
 import { Chip } from "@/components/heroui-pro/chip";
-import { Tabs, TabsList, TabsListContainer, TabsTrigger } from "@/components/heroui-pro/tabs";
 import { cn } from "@/lib/utils";
 
 type ScenarioKey = "revenue" | "launch" | "engineering";
@@ -110,35 +110,31 @@ export function WorkflowPreview(): React.ReactElement {
             <p className="truncate font-mono text-[11px] text-zinc-500">{active.room}</p>
           </div>
         </div>
-        <Tabs
-          selectedKey={activeKey}
-          onSelectionChange={(key) => setActiveKey(key as ScenarioKey)}
-          className="w-full sm:w-auto"
-        >
-          <TabsListContainer className="overflow-visible p-0">
-            <TabsList aria-label="Workflow examples" className="grid min-w-0 grid-cols-3 gap-1 rounded-lg border border-zinc-800 bg-zinc-900/70 p-1">
-              {SCENARIOS.map((scenario) => {
-                const selected = scenario.key === active.key;
-                return (
-                  <TabsTrigger
-                    key={scenario.key}
-                    id={scenario.key}
-                    className={cn(
-                      "h-8 min-w-0 justify-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] font-medium transition",
-                      selected
-                        ? "border-cyan-400/30 bg-cyan-400 text-zinc-950 shadow-none"
-                        : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
-                    )}
-                  >
-                    {scenario.icon}
-                    <span className="hidden truncate sm:inline">{scenario.label}</span>
-                    <span className="sm:hidden">{scenario.shortLabel}</span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </TabsListContainer>
-        </Tabs>
+        <div role="group" aria-label="Workflow examples" className="grid w-full grid-cols-3 gap-1 rounded-lg border border-zinc-800 bg-zinc-900/70 p-1 sm:w-auto">
+          {SCENARIOS.map((scenario) => {
+            const selected = scenario.key === active.key;
+            return (
+              <Button
+                key={scenario.key}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setActiveKey(scenario.key)}
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-8 min-w-0 justify-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] font-medium shadow-none transition",
+                  selected
+                    ? "border-cyan-400/30 bg-cyan-400 text-zinc-950"
+                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
+                )}
+              >
+                {scenario.icon}
+                <span className="hidden truncate sm:inline">{scenario.label}</span>
+                <span className="sm:hidden">{scenario.shortLabel}</span>
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid gap-0 lg:grid-cols-[1.05fr_1.55fr_0.95fr]">

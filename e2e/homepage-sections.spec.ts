@@ -30,11 +30,11 @@ test.describe("homepage full section render", () => {
     await gotoHome(page);
 
     const preview = page.getByTestId("workflow-preview");
-    await expect(preview.getByRole("tab", { name: /Customer risk/i })).toHaveAttribute("aria-selected", "true");
+    await expect(preview.getByRole("button", { name: /Customer risk/i })).toHaveAttribute("aria-pressed", "true");
     await expect(preview.getByText("15 min to account plan")).toBeVisible();
 
-    await preview.getByRole("tab", { name: /Code review/i }).click();
-    await expect(preview.getByRole("tab", { name: /Code review/i })).toHaveAttribute("aria-selected", "true");
+    await preview.getByRole("button", { name: /Code review/i }).click();
+    await expect(preview.getByRole("button", { name: /Code review/i })).toHaveAttribute("aria-pressed", "true");
     await expect(preview.getByText(/Review a PR without uploading repo context/i)).toBeVisible();
     await expect(preview.getByText("code stays local")).toBeVisible();
   });
