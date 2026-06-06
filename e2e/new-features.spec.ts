@@ -49,21 +49,20 @@ test.describe("error surfaces — auth-gated not-found", () => {
   });
 });
 
-test.describe("landing — dual-mode framing (post-rewrite)", () => {
-  test("hero lands the default-cloud-or-bring-your-own choice", async ({ page }) => {
+test.describe("landing — workflow-room framing (post-rewrite)", () => {
+  test("hero lands the agent-workflow workspace choice", async ({ page }) => {
     await page.goto("/");
-    // H1 was rewritten ("Your AI Agent. Or theirs."); both halves of
-    // the dual-mode story must be visible in the hero.
-    await expect(page.locator("h1").filter({ hasText: /Your AI Agent/i }).first()).toBeVisible();
-    await expect(page.locator("h1").filter({ hasText: /Or theirs/i }).first()).toBeVisible();
-    await expect(page.getByText(/default cloud Agent/i).first()).toBeVisible();
-    await expect(page.getByText(/Claude Code, Codex, OpenClaw, Hermes/i).first()).toBeVisible();
+    const heroSection = page.locator("section").first();
+    await expect(page.getByRole("heading", { name: /Build your business\s+with agent workflows/i })).toBeVisible();
+    await expect(heroSection.getByText(/workflow rooms where humans set direction/i)).toBeVisible();
+    await expect(heroSection.getByText(/Start with a cloud Agent/i)).toBeVisible();
+    await expect(heroSection.getByText(/bring Claude Code, Codex, OpenClaw, or Hermes/i)).toBeVisible();
   });
 
-  test("TwoWaysToRun explicitly names the two cards", async ({ page }) => {
+  test("TwoWaysToRun explicitly names the two workflow paths", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Raltic cloud Agent/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Your CLI .*Your daemon/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Run a workflow room/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Bring your agents/i })).toBeVisible();
   });
 
   test("RuntimeBadges shows all 4 with experimental on openclaw + hermes", async ({ page }) => {

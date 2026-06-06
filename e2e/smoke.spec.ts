@@ -39,9 +39,7 @@ test.describe("homepage", () => {
   test("/ renders the public marketing landing for unauthenticated visitors", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/$/);
-    // Hero H1 was rewritten to lead with the dual-mode story; match
-    // "Your AI Agent. Or theirs." (codex GTM H1 fix).
-    await expect(page.getByRole("heading", { name: /Your AI Agent.*Or theirs/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Build your business\s+with agent workflows/i })).toBeVisible();
     // Primary CTA renamed from "Get started" → "Start a cloud Agent".
     await expect(page.getByRole("link", { name: /Start a cloud Agent/i }).first()).toBeVisible();
   });

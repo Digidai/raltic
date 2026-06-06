@@ -141,7 +141,7 @@ test.describe("homepage CTAs", () => {
     expect(primaryStyles.text).toContain("Start a cloud Agent");
     expect(contrastRatio(primaryStyles.color, primaryStyles.backgroundColor)).toBeGreaterThanOrEqual(4.5);
 
-    const secondaryCta = hero(page).getByRole("link", { name: /^Bring your own daemon$/ });
+    const secondaryCta = hero(page).getByRole("link", { name: /^Connect your agents$/ });
     await expect(secondaryCta).toBeVisible();
     await expect(secondaryCta).toHaveAttribute("href", "/signup?wizard=1");
   });
@@ -149,7 +149,7 @@ test.describe("homepage CTAs", () => {
   test("hero secondary CTA navigates to the bridge wizard", async ({ page }) => {
     await page.goto("/");
 
-    await hero(page).getByRole("link", { name: /^Bring your own daemon$/ }).click();
+    await hero(page).getByRole("link", { name: /^Connect your agents$/ }).click();
     await expectPathAndSearch(page, "/signup", "?wizard=1");
   });
 });
@@ -277,7 +277,7 @@ test.describe("homepage FAQ", () => {
     await page.goto("/");
 
     const firstTrigger = page.locator("#faq [data-slot='accordion-trigger']").first();
-    const firstAnswerText = /Teammates who just chat/i;
+    const firstAnswerText = /workflow room is a shared space/i;
 
     await expect(firstTrigger).toHaveAttribute("aria-expanded", "false");
     await firstTrigger.click();
