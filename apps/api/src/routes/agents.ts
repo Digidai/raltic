@@ -17,6 +17,7 @@ const updateAgentBody = z.object({
   // docs/DESIGN_openclaw_hermes_runtimes.md. The PATCH handler
   // additionally enforces RUNTIME_MODELS combos.
   runtime: z.enum(["claude", "codex", "openclaw", "hermes"]).optional(),
+  runtimeMode: z.enum(["raltic", "bridge"]).optional(),
   avatarSeed: z.string().max(64).nullable().optional(),
 });
 import type { Env, Variables } from "../lib/env";
@@ -291,7 +292,7 @@ agentsRoutes.patch("/api/v1/agents/:id", requireAuth, async (c) => {
   // changing runtime to codex writes an unrunnable combo to DB. We
   // resolve the FINAL combo by reading the current row first when only
   // one of (runtime, model) is in the patch.
-  if (body.runtime !== undefined || body.model !== undefined) {
+  if (body.runtime !== undefined || body.model !== undefined || body.runtimeMode !== undefined) {
     const current = await db.select({ runtime: agents.runtime, model: agents.model, runtimeMode: agents.runtimeMode })
       .from(agents).where(eq(agents.id, id)).limit(1);
     if (current.length === 0) {
@@ -303,7 +304,7 @@ agentsRoutes.patch("/api/v1/agents/:id", requireAuth, async (c) => {
     // 400 INVALID_RUNTIME_MODEL.
     const finalRuntime = body.runtime ?? (current[0].runtime as unknown as typeof body.runtime);
     const finalModel = body.model ?? current[0].model;
-    const finalRuntimeMode = current[0].runtimeMode as AgentRuntimeMode;
+    const finalRuntimeMode = (body.runtimeMode ?? current[0].runtimeMode) as AgentRuntimeMode;
     const allowed = finalRuntimeMode && finalRuntimeMode !== "bridge"
       ? CLOUD_RUNTIME_MODELS
       : RUNTIME_MODELS[finalRuntime as keyof typeof RUNTIME_MODELS];
@@ -325,6 +326,7 @@ agentsRoutes.patch("/api/v1/agents/:id", requireAuth, async (c) => {
   if (body.systemPrompt !== undefined) patch.systemPrompt = body.systemPrompt;
   if (body.model !== undefined) patch.model = body.model;
   if (body.runtime !== undefined) patch.runtime = body.runtime;
+  if (body.runtimeMode !== undefined) patch.runtimeMode = body.runtimeMode;
   if (body.avatarSeed !== undefined) {
     // Cap to 64 chars — anything longer is unintentional.
     patch.avatarSeed = body.avatarSeed === null ? null : String(body.avatarSeed).slice(0, 64);

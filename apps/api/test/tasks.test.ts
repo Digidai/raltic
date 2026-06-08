@@ -147,6 +147,26 @@ describe("GET /api/v1/tasks", () => {
     expect(new Date(body.tasks[0].latestRun?.updatedAt ?? "").toString()).not.toBe("Invalid Date");
   });
 
+  it("excludes archived channel tasks from cross-workspace listings", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const active = await seedChannel(srv, "public", [owner]);
+    const archived = await seedChannel(srv, "public", [owner]);
+    await db().update(schema.channels)
+      .set({ archivedAt: new Date("2026-06-07T08:00:00.000Z"), archivedBy: owner.id })
+      .where(eq(schema.channels.id, archived.id));
+    const activeTask = await seedTask(active.id, owner.id, 10);
+    const archivedTask = await seedTask(archived.id, owner.id, 11);
+
+    const res = await request(app as never, `https://test.local/api/v1/tasks?serverId=${srv.id}`, {
+      headers: { authorization: await userBearer(owner) },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as { tasks: Array<{ id: string }> };
+    expect(body.tasks.some((task) => task.id === activeTask.id)).toBe(true);
+    expect(body.tasks.some((task) => task.id === archivedTask.id)).toBe(false);
+  });
+
   it("deduplicates bridge-visible tasks when multiple bound agents share a channel", async () => {
     const owner = await seedUser({ name: "Owner" });
     const srv = await seedServer(owner);

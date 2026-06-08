@@ -97,14 +97,23 @@ test.describe("public routing and crawler files", () => {
     });
   }
 
-  for (const path of ["/api/me/api-token", "/api/me/session-token"]) {
-    test(`${path} returns JSON 401 instead of redirecting`, async ({ request }) => {
-      const res = await getWithRetry(request, path, { maxRedirects: 0 });
+  test("/api/me/api-token returns JSON 401 instead of redirecting", async ({ request }) => {
+    const res = await getWithRetry(request, "/api/me/api-token", { maxRedirects: 0 });
 
-      expect(res.status()).toBe(401);
-      expect(res.headers().location).toBeFalsy();
-      expect(res.headers()["content-type"]).toContain("application/json");
-      await expectSecurityHeaders(res.headers(), path);
-    });
-  }
+    expect(res.status()).toBe(401);
+    expect(res.headers().location).toBeFalsy();
+    expect(res.headers()["content-type"]).toContain("application/json");
+    await expectSecurityHeaders(res.headers(), "/api/me/api-token");
+  });
+
+  test("/api/me/session-token is disabled as JSON 404", async ({ request }) => {
+    const res = await getWithRetry(request, "/api/me/session-token", { maxRedirects: 0 });
+
+    expect(res.status()).toBe(404);
+    expect(res.headers().location).toBeFalsy();
+    expect(res.headers()["content-type"]).toContain("application/json");
+    const body = await res.json();
+    expect(body.error.code).toBe("SESSION_TOKEN_ENDPOINT_DISABLED");
+    await expectSecurityHeaders(res.headers(), "/api/me/session-token");
+  });
 });

@@ -40,8 +40,7 @@ test.describe("homepage", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("heading", { name: /Build your business\s+with agent workflows/i })).toBeVisible();
-    // Primary CTA renamed from "Get started" → "Start a cloud Agent".
-    await expect(page.getByRole("link", { name: /Start a cloud Agent/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Start your first workflow/i }).first()).toBeVisible();
   });
 });
 

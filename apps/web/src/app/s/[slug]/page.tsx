@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/heroui-pro/button";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
-import { api, type Channel } from "@/lib/api";
+import { api, type AgentRun, type Channel, type TaskRow } from "@/lib/api";
 import { SetupWizard } from "@/components/setup-wizard";
 import { BrandMonogram } from "@/components/brand";
 import { notifyThrown } from "@/lib/notify";
@@ -14,6 +14,8 @@ import { trackProductEvent } from "@/lib/product-tracking";
 import { WORKFLOW_STARTERS, type WorkflowStarterKey, type WorkflowStarterTemplate } from "@/lib/workflow-starters";
 import {
   ArrowRight,
+  Activity,
+  AlertTriangle,
   CheckCircle2,
   ClipboardCheck,
   ExternalLink,
@@ -37,7 +39,7 @@ interface ServerStats {
   roomCount: number;
   starterAgentId: string | null;
   onboardingDmId: string | null;
-  channels: Array<Pick<Channel, "id" | "name" | "type">>;
+  channels: Array<Pick<Channel, "id" | "name" | "type" | "description" | "isMember">>;
 }
 
 interface PersonalRef {
@@ -92,6 +94,7 @@ export default function ServerHomePage() {
   const skipBridgeSetup = sp.get("skipBridgeSetup") === "1";
   const [stats, setStats] = useState<ServerStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   // Per-workspace bridge state — true iff THIS workspace has a key that
   // has ever been used. NOT a user-level flag (that was the original bug).
   const [hasBridgeHere, setHasBridgeHere] = useState<boolean | null>(null);
@@ -107,12 +110,21 @@ export default function ServerHomePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [personal, setPersonal] = useState<PersonalRef | null>(null);
   const [startingWorkflow, setStartingWorkflow] = useState<WorkflowStarterKey | null>(null);
+  const [tasks, setTasks] = useState<TaskRow[] | null>(null);
+  const [agentRuns, setAgentRuns] = useState<AgentRun[] | null>(null);
+  const [workLoadError, setWorkLoadError] = useState<string | null>(null);
 
   // Is the user looking at their own personal workspace?
   const onPersonalWorkspace = stats != null && personal != null && stats.id === personal.id;
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    setStats(null);
+    setWorkLoadError(null);
+    setTasks(null);
+    setAgentRuns(null);
     (async () => {
       try {
         // Resolve the current workspace first, then ask /me twice —
@@ -124,15 +136,28 @@ export default function ServerHomePage() {
         // (b) drives the wizard auto-pop on the personal page only.
         const data = await api.getServerBySlug(slug);
         if (cancelled) return;
-        const me = await api.me({ serverId: data.server.id });
+        const [me, taskResult, runResult] = await Promise.all([
+          api.me({ serverId: data.server.id }),
+          api.listTasks({ serverId: data.server.id, limit: 200 }).then(
+            (value) => ({ ok: true as const, value }),
+            (error) => ({ ok: false as const, error }),
+          ),
+          api.listAgentRuns({ serverId: data.server.id, limit: 200 }).then(
+            (value) => ({ ok: true as const, value }),
+            (error) => ({ ok: false as const, error }),
+          ),
+        ]);
         if (cancelled) return;
+        const workflowChannels = data.channels.filter((channel) =>
+          channel.type !== "dm" && channel.isMember !== false && !isSystemOnboardingWorkflow(channel)
+        );
         setStats({
           id: data.server.id,
           name: data.server.name,
           description: data.server.description,
           agentCount: data.agents.length,
           channelCount: data.channels.length,
-          roomCount: data.channels.filter((c) => c.type !== "dm").length,
+          roomCount: workflowChannels.filter((c) => c.type !== "dm").length,
           starterAgentId: (
             data.agents.find((a) => a.name === "onboarding")
             ?? data.agents.find((a) => a.isDefault)
@@ -140,8 +165,28 @@ export default function ServerHomePage() {
             ?? data.agents[0]
           )?.id ?? null,
           onboardingDmId: data.channels.find((c) => c.type === "dm" && c.name === "onboarding-assistant")?.id ?? null,
-          channels: data.channels.map((c) => ({ id: c.id, name: c.name, type: c.type })),
+          channels: data.channels.map((c) => ({
+            id: c.id,
+            name: c.name,
+            type: c.type,
+            description: c.description,
+            isMember: c.isMember,
+          })),
         });
+        const workErrors: string[] = [];
+        if (taskResult.ok) {
+          setTasks(taskResult.value.tasks);
+        } else {
+          setTasks(null);
+          workErrors.push(`tasks: ${errorMessage(taskResult.error)}`);
+        }
+        if (runResult.ok) {
+          setAgentRuns(runResult.value.runs);
+        } else {
+          setAgentRuns(null);
+          workErrors.push(`agent runs: ${errorMessage(runResult.error)}`);
+        }
+        setWorkLoadError(workErrors.length > 0 ? workErrors.join("; ") : null);
         setHasBridgeHere(me.hasConnectedBridge);
         setUserId(me.subject.userId);
 
@@ -192,6 +237,11 @@ export default function ServerHomePage() {
         ) {
           setWizardOpen(true);
         }
+      } catch (e) {
+        if (!cancelled) {
+          setStats(null);
+          setLoadError(errorMessage(e));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -208,23 +258,31 @@ export default function ServerHomePage() {
     if (!stats || startingWorkflow) return;
     trackProductEvent("workflow_starter_click", starter.key);
     const existing = stats.channels.find((c) => c.type !== "dm" && c.name === starter.channelName);
-    if (existing) {
+    if (existing && existing.isMember !== false) {
       router.push(`/s/${slug}/channel/${existing.id}?starter=${starter.key}`);
       return;
     }
 
     setStartingWorkflow(starter.key);
     try {
-      const res = await api.createChannel({
-        serverId: stats.id,
-        name: starter.channelName,
-        description: starter.description,
-        type: starter.type,
-        initialAgentIds: stats.starterAgentId ? [stats.starterAgentId] : undefined,
-      });
-      trackProductEvent("workflow_room_created", starter.key);
+      let channelId: string;
+      if (existing) {
+        await api.joinChannel(existing.id);
+        channelId = existing.id;
+        trackProductEvent("workflow_room_joined", starter.key);
+      } else {
+        const res = await api.createChannel({
+          serverId: stats.id,
+          name: starter.channelName,
+          description: starter.description,
+          type: starter.type,
+          initialAgentIds: stats.starterAgentId ? [stats.starterAgentId] : undefined,
+        });
+        channelId = res.id;
+        trackProductEvent("workflow_room_created", starter.key);
+      }
       window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
-      router.push(`/s/${slug}/channel/${res.id}?starter=${starter.key}`);
+      router.push(`/s/${slug}/channel/${channelId}?starter=${starter.key}`);
     } catch (e) {
       notifyThrown("Couldn't start workflow", e);
     } finally {
@@ -233,7 +291,20 @@ export default function ServerHomePage() {
   }
 
   if (loading) return <div className="flex flex-1 items-center justify-center"><div className="text-sm text-muted-foreground">Loading…</div></div>;
+  if (loadError) return <div className="flex flex-1 items-center justify-center px-6"><div className="max-w-md rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">Workspace unavailable: {loadError}</div></div>;
   if (!stats) return <div className="flex flex-1 items-center justify-center"><div className="text-sm text-muted-foreground">Workspace not found</div></div>;
+
+  const workDataUnavailable = tasks === null || agentRuns === null || workLoadError !== null;
+  const workflowSnapshots = buildWorkflowSnapshots(stats.channels, tasks ?? [], agentRuns ?? []);
+  const attentionWorkflows = workflowSnapshots
+    .filter((workflow) => workflow.needsAttention)
+    .slice(0, 4);
+  const runningWorkflows = workflowSnapshots
+    .filter((workflow) => workflow.activeRuns > 0 && !workflow.needsAttention)
+    .slice(0, 4);
+  const continueWorkflows = workflowSnapshots
+    .filter((workflow) => !workflow.needsAttention && workflow.activeRuns === 0)
+    .slice(0, 4);
 
   return (
     <div className="relative h-full w-full min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 lg:px-10">
@@ -245,14 +316,17 @@ export default function ServerHomePage() {
                 <BrandMonogram letter={stats.name} size="lg" className="mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <Chip size="sm" variant="soft" color="accent" className="font-mono text-[10px] uppercase tracking-wider">
-                    Workflow command center
+                    Agent workflow workspace
                   </Chip>
                   <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                    Start a workflow.
+                    {stats.roomCount > 0 ? "Start your next workflow room." : "Start your first workflow room."}
                   </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
                     Pick a real business process, let agents run the work, keep human approval visible,
                     and turn the result into team memory inside {stats.name}.
+                    <span className="block pt-1">
+                      Cards below create the room and prefill the starter brief.
+                    </span>
                   </p>
                   {stats.description && (
                     <p className="mt-3 text-xs text-muted-foreground">{stats.description}</p>
@@ -260,8 +334,9 @@ export default function ServerHomePage() {
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-2 sm:grid-cols-2">
-                <Stat label="Agents" value={stats.agentCount} />
+              <div className="mt-6 grid gap-2 sm:grid-cols-3">
+                <Stat label="Needs attention" value={workDataUnavailable ? "?" : attentionWorkflows.length} />
+                <Stat label="Running" value={workDataUnavailable ? "?" : runningWorkflows.length} />
                 <Stat label="Workflows" value={stats.roomCount} />
               </div>
             </CardPanel>
@@ -269,13 +344,46 @@ export default function ServerHomePage() {
 
           <div className="rounded-xl border border-border bg-surface/80 p-4 shadow-surface">
             <div className="grid gap-2">
-              <WorkflowStep icon={<FileText className="h-4 w-4" />} label="Brief" body="Start with the work to be done." />
-              <WorkflowStep icon={<Sparkles className="h-4 w-4" />} label="Agents" body="Cloud or local agents execute." />
-              <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="Approval" body="Humans own the boundary calls." />
-              <WorkflowStep icon={<ListChecks className="h-4 w-4" />} label="Memory" body="Decisions and tasks stay reusable." />
+              <WorkflowStep icon={<FileText className="h-4 w-4" />} label="Pick" body="Choose a starter that matches real work." />
+              <WorkflowStep icon={<Sparkles className="h-4 w-4" />} label="Send" body="Use the brief, edit it, then send." />
+              <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="Review" body="Handle approval and blocked-agent gates." />
+              <WorkflowStep icon={<ListChecks className="h-4 w-4" />} label="Keep" body="Tasks and decisions stay with the room." />
             </div>
           </div>
         </header>
+
+        {workDataUnavailable && (
+          <WorkSignalsWarning message={workLoadError ?? "Work signals are still loading."} />
+        )}
+
+        <section aria-labelledby="workflow-command-heading" className="grid gap-3 lg:grid-cols-2">
+          <WorkflowFocusPanel
+            id="workflow-command-heading"
+            title="Needs attention"
+            description="Review gates, blocked runs, and failed agent work that should not get buried in chat."
+            empty={workDataUnavailable ? "Work signals are unavailable; attention status cannot be confirmed." : "No review gates, blocked runs, or failed runs in visible workflows."}
+            items={attentionWorkflows}
+            slug={slug}
+            countLabel={workDataUnavailable ? "?" : undefined}
+          />
+          <WorkflowFocusPanel
+            title="Running work"
+            description="Agent runs currently queued, dispatched, or running across your workflow rooms."
+            empty={workDataUnavailable ? "Work signals are unavailable; running status cannot be confirmed." : "No agent runs are active right now."}
+            items={runningWorkflows}
+            slug={slug}
+            countLabel={workDataUnavailable ? "?" : undefined}
+          />
+        </section>
+
+        <WorkflowFocusPanel
+          title="Continue workflows"
+          description="Open and ready workflows that can receive the next brief, agent run, or approval decision."
+          empty={workDataUnavailable ? "Work signals are unavailable; ready workflows cannot be confirmed." : "No open workflow rooms yet. Start with one of the templates below."}
+          items={continueWorkflows}
+          slug={slug}
+          countLabel={workDataUnavailable ? "?" : undefined}
+        />
 
         <section aria-labelledby="starter-workflows-heading">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -284,7 +392,7 @@ export default function ServerHomePage() {
                 Start here
               </p>
               <h2 id="starter-workflows-heading" className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-                Choose the first workflow your team already owns.
+                Choose the first workflow your team can finish today.
               </h2>
             </div>
             {stats.onboardingDmId && (
@@ -295,7 +403,7 @@ export default function ServerHomePage() {
                 className="w-full justify-center sm:w-auto"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
-                Ask onboarding agent
+                Ask which workflow to start
               </Button>
             )}
           </div>
@@ -306,7 +414,7 @@ export default function ServerHomePage() {
                 key={starter.key}
                 starter={starter}
                 hasLocalRuntime={Boolean(hasBridgeHere)}
-                existing={stats.channels.some((c) => c.type !== "dm" && c.name === starter.channelName)}
+                state={starterState(stats.channels, starter)}
                 loading={startingWorkflow === starter.key}
                 disabled={startingWorkflow !== null}
                 onStart={() => { void startWorkflowRoom(starter); }}
@@ -376,13 +484,36 @@ export default function ServerHomePage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-lg border border-border bg-surface/70 px-3 py-2 text-center">
       <div className="text-2xl font-semibold text-foreground">{value}</div>
       <Chip size="sm" variant="soft" color="default" className="mt-1 justify-center">{label}</Chip>
     </div>
   );
+}
+
+function WorkSignalsWarning({ message }: { message: string }) {
+  return (
+    <Card className="border-warning/30 bg-[var(--warning-soft)] !shadow-none">
+      <CardPanel className="flex items-start gap-3 p-4">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--warning-soft-foreground)]" aria-hidden="true" />
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-foreground">Work signals unavailable</h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground break-words">
+            Raltic could not confirm current tasks or agent runs. Workflow status is unknown until this reloads.
+          </p>
+          <p className="mt-1 text-[11px] text-muted-foreground break-words">{message}</p>
+        </div>
+      </CardPanel>
+    </Card>
+  );
+}
+
+function starterState(channels: ServerStats["channels"], starter: WorkflowStarterTemplate): "member" | "joinable" | "new" {
+  const existing = channels.find((channel) => channel.type !== "dm" && channel.name === starter.channelName);
+  if (!existing) return "new";
+  return existing.isMember === false ? "joinable" : "member";
 }
 
 function WorkflowStep({ icon, label, body }: { icon: React.ReactNode; label: string; body: string }) {
@@ -402,20 +533,22 @@ function WorkflowStep({ icon, label, body }: { icon: React.ReactNode; label: str
 function WorkflowStarterCard({
   starter,
   hasLocalRuntime,
-  existing,
+  state,
   loading,
   disabled,
   onStart,
 }: {
   starter: WorkflowStarterTemplate;
   hasLocalRuntime: boolean;
-  existing: boolean;
+  state: "member" | "joinable" | "new";
   loading: boolean;
   disabled: boolean;
   onStart: () => void;
 }) {
   const Icon = STARTER_ICONS[starter.key];
   const runtimePending = starter.requiresLocalRuntime && !hasLocalRuntime;
+  const existing = state === "member";
+  const joinable = state === "joinable";
   return (
     <article
       aria-label={`${starter.title} workflow starter`}
@@ -443,18 +576,18 @@ function WorkflowStarterCard({
           type="button"
           onClick={onStart}
           disabled={disabled}
-          variant={existing ? "outline" : "default"}
+          variant={existing || joinable ? "outline" : "default"}
           size="sm"
           className="w-full justify-center"
         >
           {loading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : existing ? (
+          ) : existing || joinable ? (
             <CheckCircle2 className="h-3.5 w-3.5" />
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}
-          {loading ? "Starting..." : existing ? "Open workflow" : runtimePending ? "Create workflow first" : "Start workflow"}
+          {loading ? "Starting..." : existing ? "Open workflow" : joinable ? "Join workflow" : runtimePending ? "Create review room" : "Start workflow"}
           {!loading && <ArrowRight className="h-3.5 w-3.5" />}
         </Button>
         <p className="mt-2 truncate text-center font-mono text-[10px] text-muted-foreground">
@@ -472,6 +605,211 @@ function StarterRow({ label, body }: { label: string; body: string }) {
       <span className="min-w-0 text-muted-foreground">{body}</span>
     </div>
   );
+}
+
+type WorkflowTone = "accent" | "warning" | "danger" | "success" | "default";
+
+interface WorkflowSnapshot {
+  channelId: string;
+  name: string;
+  description: string | null;
+  openTasks: number;
+  reviewTasks: number;
+  activeRuns: number;
+  waitingRuns: number;
+  failedRuns: number;
+  updatedAt: number;
+  label: string;
+  meta: string;
+  tone: WorkflowTone;
+  priority: number;
+  needsAttention: boolean;
+}
+
+function WorkflowFocusPanel({
+  id,
+  title,
+  description,
+  empty,
+  items,
+  slug,
+  countLabel,
+}: {
+  id?: string;
+  title: string;
+  description: string;
+  empty: string;
+  items: WorkflowSnapshot[];
+  slug: string;
+  countLabel?: string | number;
+}) {
+  return (
+    <Card className="bg-surface/80">
+      <CardPanel className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 id={id} className="text-sm font-semibold text-foreground">{title}</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+          </div>
+          <Chip size="sm" variant="soft" color={items.length > 0 ? "warning" : "default"} className="shrink-0">
+            {countLabel ?? items.length}
+          </Chip>
+        </div>
+        {items.length === 0 ? (
+          <p className="mt-4 rounded-lg border border-dashed border-border/70 bg-background/60 px-3 py-3 text-xs text-muted-foreground">
+            {empty}
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-2">
+            {items.map((workflow) => (
+              <li key={workflow.channelId}>
+                <Link
+                  href={`/s/${slug}/channel/${workflow.channelId}`}
+                  className="flex min-w-0 items-start gap-3 rounded-lg border border-border/70 bg-background/70 px-3 py-2.5 transition-colors hover:border-accent/25 hover:bg-[var(--accent-soft)]"
+                >
+                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-[var(--accent-soft-foreground)]">
+                    {workflow.failedRuns > 0 ? (
+                      <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Activity className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex min-w-0 flex-wrap items-center gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium text-foreground">{workflow.name}</span>
+                      <Chip size="sm" variant="soft" color={workflow.tone} className="h-5 shrink-0 px-1.5 text-[10px]">
+                        {workflow.label}
+                      </Chip>
+                    </span>
+                    <span className="mt-1 block truncate text-xs text-muted-foreground">
+                      {workflow.meta}
+                    </span>
+                    {workflow.description && (
+                      <span className="mt-1 block truncate text-[11px] text-muted-foreground/80">
+                        {workflow.description}
+                      </span>
+                    )}
+                  </span>
+                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardPanel>
+    </Card>
+  );
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function buildWorkflowSnapshots(
+  channels: ServerStats["channels"],
+  tasks: TaskRow[],
+  runs: AgentRun[],
+): WorkflowSnapshot[] {
+  return channels
+    .filter((channel) => channel.type !== "dm" && channel.isMember !== false && !isSystemOnboardingWorkflow(channel))
+    .map((channel) => {
+      const channelTasks = tasks.filter((task) => task.channelId === channel.id);
+      const channelRuns = runs.filter((run) => run.channelId === channel.id);
+      const openTasks = channelTasks.filter((task) => task.status !== "done").length;
+      const reviewTasks = channelTasks.filter((task) => task.status === "in_review").length;
+      const activeRuns = channelRuns.filter((run) => isActiveRunStatus(run.status)).length;
+      const waitingRuns = channelRuns.filter((run) => run.status === "waiting_input").length;
+      const failedRuns = channelRuns.filter((run) => run.status === "failed").length;
+      const updatedAt = Math.max(
+        0,
+        ...channelTasks.map((task) => task.updatedAt),
+        ...channelRuns.map((run) => new Date(run.updatedAt).getTime()).filter(Number.isFinite),
+      );
+      return summarizeWorkflowSnapshot({
+        channelId: channel.id,
+        name: channel.name,
+        description: channel.description,
+        openTasks,
+        reviewTasks,
+        activeRuns,
+        waitingRuns,
+        failedRuns,
+        updatedAt,
+      });
+    })
+    .sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return b.updatedAt - a.updatedAt;
+    });
+}
+
+function isSystemOnboardingWorkflow(channel: Pick<Channel, "name" | "type">): boolean {
+  return channel.type !== "dm" && channel.name === "onboarding";
+}
+
+function summarizeWorkflowSnapshot(input: Omit<WorkflowSnapshot, "label" | "meta" | "tone" | "priority" | "needsAttention">): WorkflowSnapshot {
+  if (input.reviewTasks > 0) {
+    return {
+      ...input,
+      label: "Review",
+      meta: `${input.reviewTasks} task${input.reviewTasks === 1 ? "" : "s"} need human review${input.failedRuns > 0 ? ` · ${input.failedRuns} failed run${input.failedRuns === 1 ? "" : "s"}` : ""}`,
+      tone: "warning",
+      priority: 0,
+      needsAttention: true,
+    };
+  }
+  if (input.waitingRuns > 0) {
+    return {
+      ...input,
+      label: "Waiting",
+      meta: `${input.waitingRuns} agent run${input.waitingRuns === 1 ? "" : "s"} waiting for input${input.openTasks > 0 ? ` · ${input.openTasks} open task${input.openTasks === 1 ? "" : "s"}` : ""}`,
+      tone: "warning",
+      priority: 1,
+      needsAttention: true,
+    };
+  }
+  if (input.failedRuns > 0) {
+    return {
+      ...input,
+      label: "Failed",
+      meta: `${input.failedRuns} failed run${input.failedRuns === 1 ? "" : "s"}${input.openTasks > 0 ? ` · ${input.openTasks} open task${input.openTasks === 1 ? "" : "s"}` : ""}`,
+      tone: "danger",
+      priority: 2,
+      needsAttention: true,
+    };
+  }
+  if (input.activeRuns > 0) {
+    return {
+      ...input,
+      label: "Running",
+      meta: `${input.activeRuns} agent run${input.activeRuns === 1 ? "" : "s"} active${input.openTasks > 0 ? ` · ${input.openTasks} open task${input.openTasks === 1 ? "" : "s"}` : ""}`,
+      tone: "accent",
+      priority: 3,
+      needsAttention: false,
+    };
+  }
+  if (input.openTasks > 0) {
+    return {
+      ...input,
+      label: "Open",
+      meta: `${input.openTasks} open task${input.openTasks === 1 ? "" : "s"}`,
+      tone: "default",
+      priority: 4,
+      needsAttention: false,
+    };
+  }
+  return {
+    ...input,
+    label: "Ready",
+    meta: "brief, run, approve",
+    tone: "success",
+    priority: 5,
+    needsAttention: false,
+  };
+}
+
+function isActiveRunStatus(status: AgentRun["status"]): boolean {
+  return status === "queued" || status === "dispatched" || status === "running" || status === "waiting_input";
 }
 
 function RuntimeBoundaryPanel({

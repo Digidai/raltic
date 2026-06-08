@@ -195,9 +195,9 @@ test.describe("homepage full section render", () => {
     const footer = page.locator("footer");
     const lead = footer.locator("[data-raltic-footer-lead]");
     await expect(lead.getByRole("heading", { name: /Turn useful agents/i })).toBeVisible();
-    // Primary CTA renamed: "Get started" → "Start a cloud Agent"
+    // Primary CTA follows the authenticated Start page language.
     // (signed-out branch); signed-in branch is "Open Raltic".
-    await expect(lead.getByRole("link", { name: /Start a cloud Agent|Open Raltic/i })).toBeVisible();
+    await expect(lead.getByRole("link", { name: /Start your first workflow|Open Raltic/i })).toBeVisible();
     const metrics = await footer.evaluate((el) => {
       const footerRect = el.getBoundingClientRect();
       const lead = el.querySelector<HTMLElement>("[data-raltic-footer-lead]");

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api, type Server } from "@/lib/api";
 import { notifyThrown } from "@/lib/notify";
-import { Inbox as InboxIcon, MessageSquare, ListChecks, Hash, Lock, ArrowRight } from "lucide-react";
+import { Activity, AlertTriangle, ClipboardCheck, Inbox as InboxIcon, MessageSquare, ListChecks, Hash, Lock, ArrowRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/heroui-pro/button";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
@@ -13,11 +13,12 @@ import { Chip } from "@/components/heroui-pro/chip";
 import { WorkspaceEmptyState, WorkspacePage } from "@/components/workspace-page";
 
 /**
- * Work queue — answers "what needs me right now".
+ * Work queue — answers "what needs attention in this workspace".
  *
- * Aggregates unread DMs + open task assignments for the current
- * workspace. Mentions land in a Phase 2 expansion (needs a schema column
- * so the mention lookup doesn't full-scan messages).
+ * Aggregates review tasks, blocked/failed agent runs, assigned tasks,
+ * and unread handoffs for the current workspace. Mentions land in a
+ * Phase 2 expansion (needs a schema column so the mention lookup
+ * doesn't full-scan messages).
  *
  * Server-side does the heavy lifting (joins + filters + sort); this
  * page is a thin list view. Items are clickable links straight to the
@@ -26,6 +27,7 @@ import { WorkspaceEmptyState, WorkspacePage } from "@/components/workspace-page"
  * triage.
  */
 type InboxItem = Awaited<ReturnType<typeof api.getInbox>>["items"][number];
+type QueueFilter = "all" | "review" | "agent_runs" | "tasks" | "handoffs";
 
 export default function InboxPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -35,14 +37,28 @@ export default function InboxPage() {
   // the "You're caught up" empty state to users whose inbox actually had
   // unread items the server just couldn't reach. Misleading.
   const [items, setItems] = useState<InboxItem[] | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<Error | null>(null);
   // Reload counter so the retry button re-fires the effect.
   const [reloadCount, setReloadCount] = useState(0);
+  const [filter, setFilter] = useState<QueueFilter>("all");
+
+  const visibleItems = useMemo(() => {
+    if (!items) return null;
+    return items.filter((item) => {
+      if (filter === "all") return true;
+      if (filter === "review") return item.kind === "task" && item.status === "in_review";
+      if (filter === "agent_runs") return item.kind === "agent_run";
+      if (filter === "tasks") return item.kind === "task" && item.status !== "in_review";
+      return item.kind === "dm";
+    });
+  }, [filter, items]);
 
   useEffect(() => {
     let cancelled = false;
     setLoadError(null);
     setItems(null);
+    setTotalCount(null);
     (async () => {
       try {
         const data = await api.getServerBySlug(slug);
@@ -51,6 +67,7 @@ export default function InboxPage() {
         const inbox = await api.getInbox(data.server.id);
         if (cancelled) return;
         setItems(inbox.items);
+        setTotalCount(inbox.totalCount ?? inbox.count ?? inbox.items.length);
       } catch (e) {
         if (cancelled) return;
         notifyThrown("Couldn't load inbox", e);
@@ -67,7 +84,7 @@ export default function InboxPage() {
   return (
     <WorkspacePage
       title="Work queue"
-      description={<>Tasks, approvals, and direct messages waiting on you in {server.name}.</>}
+      description={<>Team-visible review gates, blocked agent work, assigned tasks, and unread handoffs in {server.name}.</>}
       icon={<InboxIcon className="h-5 w-5" aria-hidden="true" />}
       tone="accent"
       contentClassName="flex flex-col gap-3"
@@ -100,25 +117,93 @@ export default function InboxPage() {
               title="You're caught up."
               description={
                 <>
-                No unread DMs and no open tasks assigned to you.
+                No review gates, blocked runs, assigned tasks, or unread handoffs.
                 </>
               }
             />
           )}
 
-          {!loadError && items && items.length > 0 && (
-            <ul className="space-y-2">
-              {items.map((item) => (
-                <InboxRow key={item.id} item={item} />
-              ))}
-            </ul>
+          {!loadError && items && items.length > 0 && visibleItems && (
+            <>
+              <QueueFilters items={items} totalCount={totalCount ?? items.length} value={filter} onChange={setFilter} />
+              {(totalCount ?? items.length) > items.length && (
+                <Card className="border-warning/25 bg-[var(--warning-soft)] !shadow-none">
+                  <CardPanel className="flex flex-col gap-1 p-3 text-xs text-[var(--warning-soft-foreground)] sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      Showing the first {items.length} of {totalCount} queue items. Resolve visible work first, then refresh for the next batch.
+                    </span>
+                    <Button
+                      type="button"
+                      onClick={() => setReloadCount((n) => n + 1)}
+                      variant="outline"
+                      size="xs"
+                      className="w-full justify-center sm:w-auto"
+                    >
+                      Refresh queue
+                    </Button>
+                  </CardPanel>
+                </Card>
+              )}
+              {visibleItems.length === 0 ? (
+                <Card className="border-dashed bg-surface/60 !shadow-none">
+                  <CardPanel className="p-4 text-sm text-muted-foreground">
+                    No queue items match this filter.
+                  </CardPanel>
+                </Card>
+              ) : (
+                <ul className="space-y-2" data-testid="work-queue-list">
+                  {visibleItems.map((item) => (
+                    <InboxRow key={item.id} item={item} />
+                  ))}
+                </ul>
+              )}
+            </>
           )}
     </WorkspacePage>
   );
 }
 
+function QueueFilters({
+  items,
+  totalCount,
+  value,
+  onChange,
+}: {
+  items: InboxItem[];
+  totalCount: number;
+  value: QueueFilter;
+  onChange: (value: QueueFilter) => void;
+}) {
+  const options: Array<{ value: QueueFilter; label: string; count: number }> = [
+    { value: "all", label: "All", count: totalCount },
+    { value: "review", label: "Review", count: items.filter((item) => item.kind === "task" && item.status === "in_review").length },
+    { value: "agent_runs", label: "Agent runs", count: items.filter((item) => item.kind === "agent_run").length },
+    { value: "tasks", label: "Tasks", count: items.filter((item) => item.kind === "task" && item.status !== "in_review").length },
+    { value: "handoffs", label: "Handoffs", count: items.filter((item) => item.kind === "dm").length },
+  ];
+  return (
+    <div className="flex flex-wrap gap-1.5" role="toolbar" aria-label="Work queue filters">
+      {options.map((option) => (
+        <Button
+          key={option.value}
+          type="button"
+          size="xs"
+          variant={value === option.value ? "default" : "outline"}
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+          className="h-7 gap-1.5 rounded-full px-2.5 text-xs"
+        >
+          {option.label}
+          <span className="font-mono text-[10px] opacity-75">{option.count}</span>
+        </Button>
+      ))}
+    </div>
+  );
+}
+
 function InboxRow({ item }: { item: InboxItem }) {
-  const Icon = item.kind === "task" ? ListChecks : MessageSquare;
+  const meta = queueItemMeta(item);
+  const Icon = meta.icon;
   const channelIcon = item.channelType === "private" ? Lock : item.channelType === "dm" ? MessageSquare : Hash;
   const ChannelIcon = channelIcon;
   return (
@@ -129,9 +214,7 @@ function InboxRow({ item }: { item: InboxItem }) {
       >
         <div className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-          item.kind === "task"
-            ? "bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)] ring-1 ring-warning/15"
-            : "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15",
+          meta.iconClass,
         )}>
           <Icon className="h-4 w-4" aria-hidden="true" />
         </div>
@@ -141,8 +224,8 @@ function InboxRow({ item }: { item: InboxItem }) {
               <ChannelIcon className="h-3 w-3 shrink-0" aria-hidden="true" />
               <span className="truncate">{item.channelType === "dm" ? "Direct message" : `#${item.channelName}`}</span>
             </span>
-            <Chip size="sm" variant="soft" color={item.kind === "task" ? "warning" : "accent"} className="text-[9px] uppercase tracking-wider">
-              {item.kind}
+            <Chip size="sm" variant="soft" color={meta.color} className="text-[9px] uppercase tracking-wider">
+              {meta.label}
             </Chip>
             <time className="shrink-0">{relativeTime(item.createdAt)}</time>
           </div>
@@ -154,6 +237,52 @@ function InboxRow({ item }: { item: InboxItem }) {
       </Card>
     </li>
   );
+}
+
+function queueItemMeta(item: InboxItem): {
+  label: string;
+  color: "accent" | "warning" | "danger" | "default";
+  icon: LucideIcon;
+  iconClass: string;
+} {
+  if (item.kind === "agent_run") {
+    if (item.status === "failed") {
+      return {
+        label: "failed",
+        color: "danger",
+        icon: AlertTriangle,
+        iconClass: "bg-[var(--danger-soft)] text-[var(--danger-soft-foreground)] ring-1 ring-destructive/15",
+      };
+    }
+    return {
+      label: "waiting",
+      color: "warning",
+      icon: Activity,
+      iconClass: "bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)] ring-1 ring-warning/15",
+    };
+  }
+  if (item.kind === "task") {
+    if (item.status === "in_review") {
+      return {
+        label: "review",
+        color: "warning",
+        icon: ClipboardCheck,
+        iconClass: "bg-[var(--warning-soft)] text-[var(--warning-soft-foreground)] ring-1 ring-warning/15",
+      };
+    }
+    return {
+      label: "task",
+      color: "default",
+      icon: ListChecks,
+      iconClass: "bg-[var(--default-soft)] text-[var(--default-soft-foreground)] ring-1 ring-border/60",
+    };
+  }
+  return {
+    label: "handoff",
+    color: "accent",
+    icon: MessageSquare,
+    iconClass: "bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] ring-1 ring-accent/15",
+  };
 }
 
 function relativeTime(ms: number): string {

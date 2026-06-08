@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-redirect";
+import {
+  addOnboardingIntentToPath,
+  buildAuthPath,
+  clearStoredOnboardingIntent,
+  persistOnboardingIntent,
+  readAllowedOnboardingIntent,
+  type OnboardingIntent,
+} from "@/lib/onboarding-intent";
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
@@ -48,7 +56,9 @@ function VerifyEmailInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const session = authClient.useSession();
-  const nextPath = safeNext(sp.get("next")) ?? "/";
+  const nextBasePath = safeNext(sp.get("next")) ?? "/";
+  const onboardingIntent = readAllowedOnboardingIntent(sp, nextBasePath);
+  const nextPath = addOnboardingIntentToPath(nextBasePath, onboardingIntent);
 
   // ?error=<code> set by better-auth on failure paths. Common codes:
   //   INVALID_TOKEN | TOKEN_EXPIRED | INVALID_EMAIL | INTERNAL_ERROR
@@ -62,6 +72,14 @@ function VerifyEmailInner() {
 
   const redirected = useRef(false);
   useEffect(() => { redirected.current = false; }, [nextPath]);
+
+  useEffect(() => {
+    if (onboardingIntent) {
+      persistOnboardingIntent(onboardingIntent);
+    } else {
+      clearStoredOnboardingIntent();
+    }
+  }, [onboardingIntent]);
 
   // Notify any signup tab (in any browser-window/tab on the same origin)
   // that this email is now verified. The signup tab will listen + reload
@@ -98,7 +116,8 @@ function VerifyEmailInner() {
       <ErrorPanel
         errorCode={errorCode}
         emailFromUrl={emailFromUrl}
-        nextPath={nextPath}
+        nextBasePath={nextBasePath}
+        onboardingIntent={onboardingIntent}
       />
     );
   }
@@ -121,9 +140,9 @@ function VerifyEmailInner() {
           <h1 className="sr-only">Email verified</h1>
           <CardTitle>Email verified</CardTitle>
           <CardDescription>
-          If you signed up on a different device, return there — this
-          tab confirmed your email and the other one will pick it up
-          automatically. Otherwise, sign in below.
+          {onboardingIntent
+            ? "Your email is confirmed. Sign in here to connect your local runtime, or return to the original signup tab and it will continue automatically."
+            : "Your email is confirmed. Sign in here to start your first workflow room, or return to the original signup tab and it will continue automatically."}
           </CardDescription>
         </CardHeader>
         <CardFooter className="justify-center">
@@ -137,11 +156,12 @@ function VerifyEmailInner() {
 }
 
 function ErrorPanel({
-  errorCode, emailFromUrl, nextPath,
+  errorCode, emailFromUrl, nextBasePath, onboardingIntent,
 }: {
   errorCode: string;
   emailFromUrl: string;
-  nextPath: string;
+  nextBasePath: string;
+  onboardingIntent: OnboardingIntent | null;
 }) {
   const [email, setEmail] = useState(emailFromUrl);
   const [resending, setResending] = useState(false);
@@ -159,7 +179,10 @@ function ErrorPanel({
     try {
       await authClient.sendVerificationEmail({
         email: email.trim(),
-        callbackURL: nextPath !== "/" ? `/verify-email?next=${encodeURIComponent(nextPath)}` : "/verify-email",
+        callbackURL: buildAuthPath("/verify-email", {
+          next: nextBasePath !== "/" ? nextBasePath : null,
+          intent: onboardingIntent,
+        }),
       });
       setResentTo(email.trim());
     } catch (err) {
@@ -234,7 +257,16 @@ function ErrorPanel({
         </CardPanel>
         <CardFooter className="justify-center">
         <p className="mt-6 text-xs text-muted-foreground">
-          Already verified? <Link href="/login" className="underline hover:text-foreground">Sign in</Link>.
+          Already verified?{" "}
+          <Link
+            href={buildAuthPath("/login", {
+              next: nextBasePath !== "/" ? nextBasePath : null,
+              intent: onboardingIntent,
+            })}
+            className="underline hover:text-foreground"
+          >
+            Sign in
+          </Link>.
           {" "}
           <span>[ref: {errorCode}]</span>
         </p>

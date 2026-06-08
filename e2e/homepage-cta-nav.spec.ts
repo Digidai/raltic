@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { setupMockWorkspace } from "./helpers/heroui-workspace";
 
 type Rgb = {
   r: number;
@@ -124,8 +125,7 @@ test.describe("homepage CTAs", () => {
   test("anonymous hero CTAs point at signup flows", async ({ page }) => {
     await page.goto("/");
 
-    // Primary CTA renamed to "Start a cloud Agent" (codex GTM H2 fix).
-    const primaryCta = hero(page).getByRole("link", { name: /^Start a cloud Agent$/ });
+    const primaryCta = hero(page).getByRole("link", { name: /^Start your first workflow$/ });
     await expect(primaryCta).toBeVisible();
     await expect(primaryCta).toHaveAttribute("href", "/signup");
     await expect(hero(page).getByRole("status", { name: "Loading" })).toHaveCount(0);
@@ -138,19 +138,45 @@ test.describe("homepage CTAs", () => {
         text: element.textContent?.trim() ?? "",
       };
     });
-    expect(primaryStyles.text).toContain("Start a cloud Agent");
+    expect(primaryStyles.text).toContain("Start your first workflow");
     expect(contrastRatio(primaryStyles.color, primaryStyles.backgroundColor)).toBeGreaterThanOrEqual(4.5);
 
-    const secondaryCta = hero(page).getByRole("link", { name: /^Connect your agents$/ });
+    const secondaryCta = hero(page).getByRole("link", { name: /^Connect a local runtime$/ });
     await expect(secondaryCta).toBeVisible();
-    await expect(secondaryCta).toHaveAttribute("href", "/signup?wizard=1");
+    await expect(secondaryCta).toHaveAttribute("href", "/signup?intent=connect-runtime");
   });
 
   test("hero secondary CTA navigates to the bridge wizard", async ({ page }) => {
     await page.goto("/");
 
-    await hero(page).getByRole("link", { name: /^Connect your agents$/ }).click();
-    await expectPathAndSearch(page, "/signup", "?wizard=1");
+    await hero(page).getByRole("link", { name: /^Connect a local runtime$/ }).click();
+    await expectPathAndSearch(page, "/signup", "?intent=connect-runtime");
+    await expect(page.getByRole("link", { name: /^Sign in$/ })).toHaveAttribute("href", "/login?intent=connect-runtime");
+  });
+
+  test("auth pages preserve runtime intent and ignore it for desktop next paths", async ({ page }) => {
+    await page.goto("/signup?wizard=1");
+    await expect(page.getByText("Create your account, then connect this computer's runtime")).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Sign in$/ })).toHaveAttribute("href", "/login?intent=connect-runtime");
+
+    await page.goto("/login?intent=connect-runtime");
+    await expect(page.getByRole("link", { name: /^Sign up$/ })).toHaveAttribute("href", "/signup?intent=connect-runtime");
+
+    await page.goto("/verify-email?error=TOKEN_EXPIRED&intent=connect-runtime&email=dai%40live.cn");
+    await expect(page.getByRole("link", { name: /^Sign in$/ })).toHaveAttribute("href", "/login?intent=connect-runtime");
+
+    await page.goto("/login?client=desktop&next=%2Fdesktop%2Flaunch&intent=connect-runtime");
+    await expect(page.getByRole("link", { name: /^Sign up$/ })).toHaveAttribute("href", "/signup?client=desktop&next=%2Fdesktop%2Flaunch");
+    await expect(page.getByText(/connect this computer to your workspace/i)).toBeVisible();
+  });
+
+  test("signed-in runtime intent opens the personal workspace setup wizard", async ({ page, context }) => {
+    await setupMockWorkspace(page, context, { hasConnectedBridge: false });
+
+    await page.goto("/?intent=connect-runtime", { waitUntil: "domcontentloaded" });
+
+    await expect(page).toHaveURL(/\/s\/demo\?wizard=1$/);
+    await expect(page.getByRole("dialog", { name: /Connect a local runtime/ })).toBeVisible();
   });
 });
 

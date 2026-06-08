@@ -350,6 +350,8 @@ test("setup wizard runtime picker uses one HeroUI radio selected surface", async
   const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
   await expect(dialog).toBeVisible({ timeout: 15_000 });
   await expect(dialog.getByText("Which runtime should power local workflows?")).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: /OpenClaw/ })).toHaveCount(0);
+  await expect(dialog.getByRole("radio", { name: /Hermes Agent/ })).toHaveCount(0);
 
   await assertSelectedRadioOwnsSingleSurface(
     dialog.getByRole("radio", { name: /Claude Code/ }),
@@ -362,6 +364,233 @@ test("setup wizard runtime picker uses one HeroUI radio selected surface", async
     "setup wizard runtime",
   );
   await expect(dialog.getByText(/codex login/)).toBeVisible();
+
+  const advancedToggle = dialog.getByRole("button", { name: "Advanced daemon runtimes" });
+  await expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
+  await advancedToggle.click();
+  await expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(dialog.getByRole("radio", { name: /OpenClaw/ })).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: /Hermes Agent/ })).toBeVisible();
+  await dialog.locator("[data-slot='radio']").filter({ hasText: "OpenClaw" }).click();
+  await assertSelectedRadioOwnsSingleSurface(
+    dialog.getByRole("radio", { name: /OpenClaw/ }),
+    "setup wizard advanced runtime",
+  );
+  await expect(dialog.getByText(/openclaw onboard/)).toBeVisible();
+  await advancedToggle.click();
+  await expect(dialog.getByRole("button", { name: /Advanced daemon runtimes \(OpenClaw selected\)/ })).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: /OpenClaw/ })).toBeVisible();
+});
+
+for (const runtimeCase of [
+  {
+    label: "OpenAI Codex",
+    advanced: false,
+    title: "Codex CLI missing?",
+    version: "codex --version",
+    install: "npm install -g @openai/codex",
+    login: "codex login",
+  },
+  {
+    label: "OpenClaw",
+    advanced: true,
+    title: "OpenClaw CLI or daemon missing?",
+    version: "openclaw --version",
+    install: "npm install -g openclaw",
+    login: "openclaw onboard --install-daemon",
+  },
+  {
+    label: "Hermes Agent",
+    advanced: true,
+    title: "Hermes CLI or daemon missing?",
+    version: "hermes --version",
+    install: "install from the Hermes docs",
+    login: "hermes start",
+  },
+]) {
+  test(`setup wizard troubleshooting follows the selected ${runtimeCase.label} runtime`, async ({ page, context }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await setupMockWorkspace(page, context, { hasConnectedBridge: false });
+
+    await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
+    const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    if (runtimeCase.advanced) {
+      await dialog.getByRole("button", { name: "Advanced daemon runtimes" }).click();
+    }
+    await dialog.locator("[data-slot='radio']").filter({ hasText: runtimeCase.label }).click();
+    await dialog.getByRole("button", { name: "Continue" }).click();
+    await dialog.getByRole("button", { name: "Issue key" }).click();
+
+    const troubleToggle = dialog.getByRole("button", { name: "Having trouble?" });
+    if ((await troubleToggle.getAttribute("aria-expanded")) !== "true") {
+      await troubleToggle.click();
+    }
+    await expect(dialog.getByText(runtimeCase.title)).toBeVisible();
+    await expect(dialog.getByText(runtimeCase.version)).toBeVisible();
+    await expect(dialog.getByText(runtimeCase.install)).toBeVisible();
+    await expect(dialog.getByText(runtimeCase.login)).toBeVisible();
+    await expect(dialog.getByText("Claude CLI missing?")).toHaveCount(0);
+  });
+}
+
+test("setup wizard moves the onboarding assistant to the local bridge before first workflow step", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const connectedAt = Date.now();
+  const agentPatches: Array<{ agentId: string; patch: Record<string, unknown> }> = [];
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    createMachineKeyResponse: {
+      id: "mk-wizard",
+      name: "My Mac",
+      apiKey: "ck_wizard_1234567890",
+    },
+    machineKeys: [{
+      id: "mk-wizard",
+      prefix: "ck_wizard",
+      name: "My Mac",
+      serverId: "srv-demo",
+      createdAt: connectedAt - 1_000,
+      lastUsedAt: connectedAt,
+      revokedAt: null,
+      lastDetectedAt: connectedAt,
+      machines: [],
+    }],
+    agentPatches,
+  });
+
+  await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
+  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+  await expect(dialog).toBeVisible({ timeout: 15_000 });
+
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await dialog.getByRole("button", { name: "Issue key" }).click();
+
+  await expect(dialog.getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
+  expect(agentPatches).toContainEqual({
+    agentId: "agent-onboard",
+    patch: {
+      runtimeMode: "bridge",
+      runtime: "claude",
+      model: "sonnet",
+    },
+  });
+});
+
+test("setup wizard resume keeps the selected runtime and still runs runtime setup", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const connectedAt = Date.now();
+  const agentPatches: Array<{ agentId: string; patch: Record<string, unknown> }> = [];
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    machineKeys: [{
+      id: "mk-codex",
+      prefix: "ck_codex",
+      name: "My Mac",
+      serverId: "srv-demo",
+      createdAt: connectedAt - 1_000,
+      lastUsedAt: connectedAt,
+      revokedAt: null,
+      lastDetectedAt: connectedAt,
+      machines: [],
+    }],
+    agentPatches,
+  });
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem("raltic:wizard:resume:srv-demo", JSON.stringify({
+      issuedKeyId: "mk-codex",
+      keyName: "My Mac",
+      runtime: "codex",
+      at: Date.now(),
+    }));
+  });
+
+  await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
+  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+  await expect(dialog).toBeVisible({ timeout: 15_000 });
+
+  await expect(dialog.getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
+  expect(agentPatches).toContainEqual({
+    agentId: "agent-onboard",
+    patch: {
+      runtimeMode: "bridge",
+      runtime: "codex",
+      model: "gpt-5.5",
+    },
+  });
+});
+
+test("setup wizard stops before the first workflow step when runtime setup fails", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const connectedAt = Date.now();
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    createMachineKeyResponse: {
+      id: "mk-wizard",
+      name: "My Mac",
+      apiKey: "ck_wizard_1234567890",
+    },
+    machineKeys: [{
+      id: "mk-wizard",
+      prefix: "ck_wizard",
+      name: "My Mac",
+      serverId: "srv-demo",
+      createdAt: connectedAt - 1_000,
+      lastUsedAt: connectedAt,
+      revokedAt: null,
+      lastDetectedAt: connectedAt,
+      machines: [{
+        fingerprint: "machine-1",
+        hostname: "raltic-mac",
+        platform: "darwin",
+        arch: "arm64",
+        detectedAt: connectedAt,
+        runtimes: [
+          { id: "codex", detected: true, version: "1.0.0", authed: true, authMethod: "oauth", error: null },
+        ],
+      }],
+    }],
+    failAgentPatch: true,
+  });
+
+  await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
+  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+  await expect(dialog).toBeVisible({ timeout: 15_000 });
+
+  await dialog.locator("[data-slot='radio']").filter({ hasText: "OpenAI Codex" }).click();
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await dialog.getByRole("button", { name: "Issue key" }).click();
+
+  await expect(dialog.getByText("Bridge connected, but runtime setup failed.")).toBeVisible({ timeout: 10_000 });
+  await expect(dialog.getByText("couldn't update onboarding agent")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Retry runtime setup" })).toBeVisible();
+  await expect(dialog.getByText("Step 3 of 4")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /Open DM and send first workflow brief/ })).toHaveCount(0);
+});
+
+test("setup wizard keeps users on the old key when revocation fails", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setupMockWorkspace(page, context, {
+    failMachineKeyRevoke: true,
+    createMachineKeyResponse: {
+      id: "mk-stale",
+      name: "My Mac",
+      apiKey: "ck_stale_1234567890",
+    },
+  });
+
+  await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
+  const dialog = page.getByRole("dialog", { name: /Connect another local runtime|Connect a local runtime/ });
+  await expect(dialog).toBeVisible({ timeout: 15_000 });
+
+  await dialog.getByRole("button", { name: "Issue a new runtime key" }).click();
+  await dialog.getByRole("button", { name: "Issue key" }).click();
+  await dialog.getByRole("button", { name: /start over from step 2/i }).click();
+
+  await expect(dialog.getByText("Runtime key needs attention")).toBeVisible();
+  await expect(dialog.getByText(/Couldn't revoke the old runtime key/)).toBeVisible();
+  await expect(dialog.getByText("Step 3 of 4")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Issue a fresh key" })).toBeVisible();
 });
 
 test("member overlays keep contrast and picker inputs above the keyboard", async ({ page, context }) => {

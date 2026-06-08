@@ -39,7 +39,7 @@ const SCENARIOS: WorkflowScenario[] = [
     key: "revenue",
     label: "Customer risk",
     shortLabel: "Risk",
-    room: "#customer-intel",
+    room: "#customer-risk",
     owner: "GTM",
     icon: <LineChart className="h-4 w-4" aria-hidden="true" />,
     brief: "Renewal risk brief for Acme before the next account call.",
@@ -107,7 +107,7 @@ export function WorkflowPreview(): React.ReactElement {
           </span>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-white">Workflow room</p>
-            <p className="truncate font-mono text-[11px] text-zinc-500">{active.room}</p>
+            <p className="truncate font-mono text-[11px] text-zinc-400">{active.room}</p>
           </div>
         </div>
         <div role="group" aria-label="Workflow examples" className="grid w-full grid-cols-3 gap-1 rounded-lg border border-zinc-800 bg-zinc-900/70 p-1 sm:w-auto">
@@ -139,7 +139,7 @@ export function WorkflowPreview(): React.ReactElement {
 
       <div className="grid gap-0 lg:grid-cols-[1.05fr_1.55fr_0.95fr]">
         <div className="border-b border-zinc-900 p-5 lg:border-b-0 lg:border-r">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">01 brief</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">01 brief</p>
           <h3 className="mt-3 text-xl font-medium leading-tight text-white">{active.brief}</h3>
           <div className="mt-5 flex flex-wrap gap-2">
             {active.chips.map((chip) => (
@@ -150,7 +150,7 @@ export function WorkflowPreview(): React.ReactElement {
           </div>
           <div className="mt-6 rounded-lg border border-zinc-800 bg-black/40 p-3">
             <div className="flex items-center justify-between gap-3 text-[11px]">
-              <span className="text-zinc-500">owner</span>
+              <span className="text-zinc-400">owner</span>
               <span className="font-medium text-zinc-200">{active.owner}</span>
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
@@ -160,7 +160,7 @@ export function WorkflowPreview(): React.ReactElement {
         </div>
 
         <div className="border-b border-zinc-900 p-5 lg:border-b-0 lg:border-r">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">02 agents run</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">02 agents run</p>
           <div className="mt-4 grid gap-3">
             {active.agents.map((agent) => (
               <div key={agent.name} className="rounded-xl border border-zinc-800 bg-black/40 p-4">
@@ -187,7 +187,7 @@ export function WorkflowPreview(): React.ReactElement {
         </div>
 
         <div className="p-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">03 memory</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">03 memory</p>
           <div className="mt-4 space-y-3">
             <div className="rounded-xl border border-zinc-800 bg-black/40 p-4">
               <div className="flex items-center gap-2 text-sm font-medium text-white">
@@ -220,7 +220,7 @@ export function WorkflowPreview(): React.ReactElement {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 border-t border-zinc-900 px-5 py-3 text-[12px] text-zinc-500">
+      <div className="flex flex-wrap items-center justify-center gap-2 border-t border-zinc-900 px-5 py-3 text-[12px] text-zinc-400">
         <span>Brief</span>
         <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         <span>agent run</span>

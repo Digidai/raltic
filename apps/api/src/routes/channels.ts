@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { requirePolicy, policy } from "@raltic/auth-core";
 import { listMessagesQuery, createChannelRequest, markReadRequest, addChannelMembersRequest } from "@raltic/protocol";
 import { servers, serverMembers, agents, channels, channelMembers, messages, messageAttachments, reactions, user } from "@raltic/db";
-import { and, desc, eq, lt, inArray, like, or, sql as sqlFn } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, inArray, like, or, sql as sqlFn } from "drizzle-orm";
 import type { Env, Variables } from "../lib/env";
 import { requireAuth, requireUser, ctxFor } from "../lib/auth";
 import { rateLimit } from "../lib/rate-limit";
@@ -268,7 +268,7 @@ channelsRoutes.get("/api/v1/servers/:serverId/channels/browse", requireAuth, req
       createdAt: channels.createdAt,
     })
     .from(channels)
-    .where(and(eq(channels.serverId, serverId), eq(channels.type, "public")));
+    .where(and(eq(channels.serverId, serverId), eq(channels.type, "public"), isNull(channels.archivedAt)));
   const myMemberships = await db
     .select({ channelId: channelMembers.channelId })
     .from(channelMembers)
@@ -306,6 +306,9 @@ channelsRoutes.post("/api/v1/channels/:id/join", requireAuth, requireUser, async
   const rows = await db.select().from(channels).where(eq(channels.id, channelId)).limit(1);
   if (rows.length === 0) return c.json({ error: { code: "NOT_FOUND", message: "no such channel" } }, 404);
   const ch = rows[0];
+  if (ch.archivedAt != null) {
+    return c.json({ error: { code: "ARCHIVED", message: "channel is archived" } }, 423);
+  }
   if (ch.type !== "public") {
     return c.json({ error: { code: "FORBIDDEN", message: "channel is not joinable" } }, 403);
   }

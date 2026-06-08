@@ -1,8 +1,15 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn, authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-redirect";
+import {
+  addOnboardingIntentToPath,
+  buildAuthPath,
+  clearStoredOnboardingIntent,
+  persistOnboardingIntent,
+  readAllowedOnboardingIntent,
+} from "@/lib/onboarding-intent";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardPanel, CardFooter } from "@/components/heroui-pro/card";
@@ -49,8 +56,10 @@ function LoginInner() {
   const [resentMsg, setResentMsg] = useState<string | null>(null);
   const router = useRouter();
   const sp = useSearchParams();
-  const nextPath = safeNext(sp.get("next")) ?? "/";
-  const desktopClient = sp.get("client") === "desktop" || nextPath.startsWith("/desktop");
+  const nextBasePath = safeNext(sp.get("next")) ?? "/";
+  const onboardingIntent = readAllowedOnboardingIntent(sp, nextBasePath);
+  const nextPath = addOnboardingIntentToPath(nextBasePath, onboardingIntent);
+  const desktopClient = sp.get("client") === "desktop" || nextBasePath.startsWith("/desktop");
   const [justReset, setJustReset] = useState(sp.get("reset") === "ok");
 
   // Surface OAuth-callback errors better-auth bounces back through the
@@ -61,12 +70,19 @@ function LoginInner() {
   // see the form re-rendered with no explanation.
   const oauthErrorCode = sp.get("error");
   const oauthErrorMessage = oauthErrorCode ? interpretOAuthError(oauthErrorCode) : null;
-  const signupHref = nextPath !== "/"
-    ? `/signup?${new URLSearchParams({
-      ...(desktopClient ? { client: "desktop" } : {}),
-      next: nextPath,
-    }).toString()}`
-    : desktopClient ? "/signup?client=desktop" : "/signup";
+  const signupHref = buildAuthPath("/signup", {
+    client: desktopClient ? "desktop" : null,
+    next: nextBasePath !== "/" ? nextBasePath : null,
+    intent: onboardingIntent,
+  });
+
+  useEffect(() => {
+    if (onboardingIntent) {
+      persistOnboardingIntent(onboardingIntent);
+    } else {
+      clearStoredOnboardingIntent();
+    }
+  }, [onboardingIntent]);
 
   // First *real* character keystroke clears the "Password updated"
   // banner. We use `onKeyDown` (not `onChange`) because Safari fires
@@ -95,6 +111,11 @@ function LoginInner() {
         }
         return;
       }
+      if (onboardingIntent) {
+        persistOnboardingIntent(onboardingIntent);
+      } else {
+        clearStoredOnboardingIntent();
+      }
       router.push(nextPath);
       router.refresh();
     } catch (e) {
@@ -108,7 +129,13 @@ function LoginInner() {
     if (!email) return;
     setResendingVerify(true); setResentMsg(null);
     try {
-      await authClient.sendVerificationEmail({ email, callbackURL: "/verify-email" });
+      await authClient.sendVerificationEmail({
+        email,
+        callbackURL: buildAuthPath("/verify-email", {
+          next: nextBasePath !== "/" ? nextBasePath : null,
+          intent: onboardingIntent,
+        }),
+      });
       setResentMsg("Verification email sent.");
     } catch (e) {
       setResentMsg(e instanceof Error ? e.message : String(e));
@@ -119,6 +146,11 @@ function LoginInner() {
     if (oauthLoading) return;
     setOauthLoading(true);
     try {
+      if (onboardingIntent) {
+        persistOnboardingIntent(onboardingIntent);
+      } else {
+        clearStoredOnboardingIntent();
+      }
       await authClient.signIn.social({ provider: "google", callbackURL: nextPath });
     } finally {
       // OAuth navigates away on success; only resets if it errored locally.

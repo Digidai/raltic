@@ -149,10 +149,12 @@ test.describe("HeroUI Pro channel dialogs", () => {
     await expect(publicVisibility).toBeChecked();
     await page.locator('[data-slot="radio"]').filter({ hasText: "Private" }).click();
     await assertSelectedRadioOwnsSingleSurface(privateVisibility, "create channel visibility");
+    const oliviaCheckbox = page.getByRole("checkbox", { name: /Olivia/ });
     await page.locator('[data-slot="checkbox"]').filter({ hasText: "Olivia" }).click();
-    await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Olivia/ }), "create channel member picker");
+    await assertSelectedCheckboxOwnsSingleSurface(oliviaCheckbox, "create channel member picker");
+    const cloudAgentCheckbox = page.getByRole("checkbox", { name: /Cloud Test Agent/ });
     await page.locator('[data-slot="checkbox"]').filter({ hasText: "Cloud Test Agent" }).click();
-    await assertSelectedCheckboxOwnsSingleSurface(page.getByRole("checkbox", { name: /Cloud Test Agent/ }), "create channel agent picker");
+    await assertSelectedCheckboxOwnsSingleSurface(cloudAgentCheckbox, "create channel agent picker");
     const createDialog = page.getByRole("dialog", { name: /Start workflow/ });
     for (const label of ["Olivia", "Cloud Test Agent"]) {
       const chip = createDialog.locator("[data-slot='chip']").filter({ hasText: label });
@@ -165,6 +167,35 @@ test.describe("HeroUI Pro channel dialogs", () => {
 
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog", { name: /Start workflow/ })).toBeHidden();
+  });
+
+  test("start workflow dialog sends brief, approval boundary, members, and agents", async ({ page, context }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await setupMockWorkspace(page, context);
+    await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+
+    await clickVisible(page, 'button[aria-label="Start workflow"]');
+    await page.getByRole("textbox", { name: "Room name" }).fill("launch-readiness-custom");
+    await page.getByRole("textbox", { name: "Room description" }).fill("Launch proof");
+    await page.getByRole("textbox", { name: "Approval boundary" }).fill("Human checks support-risk summary before public launch");
+    await page.locator('[data-slot="radio"]').filter({ hasText: "Private" }).click();
+    await page.locator('[data-slot="checkbox"]').filter({ hasText: "Olivia" }).click();
+    await page.locator('[data-slot="checkbox"]').filter({ hasText: "Cloud Test Agent" }).click();
+
+    const createRequest = page.waitForRequest((request) =>
+      request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+    );
+    await page.getByRole("dialog", { name: /Start workflow/ }).getByRole("button", { name: "Start workflow" }).click();
+    const body = JSON.parse((await createRequest).postData() ?? "{}");
+    expect(body).toMatchObject({
+      serverId: "srv-demo",
+      name: "launch-readiness-custom",
+      type: "private",
+      initialMemberIds: ["u2"],
+      initialAgentIds: ["agent-cloud"],
+    });
+    expect(body.description).toBe("Launch proof\nApproval boundary: Human checks support-risk summary before public launch");
   });
 
   test("start direct message opens above the mobile sidebar drawer without clipping the picker", async ({ page, context }) => {

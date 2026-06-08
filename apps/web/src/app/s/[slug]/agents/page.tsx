@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { Activity, Cpu, MessageSquare, Pencil, Plus, ArrowRight } from "lucide-react";
-import { api, type Agent, type AgentRun } from "@/lib/api";
+import { api, type Agent, type AgentRun, type Channel } from "@/lib/api";
 import { notifyThrown } from "@/lib/notify";
 import { GeneratedAvatar } from "@/components/generated-avatar";
 import { CreateAgentDialog } from "@/components/create-agent-dialog";
@@ -39,6 +39,8 @@ export default function AgentsIndexPage() {
   const [agents, setAgents] = useState<Agent[] | null>(null);
   const [serverId, setServerId] = useState<string | null>(null);
   const [workByAgentId, setWorkByAgentId] = useState<Record<string, AgentWorkSummary> | null>(null);
+  const [runs, setRuns] = useState<AgentRun[]>([]);
+  const [channels, setChannels] = useState<Array<Pick<Channel, "id" | "name" | "type">>>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [workError, setWorkError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -54,25 +56,29 @@ export default function AgentsIndexPage() {
       setAgents(null);
       setServerId(null);
       setWorkByAgentId(null);
+      setRuns([]);
       // Fetch in parallel: workspace metadata gives us the serverId for
       // create-dialog + DM open; agents list is the page's main payload.
-      const [{ server }, { agents: all }] = await Promise.all([
+      const [{ server, channels }, { agents: all }] = await Promise.all([
         api.getServerBySlug(slug),
         api.listAgents(),
       ]);
       if (!live()) return;
       setServerId(server.id);
+      setChannels(channels.map((channel) => ({ id: channel.id, name: channel.name, type: channel.type })));
       // listAgents returns cross-workspace; scope to current.
       const workspaceAgents = all.filter((a) => a.serverId === server.id);
       setAgents(workspaceAgents);
       try {
         const { runs } = await api.listAgentRuns({ serverId: server.id, limit: 200 });
         if (!live()) return;
+        setRuns(runs);
         setWorkByAgentId(summarizeAgentRuns(runs));
       } catch (e) {
         if (!live()) return;
         notifyThrown("Couldn't load agent work log", e);
         setWorkError(e instanceof Error ? e.message : String(e));
+        setRuns([]);
         setWorkByAgentId({});
       }
     } catch (e) {
@@ -80,6 +86,8 @@ export default function AgentsIndexPage() {
       notifyThrown("Couldn't load agents", e);
       setLoadError(e instanceof Error ? e.message : String(e));
       setAgents([]);
+      setRuns([]);
+      setChannels([]);
       setWorkByAgentId({});
     }
   }, [slug]);
@@ -150,71 +158,74 @@ export default function AgentsIndexPage() {
             />
           )}
           {!loadError && agents !== null && agents.length > 0 && (
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {agents.map((a) => {
-                const act = activities[a.id];
-                const work = workByAgentId === null ? undefined : workByAgentId[a.id] ?? null;
-                return (
-                  <Card render={<li />} key={a.id} className="border-border/60 bg-surface/80 !shadow-none transition-colors hover:border-accent/25">
-                    <CardPanel className="p-3">
-                    <div className="flex items-start gap-3">
-                      <GeneratedAvatar id={a.id} name={a.displayName} seed={a.avatarSeed} size="lg" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Link
-                            href={`/s/${slug}/agents/${a.id}`}
-                            className="min-w-0 max-w-full truncate font-medium hover:underline"
-                          >
-                            {a.displayName}
-                          </Link>
-                          <RuntimeChip runtime={a.runtime} />
+            <div className="space-y-4">
+              <WorkspaceRunLog slug={slug} runs={runs} agents={agents} channels={channels} loading={workByAgentId === null} error={workError} />
+              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {agents.map((a) => {
+                  const act = activities[a.id];
+                  const work = workByAgentId === null ? undefined : workByAgentId[a.id] ?? null;
+                  return (
+                    <Card render={<li />} key={a.id} className="border-border/60 bg-surface/80 !shadow-none transition-colors hover:border-accent/25">
+                      <CardPanel className="p-3">
+                      <div className="flex items-start gap-3">
+                        <GeneratedAvatar id={a.id} name={a.displayName} seed={a.avatarSeed} size="lg" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Link
+                              href={`/s/${slug}/agents/${a.id}`}
+                              className="min-w-0 max-w-full truncate font-medium hover:underline"
+                            >
+                              {a.displayName}
+                            </Link>
+                            <RuntimeChip runtime={a.runtime} />
+                          </div>
+                          <p className="min-w-0 max-w-full truncate text-[11px] text-muted-foreground" title={`@${a.name} · ${a.model}`}>
+                            <span className="font-mono">@{a.name}</span> · {a.model}
+                          </p>
+                          {a.description && (
+                            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{a.description}</p>
+                          )}
+                          <div className="mt-2 flex items-center gap-3 text-[11px]">
+                            <StatusDot status={act?.status ?? (a.status === "online" ? "idle" : "offline")} />
+                            {act?.label && <span className="truncate text-muted-foreground">{act.label}</span>}
+                          </div>
+                          <AgentWorkSnapshot
+                            slug={slug}
+                            agentId={a.id}
+                            summary={work}
+                            loading={work === undefined}
+                            error={workError}
+                          />
                         </div>
-                        <p className="min-w-0 max-w-full truncate text-[11px] text-muted-foreground" title={`@${a.name} · ${a.model}`}>
-                          <span className="font-mono">@{a.name}</span> · {a.model}
-                        </p>
-                        {a.description && (
-                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{a.description}</p>
-                        )}
-                        <div className="mt-2 flex items-center gap-3 text-[11px]">
-                          <StatusDot status={act?.status ?? (a.status === "online" ? "idle" : "offline")} />
-                          {act?.label && <span className="truncate text-muted-foreground">{act.label}</span>}
-                        </div>
-                        <AgentWorkSnapshot
-                          slug={slug}
-                          agentId={a.id}
-                          summary={work}
-                          loading={work === undefined}
-                          error={workError}
-                        />
                       </div>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        render={<Link href={`/s/${slug}/agents/${a.id}`} />}
-                        className="text-xs text-muted-foreground"
-                      >
-                        <Pencil className="h-3 w-3" /> Profile
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleMessage(a)}
-                        disabled={opening !== null}
-                        variant="outline"
-                        size="xs"
-                        className="text-xs"
-                      >
-                        <MessageSquare className="h-3 w-3" />
-                        {opening === a.id ? "Opening…" : "Message"}
-                        <ArrowRight className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    </CardPanel>
-                  </Card>
-                );
-              })}
-            </ul>
+                      <div className="mt-3 flex flex-wrap items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          render={<Link href={`/s/${slug}/agents/${a.id}`} />}
+                          className="text-xs text-muted-foreground"
+                        >
+                          <Pencil className="h-3 w-3" /> Profile
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => handleMessage(a)}
+                          disabled={opening !== null}
+                          variant="outline"
+                          size="xs"
+                          className="text-xs"
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                          {opening === a.id ? "Opening…" : "Message"}
+                          <ArrowRight className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      </CardPanel>
+                    </Card>
+                  );
+                })}
+              </ul>
+            </div>
           )}
       {serverId && (
         <CreateAgentDialog
@@ -246,6 +257,97 @@ const RUN_STATUS_META: Record<AgentRun["status"], { label: string; color: "accen
   cancelled: { label: "Cancelled", color: "default" },
 };
 
+function WorkspaceRunLog({
+  slug,
+  runs,
+  agents,
+  channels,
+  loading,
+  error,
+}: {
+  slug: string;
+  runs: AgentRun[];
+  agents: Agent[];
+  channels: Array<Pick<Channel, "id" | "name" | "type">>;
+  loading: boolean;
+  error: string | null;
+}) {
+  const agentById = new Map(agents.map((agent) => [agent.id, agent]));
+  const channelById = new Map(channels.map((channel) => [channel.id, channel]));
+  const sortedRuns = [...runs]
+    .sort((a, b) => {
+      const priority = runPriority(a.status) - runPriority(b.status);
+      if (priority !== 0) return priority;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    })
+    .slice(0, 6);
+
+  return (
+    <Card className="border-border/60 bg-surface/80 !shadow-none">
+      <CardPanel className="p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-foreground">Workspace run log</h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Recent agent execution, ordered by what most needs attention.
+            </p>
+          </div>
+          <Chip size="sm" variant="soft" color={sortedRuns.length > 0 ? "accent" : "default"} className="w-fit">
+            {runs.length} sampled
+          </Chip>
+        </div>
+        {loading ? (
+          <div className="mt-4 h-12 animate-pulse rounded-lg bg-muted/60" aria-hidden="true" />
+        ) : error ? (
+          <p className="mt-4 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger-text">
+            Work log unavailable: {error}
+          </p>
+        ) : sortedRuns.length === 0 ? (
+          <p className="mt-4 rounded-lg border border-dashed border-border/70 bg-background/60 px-3 py-3 text-xs text-muted-foreground">
+            No agent runs yet. Mention an agent in a workflow room to create a traceable run.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-border/60 overflow-hidden rounded-lg border border-border/60">
+            {sortedRuns.map((run) => {
+              const agent = agentById.get(run.agentId);
+              const workflow = channelById.get(run.channelId);
+              const meta = RUN_STATUS_META[run.status];
+              return (
+                <li key={run.id}>
+                  <Link
+                    href={`/s/${slug}/agents/${run.agentId}?tab=runs&runId=${run.id}`}
+                    className="flex min-w-0 items-center gap-3 bg-background/70 px-3 py-2.5 transition-colors hover:bg-[var(--accent-soft)]"
+                  >
+                    <Activity className={cn(
+                      "h-4 w-4 shrink-0",
+                      run.status === "failed" ? "text-danger-text" : "text-muted-foreground",
+                    )} aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                          {agent?.displayName ?? `Agent ${run.agentId.slice(0, 6)}`}
+                        </span>
+                        <Chip size="sm" variant="soft" color={meta.color} className="h-5 px-1.5 text-[10px]">
+                          {meta.label}
+                        </Chip>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                        {workflow && workflow.type !== "dm" ? `#${workflow.name} · ` : ""}
+                        {formatRunSource(run.source)} · {formatRuntimeMode(run.runtimeMode)} · {formatRelativeTime(run.updatedAt)}
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardPanel>
+    </Card>
+  );
+}
+
 function summarizeAgentRuns(runs: AgentRun[]): Record<string, AgentWorkSummary> {
   const out: Record<string, AgentWorkSummary> = {};
   for (const run of runs) {
@@ -271,6 +373,26 @@ function summarizeAgentRuns(runs: AgentRun[]): Record<string, AgentWorkSummary> 
 
 function isActiveRun(run: AgentRun): boolean {
   return run.status === "queued" || run.status === "dispatched" || run.status === "running" || run.status === "waiting_input";
+}
+
+function runPriority(status: AgentRun["status"]): number {
+  if (status === "waiting_input") return 0;
+  if (status === "failed") return 1;
+  if (status === "running" || status === "dispatched" || status === "queued") return 2;
+  if (status === "completed") return 3;
+  return 4;
+}
+
+function formatRunSource(source: string): string {
+  if (source === "channel_mention") return "Workflow mention";
+  if (source === "channel_message") return "Workflow message";
+  return source.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function formatRuntimeMode(mode: string): string {
+  if (mode === "bridge") return "Local Bridge";
+  if (mode === "raltic") return "Raltic Cloud";
+  return mode.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
 function formatRelativeTime(iso: string): string {

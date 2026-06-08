@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { env } from "cloudflare:test";
 import { eq } from "drizzle-orm";
 import * as schema from "@raltic/db/schema";
+import { agentRunRecord } from "@raltic/protocol";
 import app from "../src/index";
 import { dispatchToAgents } from "../src/lib/agent-dispatch";
 import { runAgentRunSweeper } from "../src/scheduled";
@@ -15,6 +16,8 @@ async function seedRun(input: {
   source?: "channel_mention" | "channel_message" | "dm" | "scheduled";
   runtimeMode?: "bridge" | "raltic";
   createdAt?: Date;
+  inputPreview?: string | null;
+  error?: string | null;
 }): Promise<string> {
   const id = crypto.randomUUID();
   const now = input.createdAt ?? new Date();
@@ -33,8 +36,8 @@ async function seedRun(input: {
     callerType: null,
     triggerMessageId: crypto.randomUUID(),
     outputMessageId: crypto.randomUUID(),
-    inputPreview: "test run",
-    error: status === "failed" ? "agent failed" : null,
+    inputPreview: input.inputPreview ?? "test run",
+    error: input.error ?? (status === "failed" ? "agent failed" : null),
     metadata: null,
     startedAt: status === "queued" || status === "dispatched" ? null : now,
     completedAt: active ? null : now,
@@ -157,6 +160,49 @@ describe("GET /api/v1/agent-runs", () => {
     expect(body.run.source).toBe("dm");
     expect(new Date(body.run.createdAt).toString()).not.toBe("Invalid Date");
     expect(body.run.completedAt).not.toBeNull();
+  });
+
+  it("redacts DB-stored raw errors on list and detail read paths", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const channel = await seedChannel(srv, "public", [owner]);
+    const agent = await seedAgent(srv, owner);
+    const runId = await seedRun({
+      serverId: srv.id,
+      channelId: channel.id,
+      agentId: agent.id,
+      status: "failed",
+      inputPreview: "inspect /Users/dai/private with ck_abcdefghijklmnopqrstuvwxyz123456 token=plain-secret",
+      error: "sk-ant-secret Bearer abc.def token=plain-secret /Users/dai/private",
+    });
+    const auth = await userBearer(owner);
+
+    const listRes = await request(app as never, `https://test.local/api/v1/agent-runs?serverId=${srv.id}`, {
+      headers: { authorization: auth },
+    });
+    expect(listRes.status).toBe(200);
+    const listBody = await listRes.json() as { runs: unknown[] };
+    const listed = agentRunRecord.parse(listBody.runs.find((run) => (run as { id?: string }).id === runId));
+    expect(listed.error).toContain("[redacted token]");
+    expect(listed.error).toContain("[local path]");
+    expect(listed.error).not.toContain("sk-ant-");
+    expect(listed.error).not.toContain("Bearer abc");
+    expect(listed.error).not.toContain("plain-secret");
+    expect(listed.error).not.toContain("/Users/dai");
+    expect(listed.inputPreview).toContain("[redacted token]");
+    expect(listed.inputPreview).toContain("[local path]");
+    expect(listed.inputPreview).not.toContain("ck_abcdefghijklmnopqrstuvwxyz123456");
+    expect(listed.inputPreview).not.toContain("plain-secret");
+    expect(listed.inputPreview).not.toContain("/Users/dai");
+
+    const detailRes = await request(app as never, `https://test.local/api/v1/agent-runs/${runId}`, {
+      headers: { authorization: auth },
+    });
+    expect(detailRes.status).toBe(200);
+    const detailBody = await detailRes.json() as { run: unknown };
+    const detailed = agentRunRecord.parse(detailBody.run);
+    expect(detailed.error).toBe(listed.error);
+    expect(detailed.inputPreview).toBe(listed.inputPreview);
   });
 
   it("does not let hidden newer runs crowd out older visible runs", async () => {

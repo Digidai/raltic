@@ -4,6 +4,14 @@ import { Suspense, useEffect, useState } from "react";
 import { MailCheckIcon, ExternalLinkIcon } from "lucide-react";
 import { signUp, authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-redirect";
+import {
+  addOnboardingIntentToPath,
+  buildAuthPath,
+  clearStoredOnboardingIntent,
+  persistOnboardingIntent,
+  readAllowedOnboardingIntent,
+  type OnboardingIntent,
+} from "@/lib/onboarding-intent";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardPanel, CardFooter } from "@/components/heroui-pro/card";
@@ -27,14 +35,15 @@ export default function SignupPage() {
 
 function SignupInner() {
   const sp = useSearchParams();
-  const nextPath = safeNext(sp.get("next")) ?? "/";
-  const desktopClient = sp.get("client") === "desktop" || nextPath.startsWith("/desktop");
-  const loginHref = nextPath !== "/"
-    ? `/login?${new URLSearchParams({
-      ...(desktopClient ? { client: "desktop" } : {}),
-      next: nextPath,
-    }).toString()}`
-    : desktopClient ? "/login?client=desktop" : "/login";
+  const nextBasePath = safeNext(sp.get("next")) ?? "/";
+  const onboardingIntent = readAllowedOnboardingIntent(sp, nextBasePath);
+  const nextPath = addOnboardingIntentToPath(nextBasePath, onboardingIntent);
+  const desktopClient = sp.get("client") === "desktop" || nextBasePath.startsWith("/desktop");
+  const loginHref = buildAuthPath("/login", {
+    client: desktopClient ? "desktop" : null,
+    next: nextBasePath !== "/" ? nextBasePath : null,
+    intent: onboardingIntent,
+  });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,6 +74,14 @@ function SignupInner() {
     return () => clearInterval(t);
   }, [resendReadyAt]);
   const cooldown = Math.max(0, Math.ceil((resendReadyAt - now) / 1000));
+
+  useEffect(() => {
+    if (onboardingIntent) {
+      persistOnboardingIntent(onboardingIntent);
+    } else {
+      clearStoredOnboardingIntent();
+    }
+  }, [onboardingIntent]);
 
   // Cross-tab handoff (codex P3 onboarding audit, UX angle 2 H1):
   // when the verification link is clicked in a different tab in the
@@ -112,9 +129,10 @@ function SignupInner() {
   }
 
   function verifyCallback() {
-    return nextPath !== "/"
-      ? `/verify-email?next=${encodeURIComponent(nextPath)}`
-      : "/verify-email";
+    return buildAuthPath("/verify-email", {
+      next: nextBasePath !== "/" ? nextBasePath : null,
+      intent: onboardingIntent,
+    });
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -205,12 +223,19 @@ function SignupInner() {
             onResend={handleResend}
             onUseDifferentEmail={handleUseDifferentEmail}
             nextPath={nextPath}
+            onboardingIntent={onboardingIntent}
           />
         ) : (
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">{desktopClient ? "Raltic Desktop" : "Raltic"}</CardTitle>
-              <CardDescription>{desktopClient ? "Create an account to connect this computer" : "Create your account"}</CardDescription>
+              <CardDescription>
+                {desktopClient
+                  ? "Create an account to connect this computer"
+                  : onboardingIntent
+                    ? "Create your account, then connect this computer's runtime"
+                    : "Create your account, then start your first workflow room"}
+              </CardDescription>
             </CardHeader>
             <form onSubmit={handleSignup}>
               <CardPanel>
@@ -317,7 +342,7 @@ function SignupInner() {
 // ---------------------------------------------------------------------------
 function CheckInboxCard({
   email, cooldown, resendLoading, resendNotice,
-  onResend, onUseDifferentEmail, nextPath,
+  onResend, onUseDifferentEmail, nextPath, onboardingIntent,
 }: {
   email: string;
   cooldown: number;
@@ -326,6 +351,7 @@ function CheckInboxCard({
   onResend: () => void;
   onUseDifferentEmail: () => void;
   nextPath: string;
+  onboardingIntent: OnboardingIntent | null;
 }) {
   const mailbox = mailboxFor(email);
   return (
@@ -349,8 +375,10 @@ function CheckInboxCard({
       <CardPanel>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Click the link in the email to finish signing up. It can take a
-            minute to arrive — check your spam folder if you don&apos;t see it.
+            {onboardingIntent
+              ? "Click the link in the email. After verification we'll take you straight to the local runtime setup."
+              : "Click the link in the email. After verification you can start your first workflow room."}
+            {" "}It can take a minute to arrive — check your spam folder if you don&apos;t see it.
           </p>
           {resendNotice && (
             <Alert>

@@ -28,6 +28,7 @@ export const onboardingChannel = {
   lastReadSeq: 2,
   mutedAt: null,
   agentIds: ["agent-onboard", "agent-cloud"],
+  isMember: true,
 };
 
 export const researchChannel = {
@@ -49,6 +50,17 @@ export const starterWorkflowChannel = {
   lastReadSeq: 0,
 };
 
+export const discoverWorkflowChannel = {
+  ...onboardingChannel,
+  id: "ch-customer-risk",
+  name: "customer-risk",
+  description: "Renewal risk briefs and follow-up approvals.",
+  maxSeq: 0,
+  lastReadSeq: 0,
+  agentIds: [],
+  isMember: false,
+};
+
 export const dmChannel = {
   id: "dm-agent",
   serverId: "srv-demo",
@@ -65,6 +77,7 @@ export const dmChannel = {
   maxSeq: 0,
   lastReadSeq: 0,
   mutedAt: null,
+  isMember: true,
   peer: { name: "Cloud Test Agent", type: "agent", id: "agent-cloud", runtime: "claude", avatarSeed: null },
 };
 
@@ -162,6 +175,27 @@ export const mockAgentRuns = [
     createdAt: nowIso,
     updatedAt: nowIso,
   },
+  {
+    id: "run-research-failed",
+    serverId: "srv-demo",
+    channelId: "ch-research",
+    agentId: "agent-cloud",
+    taskId: null,
+    source: "channel_mention",
+    status: "failed",
+    runtimeMode: "raltic",
+    callerId: "u1",
+    callerType: "human",
+    triggerMessageId: "msg-failed",
+    outputMessageId: null,
+    inputPreview: "Research handoff",
+    error: "[redacted token]",
+    metadata: null,
+    startedAt: nowIso,
+    completedAt: nowIso,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  },
 ];
 
 export const agents = [
@@ -207,6 +241,66 @@ export const workspaceMembers = [
   { userId: "u1", role: "owner", joinedAt: Date.now(), name: "Gene", email: "dai@live.cn", image: null },
   { userId: "u2", role: "member", joinedAt: Date.now(), name: "Olivia", email: "olivia@example.com", image: null },
 ];
+
+type MockWorkspaceChannel =
+  | typeof onboardingChannel
+  | typeof researchChannel
+  | typeof starterWorkflowChannel
+  | typeof discoverWorkflowChannel
+  | typeof dmChannel;
+
+type MockRuntimeId = "claude" | "codex" | "openclaw" | "hermes";
+
+const BRIDGE_RUNTIME_MODELS: Record<MockRuntimeId, readonly string[]> = {
+  claude: ["sonnet", "opus", "haiku"],
+  codex: ["gpt-5.5", "gpt-5.4", "gpt-5.3-codex-spark"],
+  openclaw: ["auto", "claude-sonnet-4-6", "gpt-5.4", "gemini-2.5-pro"],
+  hermes: ["auto", "router-default"],
+};
+
+const CLOUD_RUNTIME_MODELS = [
+  "claude-haiku-4-5",
+  "claude-sonnet-4-6",
+  "claude-opus-4-7",
+  "gpt-5.4",
+  "gpt-5.5",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+] as const;
+
+type MockAgent = Omit<(typeof agents)[number], "runtime" | "runtimeMode" | "model"> & {
+  runtime: MockRuntimeId;
+  runtimeMode: "bridge" | "raltic";
+  model: string;
+};
+
+type MockMachineRuntimeRow = {
+  fingerprint: string;
+  hostname: string | null;
+  platform: string | null;
+  arch: string | null;
+  detectedAt: number;
+  runtimes: Array<{
+    id: MockRuntimeId;
+    detected: boolean;
+    version: string | null;
+    authed: boolean | null;
+    authMethod: string | null;
+    error: string | null;
+  }>;
+};
+
+type MockMachineKey = {
+  id: string;
+  prefix: string;
+  name: string;
+  serverId: string;
+  createdAt: number;
+  lastUsedAt: number | null;
+  revokedAt: number | null;
+  lastDetectedAt: number | null;
+  machines: MockMachineRuntimeRow[];
+};
 
 export const channelMembers = [
   { channelId: "ch-onboarding", memberId: "u1", memberType: "human", joinedAt: Date.now() },
@@ -466,9 +560,23 @@ export async function assertSelectedCheckboxOwnsSingleSurface(checkbox: Locator,
 export async function setupMockWorkspace(
   page: Page,
   context: BrowserContext,
-  options: { hasConnectedBridge?: boolean } = {},
+  options: {
+    hasConnectedBridge?: boolean;
+    channels?: MockWorkspaceChannel[];
+    tasks?: typeof mockTasks;
+    agentRuns?: typeof mockAgentRuns;
+    machineKeys?: MockMachineKey[];
+    createMachineKeyResponse?: { id: string; name: string; apiKey: string };
+    failAgentPatch?: boolean;
+    failMachineKeyRevoke?: boolean;
+    agentPatches?: Array<{ agentId: string; patch: Record<string, unknown> }>;
+    inboxResponse?: { items: Array<Record<string, unknown>>; count: number; totalCount?: number };
+  } = {},
 ) {
   const hasConnectedBridge = options.hasConnectedBridge ?? true;
+  let joinedDiscoverWorkflow = false;
+  const joinedWorkflowIds = new Set<string>();
+  const mockAgents = agents.map((agent) => ({ ...agent })) as MockAgent[];
   const baseURL = test.info().project.use.baseURL;
   const host = new URL(String(baseURL)).hostname;
   await context.addCookies([
@@ -484,7 +592,16 @@ export async function setupMockWorkspace(
     const path = url.pathname;
     const method = route.request().method();
     if (method === "OPTIONS") return route.fulfill(noContent());
-    if (path === "/api/v1/servers/by-slug/demo") return route.fulfill(json({ server, channels: [onboardingChannel, researchChannel, dmChannel], agents }));
+    if (path === "/api/v1/servers/by-slug/demo") {
+      const visibleChannels = (options.channels
+        ?? [
+          onboardingChannel,
+          researchChannel,
+          { ...discoverWorkflowChannel, isMember: joinedDiscoverWorkflow },
+          dmChannel,
+        ]).map((channel) => joinedWorkflowIds.has(channel.id) ? { ...channel, isMember: true } : channel);
+      return route.fulfill(json({ server, channels: visibleChannels, agents: mockAgents }));
+    }
     if (path === "/api/v1/me") return route.fulfill(json({
       subject: { kind: "user", userId: "u1" },
       servers: [server],
@@ -494,19 +611,114 @@ export async function setupMockWorkspace(
       defaultServerSlug: "demo",
       hasConnectedBridge,
     }));
-    if (path === "/api/v1/inbox") return route.fulfill(json({ items: [], count: 0 }));
-    if (path === "/api/v1/tasks" && method === "GET") return route.fulfill(json({ tasks: mockTasks }));
-    if (path === "/api/v1/agent-runs" && method === "GET") return route.fulfill(json({ runs: mockAgentRuns }));
+    if (path === "/api/v1/inbox") return route.fulfill(json(options.inboxResponse ?? {
+      items: [
+        {
+          id: "task:task-onboarding-review",
+          kind: "task",
+          priority: 0,
+          createdAt: Date.now() - 1_000,
+          channelId: "ch-onboarding",
+          channelName: "onboarding",
+          channelType: "public",
+          preview: "Review onboarding handoff",
+          href: "/s/demo/channel/ch-onboarding",
+          status: "in_review",
+        },
+        {
+          id: "run:run-onboarding-waiting",
+          kind: "agent_run",
+          priority: 1,
+          createdAt: Date.now() - 500,
+          channelId: "ch-onboarding",
+          channelName: "onboarding",
+          channelType: "public",
+          preview: "Onboarding Assistant is waiting for input",
+          href: "/s/demo/agents/agent-onboard?tab=runs&runId=run-onboarding-waiting",
+          status: "waiting_input",
+          agentId: "agent-onboard",
+          runtimeMode: "raltic",
+        },
+        {
+          id: "run:run-research-failed",
+          kind: "agent_run",
+          priority: 2,
+          createdAt: Date.now() - 750,
+          channelId: "ch-research",
+          channelName: "research",
+          channelType: "public",
+          preview: "Cloud Test Agent failed · [redacted token]",
+          href: "/s/demo/agents/agent-cloud?tab=runs&runId=run-research-failed",
+          status: "failed",
+          agentId: "agent-cloud",
+          runtimeMode: "raltic",
+        },
+        {
+          id: "task:task-research-running",
+          kind: "task",
+          priority: 4,
+          createdAt: Date.now() - 250,
+          channelId: "ch-research",
+          channelName: "research",
+          channelType: "public",
+          preview: "Collect research notes",
+          href: "/s/demo/channel/ch-research",
+          status: "in_progress",
+        },
+        {
+          id: "dm:msg-handoff",
+          kind: "dm",
+          priority: 5,
+          createdAt: Date.now() - 100,
+          channelId: "dm-agent",
+          channelName: "cloud-test",
+          channelType: "dm",
+          preview: "Cloud Test Agent left a handoff",
+          href: "/s/demo/dm/dm-agent",
+        },
+      ],
+      count: 5,
+      totalCount: 5,
+    }));
+    if (path === "/api/v1/tasks" && method === "GET") return route.fulfill(json({ tasks: options.tasks ?? mockTasks }));
+    if (path === "/api/v1/agent-runs" && method === "GET") return route.fulfill(json({ runs: options.agentRuns ?? mockAgentRuns }));
     if (path === "/api/v1/servers/srv-demo/channels/browse") return route.fulfill(json({
       channels: [
         { id: onboardingChannel.id, name: onboardingChannel.name, description: onboardingChannel.description, createdAt: onboardingChannel.createdAt, isMember: true },
         { id: researchChannel.id, name: researchChannel.name, description: researchChannel.description, createdAt: researchChannel.createdAt, isMember: true },
+        { id: discoverWorkflowChannel.id, name: discoverWorkflowChannel.name, description: discoverWorkflowChannel.description, createdAt: discoverWorkflowChannel.createdAt, isMember: joinedDiscoverWorkflow || joinedWorkflowIds.has(discoverWorkflowChannel.id) },
       ],
     }));
-    if (path === "/api/v1/agents") return route.fulfill(json({ agents }));
+    if (path === "/api/v1/agents") return route.fulfill(json({ agents: mockAgents }));
+    if (path === "/api/v1/agent-runs/run-onboarding-waiting") return route.fulfill(json({
+      run: mockAgentRuns.find((run) => run.id === "run-onboarding-waiting"),
+    }));
+    if (path === "/api/v1/agent-runs/run-research-failed") return route.fulfill(json({
+      run: mockAgentRuns.find((run) => run.id === "run-research-failed"),
+    }));
     if (path === "/api/v1/connectors") return route.fulfill(json({ connectors: [] }));
     if (path === "/api/v1/invites") return route.fulfill(json({ invites: [] }));
-    if (path === "/api/v1/machine-keys") return route.fulfill(json({ keys: [] }));
+    if (path === "/api/v1/machine-keys" && method === "POST") {
+      return route.fulfill(json(options.createMachineKeyResponse ?? {
+        id: "mk-wizard",
+        name: "My Mac",
+        apiKey: "ck_wizard_1234567890",
+      }));
+    }
+    if (path === "/api/v1/machine-keys" && method === "GET") {
+      return route.fulfill(json({ keys: options.machineKeys ?? [] }));
+    }
+    if (path.startsWith("/api/v1/machine-keys/") && method === "DELETE") {
+      if (options.failMachineKeyRevoke) {
+        return route.fulfill(json({
+          error: {
+            code: "MACHINE_KEY_REVOKE_FAILED",
+            message: "couldn't revoke runtime key",
+          },
+        }, 500));
+      }
+      return route.fulfill(json({ ok: true }));
+    }
     if (path === "/api/v1/servers/srv-demo/members") return route.fulfill(json({ members: workspaceMembers, viewerRole: "owner" }));
     if (path === "/api/v1/agents/agent-cloud/workspace/list") {
       const requestedPath = url.searchParams.get("path") ?? ".";
@@ -563,6 +775,13 @@ export async function setupMockWorkspace(
       viewerCanManage: true,
       viewerCanAddMembers: true,
     }));
+    if (path === "/api/v1/channels/ch-customer-risk") return route.fulfill(json({
+      channel: discoverWorkflowChannel,
+      members: [],
+      peer: null,
+      viewerCanManage: true,
+      viewerCanAddMembers: true,
+    }));
     if (path === "/api/v1/channels/dm-agent") return route.fulfill(json({
       channel: dmChannel,
       members: [],
@@ -573,14 +792,65 @@ export async function setupMockWorkspace(
     if (path === "/api/v1/channels/ch-onboarding/messages") return route.fulfill(json({ messages: [] }));
     if (path === "/api/v1/channels/ch-research/messages") return route.fulfill(json({ messages: [] }));
     if (path === "/api/v1/channels/ch-new/messages") return route.fulfill(json({ messages: [] }));
+    if (path === "/api/v1/channels/ch-customer-risk/messages") return route.fulfill(json({ messages: [] }));
     if (path === "/api/v1/channels/dm-agent/messages") return route.fulfill(json({ messages: [] }));
     if (path === "/api/v1/ws/token") return route.fulfill(json({ token: "ws-mock", wsUrl: "ws://127.0.0.1:9/ws/channel/ch-onboarding" }));
     if (path.endsWith("/read") && method === "POST") return route.fulfill(json({ ok: true }));
     if (path === "/api/v1/dm" && method === "POST") return route.fulfill(json({ channelId: "dm-agent", created: false }));
     if (path === "/api/v1/channels" && method === "POST") return route.fulfill(json({ id: "ch-new" }));
+    if (path.startsWith("/api/v1/channels/") && path.endsWith("/join") && method === "POST") {
+      const channelId = path.split("/").at(-2);
+      if (channelId) joinedWorkflowIds.add(channelId);
+      if (path === "/api/v1/channels/ch-customer-risk/join") joinedDiscoverWorkflow = true;
+      return route.fulfill(json({ ok: true, alreadyMember: false }));
+    }
     if (path.includes("/members") && method === "POST") return route.fulfill(json({ ok: true }));
     if (path.includes("/members/") && method === "DELETE") return route.fulfill(json({ ok: true }));
-    if (path.includes("/agents/") && method === "PATCH") return route.fulfill(json({ ok: true }));
+    if (path.includes("/agents/") && method === "PATCH") {
+      if (options.failAgentPatch) {
+        return route.fulfill(json({
+          error: {
+            code: "AGENT_UPDATE_FAILED",
+            message: "couldn't update onboarding agent",
+          },
+        }, 500));
+      }
+      const agentId = path.split("/").at(-1);
+      const target = mockAgents.find((agent) => agent.id === agentId);
+      if (!target) {
+        return route.fulfill(json({
+          error: { code: "NOT_FOUND", message: "no such agent" },
+        }, 404));
+      }
+      const patch = JSON.parse(route.request().postData() || "{}") as Partial<{
+        displayName: string;
+        description: string | null;
+        systemPrompt: string | null;
+        model: string;
+        runtime: MockRuntimeId;
+        runtimeMode: "bridge" | "raltic";
+        avatarSeed: string | null;
+      }>;
+      options.agentPatches?.push({ agentId: target.id, patch: { ...patch } });
+      const nextRuntime = patch.runtime ?? target.runtime;
+      const nextRuntimeMode = patch.runtimeMode ?? target.runtimeMode;
+      const nextModel = patch.model ?? target.model;
+      const allowed = nextRuntimeMode === "bridge"
+        ? BRIDGE_RUNTIME_MODELS[nextRuntime]
+        : CLOUD_RUNTIME_MODELS;
+      if (!allowed.includes(nextModel)) {
+        return route.fulfill(json({
+          error: {
+            code: "INVALID_RUNTIME_MODEL",
+            message: nextRuntimeMode === "bridge"
+              ? `model "${nextModel}" is not valid for runtime "${nextRuntime}"`
+              : `model "${nextModel}" is not valid for cloud agents`,
+          },
+        }, 400));
+      }
+      Object.assign(target, patch, { updatedAt: Date.now() });
+      return route.fulfill(json({ ok: true }));
+    }
     if (path === "/api/v1/agents" && method === "POST") return route.fulfill(json({ id: "agent-new" }));
     return route.fulfill(json({ error: { code: "MOCK_MISS", message: path } }, 404));
   });

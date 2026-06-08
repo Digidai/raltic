@@ -1,6 +1,7 @@
 type ProductEvent =
   | "workflow_starter_click"
   | "workflow_room_created"
+  | "workflow_room_joined"
   | "workflow_starter_draft_used";
 
 export function trackProductEvent(event: ProductEvent, target: string): void {

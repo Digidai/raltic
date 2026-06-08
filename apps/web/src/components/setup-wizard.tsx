@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps, useEffect, useId, useRef, useState } from "react";
+import { type ComponentProps, useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError, type RuntimeId } from "@/lib/api";
 import { getApiOrigin } from "@/lib/auth-client";
@@ -62,6 +62,7 @@ type RuntimeChipTone = NonNullable<ComponentProps<typeof Chip>["color"]>;
 
 interface ResumeState {
   issuedKeyId: string;
+  runtime?: RuntimeId;
   /** Display name shown in the resume notice — cosmetic only. */
   keyName?: string;
   /** When the previous wizard ran — drop entries older than 24h. */
@@ -92,6 +93,70 @@ function clearResume(serverId: string): void {
 
 const API_URL = getApiOrigin();
 
+function defaultModelForRuntime(runtime: RuntimeId): string {
+  switch (runtime) {
+    case "claude":
+      return "sonnet";
+    case "codex":
+      return "gpt-5.5";
+    case "openclaw":
+      return "auto";
+    case "hermes":
+      return "auto";
+  }
+}
+
+function runtimeDisplayName(runtime: RuntimeId): string {
+  switch (runtime) {
+    case "claude":
+      return "Claude Code";
+    case "codex":
+      return "OpenAI Codex";
+    case "openclaw":
+      return "OpenClaw";
+    case "hermes":
+      return "Hermes Agent";
+  }
+}
+
+function runtimeTroubleshooting(runtime: RuntimeId): {
+  title: string;
+  versionCommand: string;
+  installHint: string;
+  loginCommand: string;
+} {
+  switch (runtime) {
+    case "claude":
+      return {
+        title: "Claude CLI missing?",
+        versionCommand: "claude --version",
+        installHint: "npm install -g @anthropic-ai/claude-code",
+        loginCommand: "claude",
+      };
+    case "codex":
+      return {
+        title: "Codex CLI missing?",
+        versionCommand: "codex --version",
+        installHint: "npm install -g @openai/codex",
+        loginCommand: "codex login",
+      };
+    case "openclaw":
+      return {
+        title: "OpenClaw CLI or daemon missing?",
+        versionCommand: "openclaw --version",
+        installHint: "npm install -g openclaw",
+        loginCommand: "openclaw onboard --install-daemon",
+      };
+    case "hermes":
+      return {
+        title: "Hermes CLI or daemon missing?",
+        versionCommand: "hermes --version",
+        installHint: "install from the Hermes docs",
+        loginCommand: "hermes start",
+      };
+  }
+}
+
 /**
  * 4-step wizard shown to users who haven't connected a bridge yet:
  *   1. Runtime boundary — when local execution matters
@@ -105,6 +170,7 @@ export function SetupWizard({
 }: Props) {
   const router = useRouter();
   const helpPanelId = useId();
+  const advancedRuntimesId = useId();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [keyName, setKeyName] = useState("My Mac");
   // Runtime choice made on step 1 — applied to the personal workspace's
@@ -119,13 +185,28 @@ export function SetupWizard({
   // they close the terminal, and a desktop-app link (placeholder until
   // the binary is published).
   const [installTab, setInstallTab] = useState<"quick" | "persistent" | "desktop">("quick");
+  const [showAdvancedRuntimes, setShowAdvancedRuntimes] = useState(false);
   const [issued, setIssued] = useState<string | null>(null);
   /** Track the issued key's id so "start over" can revoke it before
    *  issuing a new one — otherwise abandoned keys pile up forever. */
   const [issuedKeyId, setIssuedKeyId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [restarting, setRestarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bridgeOnline, setBridgeOnline] = useState(false);
+  const [configuringRuntime, setConfiguringRuntime] = useState(false);
+  const [runtimeApplyError, setRuntimeApplyError] = useState<string | null>(null);
+  const setRuntimeChoice = useCallback((next: typeof runtime) => {
+    setRuntime(next);
+    setError(null);
+    setRuntimeApplyError(null);
+    if (next === "openclaw" || next === "hermes") {
+      setShowAdvancedRuntimes(true);
+    }
+  }, []);
+  const advancedRuntimeSelected = runtime === "openclaw" || runtime === "hermes";
+  const showAdvancedRuntimeChoices = showAdvancedRuntimes || advancedRuntimeSelected;
+  const runtimeHelp = runtimeTroubleshooting(runtime);
   // Per-machine snapshots captured from the bridge's `/connect`.
   // Populated when step 4 fires; refreshed by the step-4 background poll
   // so `codex login` mid-wizard becomes visible within 3s.
@@ -138,6 +219,46 @@ export function SetupWizard({
   /** Indicates the wizard auto-resumed after a page refresh — show a
    *  short banner so the user understands why they jumped past Step 1/2. */
   const [resumed, setResumed] = useState(false);
+
+  const finishBridgeSetup = useCallback(async (runtimeForSetup: RuntimeId) => {
+    setRuntimeApplyError(null);
+    setError(null);
+
+    if (hasExistingBridge) {
+      setConfiguringRuntime(false);
+      clearResume(serverId);
+      setStep(4);
+      return;
+    }
+
+    setConfiguringRuntime(true);
+    try {
+      const { agents: all } = await api.listAgents();
+      const onboarding = all.find(
+        (a) => a.serverId === serverId && a.name === "onboarding",
+      );
+      if (!onboarding) {
+        throw new Error("Onboarding agent not found. Open Settings -> Agents and create or repair the onboarding agent.");
+      }
+      await api.updateAgent(onboarding.id, {
+        runtimeMode: "bridge",
+        runtime: runtimeForSetup,
+        model: defaultModelForRuntime(runtimeForSetup),
+      });
+      clearResume(serverId);
+      setStep(4);
+    } catch (e) {
+      setRuntimeApplyError(
+        e instanceof ApiError
+          ? e.message
+          : e instanceof Error
+            ? e.message
+            : String(e),
+      );
+    } finally {
+      setConfiguringRuntime(false);
+    }
+  }, [hasExistingBridge, serverId]);
 
   // ── Resume after refresh: if sessionStorage carries an in-progress
   // key id from this server, validate it server-side BEFORE jumping into
@@ -172,11 +293,19 @@ export function SetupWizard({
         }
         setIssuedKeyId(r.issuedKeyId);
         setKeyName(r.keyName ?? "My Mac");
+        const resumedRuntime = r.runtime ?? "claude";
+        setRuntime(resumedRuntime);
+        if (resumedRuntime === "openclaw" || resumedRuntime === "hermes") {
+          setShowAdvancedRuntimes(true);
+        }
         if (k.lastUsedAt) {
-          // Already connected. Skip the poll, mark complete.
+          // Already connected. Skip the poll, but still run the same
+          // runtime-configuration gate as the fresh-connect path.
           setBridgeOnline(true);
-          setStep(4);
-          clearResume(serverId);
+          setDetectedMachines(k.machines ?? []);
+          setResumed(true);
+          setStep(3);
+          void finishBridgeSetup(resumedRuntime);
           return;
         }
         // Just-issued, never used. Mark issued so the poll fires; the
@@ -191,7 +320,7 @@ export function SetupWizard({
       }
     })();
     return () => { cancelled = true; };
-  }, [serverId, hasExistingBridge]);
+  }, [serverId, hasExistingBridge, finishBridgeSetup]);
   // Step-3 polling state — `pollStartedAtRef` is a ref (not state) so
   // setting it doesn't tear down + recreate the interval. Reviews #1/#2
   // both flagged the original useState version as eating the first poll
@@ -242,48 +371,8 @@ export function SetupWizard({
           // step 4 renders a runtime strip from this. Polled every 3s
           // so a `codex login` in user's terminal shows up promptly.
           setDetectedMachines(me.machines ?? []);
-          clearResume(serverId);   // bridge connected — no need to resume
           clearInterval(t);
-          // Apply the runtime the user picked on step 1 to the personal
-          // workspace's Onboarding Assistant agent so step 4's "send a
-          // message" round-trip actually exercises that runtime. The
-          // onboarding agent was created during runOnboarding (always
-          // runtime=claude/sonnet); we lazy-flip it here when the user
-          // picked something else. Best-effort — a flip failure shouldn't
-          // block the wizard from advancing; user can edit the agent
-          // manually from Settings → Agents.
-          //
-          // Codex review MED: previously this only fired for codex,
-          // which silently routed openclaw/hermes wizard users through
-          // a Claude agent and produced confusing round-trip behaviour.
-          if (runtime !== "claude" && !hasExistingBridge) {
-            void (async () => {
-              try {
-                const { agents: all } = await api.listAgents();
-                const onboarding = all.find(
-                  (a) => a.serverId === serverId && a.name === "onboarding",
-                );
-                if (onboarding && onboarding.runtime !== runtime) {
-                  // Canonical default model per runtime — keep in sync
-                  // with RUNTIME_MODELS[runtime][1] (slot 0 is "auto",
-                  // which is a router-level alias not a real model).
-                  const defaultModel: Record<RuntimeId, string> = {
-                    claude:   "claude-sonnet-4-6",
-                    codex:    "gpt-5.5",
-                    openclaw: "claude-sonnet-4-6",
-                    hermes:   "auto",
-                  };
-                  await api.updateAgent(onboarding.id, {
-                    runtime,
-                    model: defaultModel[runtime],
-                  });
-                }
-              } catch (e) {
-                console.warn("[wizard] couldn't flip onboarding agent runtime", e);
-              }
-            })();
-          }
-          setStep(4);
+          void finishBridgeSetup(runtime);
           return;
         }
         if (Date.now() - startedAt > BRIDGE_POLL_TIMEOUT_MS) {
@@ -299,7 +388,7 @@ export function SetupWizard({
     // deps keeps the effect honest if the user happens to change
     // runtime mid-poll (currently impossible from the UI, but the
     // lint contract still applies).
-  }, [issued, resumed, issuedKeyId, bridgeOnline, step, serverId, runtime, hasExistingBridge]);
+  }, [issued, resumed, issuedKeyId, bridgeOnline, step, serverId, runtime, finishBridgeSetup]);
 
   // ── Discover the seeded Onboarding DM channel id so step 4 can both
   // (a) deep-link the "Open the conversation" button and (b) actively
@@ -372,7 +461,7 @@ export function SetupWizard({
       setIssued(res.apiKey);
       setIssuedKeyId(res.id);
       setResumed(false);
-      writeResume(serverId, { issuedKeyId: res.id, keyName: res.name, at: Date.now() });
+      writeResume(serverId, { issuedKeyId: res.id, keyName: res.name, runtime, at: Date.now() });
       setStep(3);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : String(e));
@@ -381,15 +470,25 @@ export function SetupWizard({
 
   /** "Start over" path — revoke the abandoned key first so retried users
    *  don't accumulate a graveyard of valid-but-unused runtime keys (each
-   *  one is a full bridge credential). Best-effort: if revoke fails we
-   *  still let them retry; orphaned keys can be cleaned up from settings. */
+   *  one is a full bridge credential). Revoke failure is not safe to hide:
+   *  a still-valid abandoned key means issuing another one would increase
+   *  the account's credential surface. */
   async function startOverFromStep2() {
+    if (restarting) return;
+    setRestarting(true);
+    setError(null);
     if (issuedKeyId) {
-      try { await api.revokeMachineKey(issuedKeyId); }
+      try {
+        await api.revokeMachineKey(issuedKeyId);
+      }
       catch (e) {
-        // Don't block retry — but a failed revoke means the abandoned
-        // key is still valid. Log loudly so a real failure isn't silent.
-        console.warn("[wizard] revoke of abandoned key failed — it's still valid", { id: issuedKeyId, error: e });
+        setError(
+          e instanceof ApiError
+            ? `Couldn't revoke the old runtime key: ${e.message}`
+            : `Couldn't revoke the old runtime key: ${e instanceof Error ? e.message : String(e)}`,
+        );
+        setRestarting(false);
+        return;
       }
     }
     clearResume(serverId);
@@ -398,9 +497,11 @@ export function SetupWizard({
     setResumed(false);
     pollStartedAtRef.current = null;
     setPollTimedOut(false);
-    setShowHelp(false);
+    setShowHelp(true);
     setBridgeOnline(false);     // safety: never short-circuit retry
+    setRuntimeApplyError(null);
     setError(null);             // clear stale red toast from prior attempt
+    setRestarting(false);
     setStep(2);
   }
 
@@ -509,53 +610,72 @@ export function SetupWizard({
                     <div>
                       <p className="font-medium">Which runtime should power local workflows?</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        Pick the agent runtime that can safely touch local code, keys, or tools. You can change per-agent later.
+                        Start with Claude Code or Codex. Advanced daemon runtimes are available if your team already operates them.
                       </p>
                       <RadioGroup
                         aria-label="AI runtime"
                         value={runtime}
-                        onValueChange={(next) => setRuntime(next as typeof runtime)}
-                        className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2"
+                        onValueChange={(next) => setRuntimeChoice(next as typeof runtime)}
+                        className="mt-2 space-y-2"
                       >
-                        <RuntimePick
-                          id="claude"
-                          title="Claude Code"
-                          chip="Recommended"
-                          chipTone="accent"
-                          body="Anthropic Claude — Sonnet 4.6 default, also Opus/Haiku. Requires the claude CLI."
-                          installHref="https://docs.claude.com/en/docs/claude-code/setup"
-                        />
-                        <RuntimePick
-                          id="codex"
-                          title="OpenAI Codex"
-                          chip="Preview"
-                          chipTone="warning"
-                          body="OpenAI Codex — GPT-5.5 default. Requires the codex CLI logged in."
-                          installHref="https://platform.openai.com/docs/codex/cli"
-                        />
-                        {/* External-daemon runtimes — the user runs the
-                            daemon themselves and Raltic just shells out
-                            to its CLI. Marked "Advanced" because they
-                            require a separate onboarding (multi-channel
-                            routing for OpenClaw, skill marketplace for
-                            Hermes) most new Raltic users don't need yet. */}
-                        <RuntimePick
-                          id="openclaw"
-                          title="OpenClaw"
-                          chip="Advanced"
-                          chipTone="default"
-                          body="Local-first multi-channel assistant. Install separately; Raltic detects your daemon."
-                          installHref="https://github.com/openclaw/openclaw"
-                        />
-                        <RuntimePick
-                          id="hermes"
-                          title="Hermes Agent"
-                          chip="Advanced"
-                          chipTone="default"
-                          body="Nous Research's self-improving agent with persistent memory + auto skills. Install separately."
-                          installHref="https://hermes-agent.nousresearch.com/"
-                        />
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <RuntimePick
+                            id="claude"
+                            title="Claude Code"
+                            chip="Recommended"
+                            chipTone="accent"
+                            body="Anthropic Claude — Sonnet 4.6 default, also Opus/Haiku. Requires the claude CLI."
+                            installHref="https://docs.claude.com/en/docs/claude-code/setup"
+                          />
+                          <RuntimePick
+                            id="codex"
+                            title="OpenAI Codex"
+                            chip="Preview"
+                            chipTone="warning"
+                            body="OpenAI Codex — GPT-5.5 default. Requires the codex CLI logged in."
+                            installHref="https://platform.openai.com/docs/codex/cli"
+                          />
+                        </div>
+                        {showAdvancedRuntimeChoices && (
+                          <div id={advancedRuntimesId} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {/* External-daemon runtimes — the user runs the
+                                daemon themselves and Raltic just shells out
+                                to its CLI. Marked "Advanced" because they
+                                require a separate onboarding (multi-channel
+                                routing for OpenClaw, skill marketplace for
+                                Hermes) most new Raltic users don't need yet. */}
+                            <RuntimePick
+                              id="openclaw"
+                              title="OpenClaw"
+                              chip="Advanced"
+                              chipTone="default"
+                              body="Local-first multi-channel assistant. Install separately; Raltic detects your daemon."
+                              installHref="https://github.com/openclaw/openclaw"
+                            />
+                            <RuntimePick
+                              id="hermes"
+                              title="Hermes Agent"
+                              chip="Advanced"
+                              chipTone="default"
+                              body="Nous Research's self-improving agent with persistent memory + auto skills. Install separately."
+                              installHref="https://hermes-agent.nousresearch.com/"
+                            />
+                          </div>
+                        )}
                       </RadioGroup>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-controls={advancedRuntimesId}
+                        aria-expanded={showAdvancedRuntimeChoices}
+                        onClick={() => setShowAdvancedRuntimes((v) => !v)}
+                        className="mt-2 w-full justify-start gap-1 text-left text-xs text-muted-foreground"
+                      >
+                        {showAdvancedRuntimeChoices ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        Advanced daemon runtimes
+                        {advancedRuntimeSelected && !showAdvancedRuntimes ? ` (${runtimeDisplayName(runtime)} selected)` : ""}
+                      </Button>
                     </div>
                   )}
 
@@ -627,191 +747,269 @@ export function SetupWizard({
 
               {step === 3 && (issued || resumed) && (
                 <div className="space-y-3 text-sm">
-                  {resumed ? (
+                  {error && (
+                    <Alert variant="error" className="text-xs">
+                      <AlertTitle>Runtime key needs attention</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                      <div className="mt-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          loading={restarting}
+                          onClick={() => { void startOverFromStep2(); }}
+                        >
+                          Issue a fresh key
+                        </Button>
+                      </div>
+                    </Alert>
+                  )}
+
+                  {bridgeOnline && configuringRuntime && (
                     <Alert variant="info" className="text-xs">
-                      <AlertTitle>Resumed from a previous session</AlertTitle>
+                      <AlertTitle>Bridge connected. Configuring {runtimeDisplayName(runtime)}.</AlertTitle>
                       <AlertDescription>
-                        We&apos;re watching for the bridge from runtime key{" "}
-                        <code className="raltic-inline-token">{keyName}</code>.
-                        Already pasted the command in your terminal? Just keep it running and we&apos;ll detect the connection.
+                        Raltic is updating the onboarding agent to use the runtime you selected before opening the first workflow message.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {bridgeOnline && runtimeApplyError && (
+                    <Alert variant="error" className="text-xs">
+                      <AlertTitle>Bridge connected, but runtime setup failed.</AlertTitle>
+                      <AlertDescription>
+                        {runtimeApplyError}
                       </AlertDescription>
                       <AlertDescription className="mt-1">
-                        Lost the command?{" "}
-                        <Button type="button" variant="link" size="xs" className="h-auto px-0 py-0 text-xs" onClick={() => { void startOverFromStep2(); }}>
-                          Start over to issue a fresh key
-                        </Button>.
+                        Retry before sending the first workflow message so the onboarding assistant replies from {runtimeDisplayName(runtime)}.
+                      </AlertDescription>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          type="button"
+                          size="sm"
+                          loading={configuringRuntime}
+                          onClick={() => { void finishBridgeSetup(runtime); }}
+                        >
+                          Retry runtime setup
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          loading={restarting}
+                          onClick={() => { void startOverFromStep2(); }}
+                        >
+                          Start over with a new key
+                        </Button>
+                      </div>
+                    </Alert>
+                  )}
+
+                  {bridgeOnline && !configuringRuntime && !runtimeApplyError && !error && (
+                    <Alert variant="info" className="text-xs">
+                      <AlertTitle>Bridge connected.</AlertTitle>
+                      <AlertDescription>
+                        Preparing the first workflow message step.
                       </AlertDescription>
                     </Alert>
-                  ) : (
+                  )}
+
+                  {!bridgeOnline && !error && (
                     <>
-                      {/* What the command DOES — three-bullet explainer
-                          so users aren't pasting a black-box one-liner.
-                          Lifted directly from a real install run so the
-                          terms match what they'll see in their terminal. */}
-                      <Alert variant="info" className="text-[11px]">
-                        <AlertTitle>What this command does:</AlertTitle>
-                        <AlertDescription>
-                          <ul className="mt-1 space-y-0.5">
-                            <li>1. Downloads <code className="raltic-inline-token">@raltic/bridge</code> via npx (no global install)</li>
-                            <li>2. Registers this computer with your workspace using the runtime key below</li>
-                            <li>3. Stays running in this terminal — watches for messages from your agents</li>
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-
-                      {/* Tabbed install surface. Quick is the default and
-                          what 95% of users want; Persistent is for users
-                          who want bridge to keep running after closing
-                          terminal; Desktop points users to the installed
-                          app's authenticated launch flow. */}
-                      <Tabs
-                        selectedKey={installTab}
-                        onSelectionChange={(key) => setInstallTab(key as typeof installTab)}
-                      >
-                        <TabsListContainer className="py-1">
-                          <TabsList
-                            aria-label="Install method"
-                            className="gap-1 rounded-xl border border-border bg-[var(--surface-secondary)] p-1"
-                          >
-                            {[
-                              { id: "quick" as const, label: "Quick (recommended)" },
-                              { id: "persistent" as const, label: "Persistent" },
-                              { id: "desktop" as const, label: "Desktop app" },
-                            ].map((t) => {
-                              const active = installTab === t.id;
-                              return (
-                                <TabsTrigger
-                                  key={t.id}
-                                  id={t.id}
-                                  className={cn(
-                                    "h-8 rounded-[8px] border border-transparent px-2.5 text-xs transition-colors",
-                                    active
-                                      ? "border-accent/25 bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] shadow-xs"
-                                      : "text-muted-foreground hover:bg-[var(--surface-tertiary)] hover:text-foreground",
-                                  )}
-                                >
-                                  {t.label}
-                                </TabsTrigger>
-                              );
-                            })}
-                          </TabsList>
-                        </TabsListContainer>
-                      </Tabs>
-
-                      {installTab === "quick" && (
+                      {resumed ? (
+                        <Alert variant="info" className="text-xs">
+                          <AlertTitle>Resumed from a previous session</AlertTitle>
+                          <AlertDescription>
+                            We&apos;re watching for the bridge from runtime key{" "}
+                            <code className="raltic-inline-token">{keyName}</code>.
+                            Already pasted the command in your terminal? Just keep it running and we&apos;ll detect the connection.
+                          </AlertDescription>
+                          <AlertDescription className="mt-1">
+                            Lost the command?{" "}
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="xs"
+                              loading={restarting}
+                              className="h-auto px-0 py-0 text-xs"
+                              onClick={() => { void startOverFromStep2(); }}
+                            >
+                              Start over to issue a fresh key
+                            </Button>.
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
                         <>
-                          <p className="text-xs">Open a terminal on this computer and run:</p>
-                          <CopyableCommand cmd={quickCmd} />
+                          {/* What the command DOES — three-bullet explainer
+                              so users aren't pasting a black-box one-liner.
+                              Lifted directly from a real install run so the
+                              terms match what they'll see in their terminal. */}
+                          <Alert variant="info" className="text-[11px]">
+                            <AlertTitle>What this command does:</AlertTitle>
+                            <AlertDescription>
+                              <ul className="mt-1 space-y-0.5">
+                                <li>1. Downloads <code className="raltic-inline-token">@raltic/bridge</code> via npx (no global install)</li>
+                                <li>2. Registers this computer with your workspace using the runtime key below</li>
+                                <li>3. Stays running in this terminal — watches for messages from your agents</li>
+                              </ul>
+                            </AlertDescription>
+                          </Alert>
+
+                          {/* Tabbed install surface. Quick is the default and
+                              what 95% of users want; Persistent is for users
+                              who want bridge to keep running after closing
+                              terminal; Desktop points users to the installed
+                              app's authenticated launch flow. */}
+                          <Tabs
+                            selectedKey={installTab}
+                            onSelectionChange={(key) => setInstallTab(key as typeof installTab)}
+                          >
+                            <TabsListContainer className="py-1">
+                              <TabsList
+                                aria-label="Install method"
+                                className="gap-1 rounded-xl border border-border bg-[var(--surface-secondary)] p-1"
+                              >
+                                {[
+                                  { id: "quick" as const, label: "Quick (recommended)" },
+                                  { id: "persistent" as const, label: "Persistent" },
+                                  { id: "desktop" as const, label: "Desktop app" },
+                                ].map((t) => {
+                                  const active = installTab === t.id;
+                                  return (
+                                    <TabsTrigger
+                                      key={t.id}
+                                      id={t.id}
+                                      className={cn(
+                                        "h-8 rounded-[8px] border border-transparent px-2.5 text-xs transition-colors",
+                                        active
+                                          ? "border-accent/25 bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)] shadow-xs"
+                                          : "text-muted-foreground hover:bg-[var(--surface-tertiary)] hover:text-foreground",
+                                      )}
+                                    >
+                                      {t.label}
+                                    </TabsTrigger>
+                                  );
+                                })}
+                              </TabsList>
+                            </TabsListContainer>
+                          </Tabs>
+
+                          {installTab === "quick" && (
+                            <>
+                              <p className="text-xs">Open a terminal on this computer and run:</p>
+                              <CopyableCommand cmd={quickCmd} />
+                            </>
+                          )}
+
+                          {installTab === "persistent" && (
+                            <div className="space-y-2 text-xs">
+                              <p>Install once, then run anytime (also works as a launchd/systemd unit):</p>
+                              <CopyableCommand cmd={persistentInstall} />
+                              <p>Then start the bridge:</p>
+                              <CopyableCommand cmd={persistentRun} />
+                              <p className="text-muted-foreground">
+                                Auto-start on login: see the README&apos;s launchd / systemd snippets.
+                              </p>
+                            </div>
+                          )}
+
+                          {installTab === "desktop" && (
+                            <Card render={<section />} className="border-border/70 bg-[var(--surface-secondary)] !shadow-none">
+                              <CardPanel className="p-3 text-xs">
+                              <p className="font-medium">Desktop app</p>
+                              <p className="mt-1 text-muted-foreground">
+                                Open Raltic Desktop on this computer, sign in, then click
+                                <span className="font-medium text-foreground"> Connect this computer</span>.
+                                The app creates a workspace-scoped key and keeps the bridge
+                                running from the menu bar.
+                              </p>
+                              </CardPanel>
+                            </Card>
+                          )}
+
+                          {/* What success looks like — fake terminal preview
+                              so the user has a visual to match against their
+                              REAL terminal output. Without this they don&apos;t
+                              know when to consider "it worked". */}
+                          <Card
+                            data-raltic-terminal-preview
+                            render={<div />}
+                            className="raltic-terminal-surface overflow-hidden shadow-overlay"
+                          >
+                            <CardPanel className="space-y-0.5 p-2.5 font-mono text-[10.5px] leading-relaxed">
+                              <p className="raltic-terminal-line">$ {installTab === "persistent" ? "raltic-bridge setup ck_…" : quickCmd || "npx -y @raltic/bridge setup ck_…"}</p>
+                              <p className="raltic-terminal-line">[bridge] starting</p>
+                              <p className="raltic-terminal-line">[bridge]   server-url={API_URL}</p>
+                              <p className="raltic-terminal-line">[bridge] runtime {runtime} ready</p>
+                              <p className="raltic-terminal-line">[bridge] connected as user=… server=…</p>
+                              <p className="raltic-terminal-success">[bridge] ready — waiting for messages</p>
+                            </CardPanel>
+                          </Card>
                         </>
                       )}
+                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Terminal className="h-3 w-3" />
+                        Waiting for the bridge to connect…
+                        <Chip size="sm" variant="soft" color="warning" className="ml-auto gap-1 text-[10px] uppercase tracking-wider">
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--warning)]" aria-hidden="true" />
+                          polling
+                        </Chip>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Once it prints <code className="raltic-inline-token">[bridge] ready</code> the wizard will advance automatically.
+                      </p>
 
-                      {installTab === "persistent" && (
-                        <div className="space-y-2 text-xs">
-                          <p>Install once, then run anytime (also works as a launchd/systemd unit):</p>
-                          <CopyableCommand cmd={persistentInstall} />
-                          <p>Then start the bridge:</p>
-                          <CopyableCommand cmd={persistentRun} />
-                          <p className="text-muted-foreground">
-                            Auto-start on login: see the README&apos;s launchd / systemd snippets.
-                          </p>
-                        </div>
+                      {pollTimedOut && (
+                        <Alert variant="warning" className="text-xs">
+                          <AlertTitle className="flex items-center gap-1.5">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            Still waiting after 4 minutes — something&apos;s likely off.
+                          </AlertTitle>
+                          <AlertDescription>
+                            We&apos;re still listening if it comes online. Check your terminal for any error output.
+                          </AlertDescription>
+                        </Alert>
                       )}
 
-                      {installTab === "desktop" && (
-                        <Card render={<section />} className="border-border/70 bg-[var(--surface-secondary)] !shadow-none">
-                          <CardPanel className="p-3 text-xs">
-                          <p className="font-medium">Desktop app</p>
-                          <p className="mt-1 text-muted-foreground">
-                            Open Raltic Desktop on this computer, sign in, then click
-                            <span className="font-medium text-foreground"> Connect this computer</span>.
-                            The app creates a workspace-scoped key and keeps the bridge
-                            running from the menu bar.
-                          </p>
-                          </CardPanel>
+                      <Button type="button"
+                        onClick={() => setShowHelp(v => !v)}
+                        variant="ghost"
+                        size="sm"
+                        aria-controls={helpPanelId}
+                        aria-expanded={showHelp}
+                        className="w-full justify-start gap-1 text-left text-xs text-muted-foreground">
+                        {showHelp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                        Having trouble?
+                      </Button>
+                      {showHelp && (
+                        <Card id={helpPanelId} render={<ul />} className="space-y-2 bg-background p-3 text-xs text-muted-foreground !shadow-none">
+                          <li>
+                            <strong className="text-foreground">Node ≥ 20 not installed?</strong>{" "}
+                            Run <code className="raltic-inline-token">node -v</code>. If missing, install from{" "}
+                            <a className="underline" href="https://nodejs.org" target="_blank" rel="noreferrer">nodejs.org</a>{" "}
+                            or via Homebrew (<code className="raltic-inline-token">brew install node</code>).
+                          </li>
+                          <li>
+                            <strong className="text-foreground">{runtimeHelp.title}</strong>{" "}
+                            Run <code className="raltic-inline-token">{runtimeHelp.versionCommand}</code>. If missing,{" "}
+                            <code className="raltic-inline-token">{runtimeHelp.installHint}</code>{" "}
+                            then <code className="raltic-inline-token">{runtimeHelp.loginCommand}</code> once to finish setup.
+                          </li>
+                          <li>
+                            <strong className="text-foreground">Stale npx cache?</strong>{" "}
+                            Try <code className="raltic-inline-token">rm -rf ~/.npm/_npx</code> and re-run the command above.
+                          </li>
+                          <li>
+                            <strong className="text-foreground">Key got pasted with extra characters?</strong>{" "}
+                            Re-issue the key{" "}
+                            <Button type="button" variant="link" size="xs" loading={restarting} className="h-auto px-0 py-0 text-xs"
+                              onClick={() => { void startOverFromStep2(); }}>
+                              (start over from step 2)
+                            </Button>.
+                          </li>
                         </Card>
                       )}
-
-                      {/* What success looks like — fake terminal preview
-                          so the user has a visual to match against their
-                          REAL terminal output. Without this they don&apos;t
-                          know when to consider "it worked". */}
-                      <Card
-                        data-raltic-terminal-preview
-                        render={<div />}
-                        className="raltic-terminal-surface overflow-hidden shadow-overlay"
-                      >
-                        <CardPanel className="space-y-0.5 p-2.5 font-mono text-[10.5px] leading-relaxed">
-                          <p className="raltic-terminal-line">$ {installTab === "persistent" ? "raltic-bridge setup ck_…" : quickCmd || "npx -y @raltic/bridge setup ck_…"}</p>
-                          <p className="raltic-terminal-line">[bridge] starting</p>
-                          <p className="raltic-terminal-line">[bridge]   server-url={API_URL}</p>
-                          <p className="raltic-terminal-line">[bridge] runtime {runtime} ready</p>
-                          <p className="raltic-terminal-line">[bridge] connected as user=… server=…</p>
-                          <p className="raltic-terminal-success">[bridge] ready — waiting for messages</p>
-                        </CardPanel>
-                      </Card>
                     </>
-                  )}
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Terminal className="h-3 w-3" />
-                    Waiting for the bridge to connect…
-                    <Chip size="sm" variant="soft" color="warning" className="ml-auto gap-1 text-[10px] uppercase tracking-wider">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--warning)]" aria-hidden="true" />
-                      polling
-                    </Chip>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Once it prints <code className="raltic-inline-token">[bridge] ready</code> the wizard will advance automatically.
-                  </p>
-
-                  {pollTimedOut && (
-                    <Alert variant="warning" className="text-xs">
-                      <AlertTitle className="flex items-center gap-1.5">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        Still waiting after 4 minutes — something&apos;s likely off.
-                      </AlertTitle>
-                      <AlertDescription>
-                        We&apos;re still listening if it comes online. Check your terminal for any error output.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  <Button type="button"
-                    onClick={() => setShowHelp(v => !v)}
-                    variant="ghost"
-                    size="sm"
-                    aria-controls={helpPanelId}
-                    aria-expanded={showHelp}
-                    className="w-full justify-start gap-1 text-left text-xs text-muted-foreground">
-                    {showHelp ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    Having trouble?
-                  </Button>
-                  {showHelp && (
-                    <Card id={helpPanelId} render={<ul />} className="space-y-2 bg-background p-3 text-xs text-muted-foreground !shadow-none">
-                      <li>
-                        <strong className="text-foreground">Node ≥ 20 not installed?</strong>{" "}
-                        Run <code className="raltic-inline-token">node -v</code>. If missing, install from{" "}
-                        <a className="underline" href="https://nodejs.org" target="_blank" rel="noreferrer">nodejs.org</a>{" "}
-                        or via Homebrew (<code className="raltic-inline-token">brew install node</code>).
-                      </li>
-                      <li>
-                        <strong className="text-foreground">Claude CLI missing?</strong>{" "}
-                        Run <code className="raltic-inline-token">claude --version</code>. If missing,{" "}
-                        <code className="raltic-inline-token">npm install -g @anthropic-ai/claude-code</code>{" "}
-                        then <code className="raltic-inline-token">claude</code> once to log in.
-                      </li>
-                      <li>
-                        <strong className="text-foreground">Stale npx cache?</strong>{" "}
-                        Try <code className="raltic-inline-token">rm -rf ~/.npm/_npx</code> and re-run the command above.
-                      </li>
-                      <li>
-                        <strong className="text-foreground">Key got pasted with extra characters?</strong>{" "}
-                        Re-issue the key{" "}
-                        <Button type="button" variant="link" size="xs" className="h-auto px-0 py-0 text-xs"
-                          onClick={() => { void startOverFromStep2(); }}>
-                          (start over from step 2)
-                        </Button>.
-                      </li>
-                    </Card>
                   )}
                 </div>
               )}
@@ -846,7 +1044,7 @@ export function SetupWizard({
                     </p>
                   ) : (
                     <p className="text-muted-foreground">
-                      Send a first workflow message in the DM below. We&apos;ll mark this step done as soon as the agent replies from your runtime.
+                      Open the onboarding DM and send one real workflow brief. We&apos;ll mark this complete after the selected local runtime replies.
                     </p>
                   )}
                   <Button onClick={() => {
@@ -854,7 +1052,7 @@ export function SetupWizard({
                     if (onboardingDmId) router.push(`/s/${serverSlug}/dm/${onboardingDmId}`);
                   }}>
                     <MessageSquare className="mr-1 h-3.5 w-3.5" />
-                    {onboardingDmId ? "Open onboarding DM" : "Open my workspace"}
+                    {onboardingDmId ? "Open DM and send first workflow brief" : "Open my workspace"}
                   </Button>
                 </div>
               )}

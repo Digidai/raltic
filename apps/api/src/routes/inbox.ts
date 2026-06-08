@@ -1,12 +1,15 @@
 /**
  * GET /api/v1/inbox?serverId=… — unified inbox surface.
  *
- * Aggregates two signals into a single chronological list:
+ * Aggregates high-signal work into a single attention list:
  *   1. Unread DMs: every DM channel the caller is in where the latest
  *      message's seq exceeds their last_read_seq AND the latest sender
  *      isn't the caller themselves.
  *   2. Open task assignments: tasks where assignee_id = caller and
  *      status ∈ (todo, in_progress), ordered by created_at desc.
+ *   3. Review tasks: tasks in joined workflow rooms with status
+ *      in_review.
+ *   4. Agent runs waiting for input or failed in joined workflow rooms.
  *
  * Why no @-mention source yet:
  *   The messages table doesn't index mentioned user ids — adding one
@@ -29,33 +32,25 @@
 import { Hono } from "hono";
 import { drizzle } from "drizzle-orm/d1";
 import { requirePolicy, policy } from "@raltic/auth-core";
-import { messages, channels, channelMembers, tasks, servers } from "@raltic/db";
-import { and, desc, eq, or } from "drizzle-orm";
+import { agentRuns, agents, messages, channels, channelMembers, tasks, servers } from "@raltic/db";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { inboxResponse, listInboxQuery, sanitizeUserVisibleError, type InboxItemRecord } from "@raltic/protocol";
 import type { Env, Variables } from "../lib/env";
 import { requireAuth, ctxFor } from "../lib/auth";
+import { listVisibleChannelIds } from "../lib/visible-channels";
 
 export const inboxRoutes = new Hono<{ Bindings: Env; Variables: Variables }>();
-
-interface InboxItem {
-  id: string;
-  kind: "dm" | "task";
-  createdAt: number;
-  channelId: string;
-  channelName: string;
-  channelType: "public" | "private" | "dm";
-  preview: string;
-  href: string;
-}
 
 inboxRoutes.get("/api/v1/inbox", requireAuth, async (c) => {
   const subject = c.get("subject");
   if (subject.kind !== "user") {
-    return c.json({ items: [] });
+    return c.json(inboxResponse.parse({ items: [], count: 0, totalCount: 0 }));
   }
-  const serverIdParam = c.req.query("serverId");
-  if (!serverIdParam) {
-    return c.json({ error: { code: "BAD_REQ", message: "serverId required" } }, 400);
+  const parsed = listInboxQuery.safeParse(Object.fromEntries(new URL(c.req.url).searchParams));
+  if (!parsed.success) {
+    return c.json({ error: { code: "BAD_REQ", message: parsed.error.issues[0]?.message ?? "bad inbox query" } }, 400);
   }
+  const { serverId: serverIdParam, limit } = parsed.data;
   const ctx = ctxFor(c);
   await requirePolicy(policy.servers.canRead(ctx, serverIdParam));
 
@@ -82,9 +77,10 @@ inboxRoutes.get("/api/v1/inbox", requireAuth, async (c) => {
       eq(channelMembers.memberType, "human"),
       eq(channels.type, "dm"),
       eq(channels.serverId, serverIdParam),
+      isNull(channels.archivedAt),
     ));
 
-  const dmItems: InboxItem[] = [];
+  const dmItems: InboxItemRecord[] = [];
   for (const dm of dmMemberships) {
     const latest = await db.select({
       id: messages.id, seq: messages.seq, content: messages.content,
@@ -101,6 +97,7 @@ inboxRoutes.get("/api/v1/inbox", requireAuth, async (c) => {
     dmItems.push({
       id: `dm:${top.id}`,
       kind: "dm",
+      priority: 5,
       createdAt: top.createdAt instanceof Date ? top.createdAt.getTime() : Number(top.createdAt),
       channelId: dm.channelId,
       channelName: dm.channelName,
@@ -110,11 +107,16 @@ inboxRoutes.get("/api/v1/inbox", requireAuth, async (c) => {
     });
   }
 
+  const visibleChannelIds = await listVisibleChannelIds(db, subject, {
+    serverId: serverIdParam,
+    includePublic: false,
+  });
+
   // ── 2. Open tasks assigned to me ───────────────────────────────────────
   // tasks doesn't store a title — the title is the source message's content.
   // LEFT JOIN messages so a task whose message got hard-deleted still
   // surfaces (preview falls back to "Task #N").
-  const myTasks = await db
+  const myTasks = visibleChannelIds.length === 0 ? [] : await db
     .select({
       tId: tasks.id, tNumber: tasks.taskNumber,
       tStatus: tasks.status, tCreatedAt: tasks.createdAt, tChannelId: tasks.channelId,
@@ -127,27 +129,88 @@ inboxRoutes.get("/api/v1/inbox", requireAuth, async (c) => {
     .leftJoin(messages, eq(messages.id, tasks.messageId))
     .where(and(
       eq(channels.serverId, serverIdParam),
-      eq(tasks.assigneeId, subject.userId),
-      eq(tasks.assigneeType, "human"),
-      or(eq(tasks.status, "todo"), eq(tasks.status, "in_progress")),
+      inArray(tasks.channelId, visibleChannelIds),
+      or(
+        and(
+          eq(tasks.assigneeId, subject.userId),
+          eq(tasks.assigneeType, "human"),
+          or(eq(tasks.status, "todo"), eq(tasks.status, "in_progress")),
+        ),
+        eq(tasks.status, "in_review"),
+      ),
     ))
-    .orderBy(desc(tasks.createdAt))
-    .limit(20);
+    .orderBy(desc(tasks.createdAt));
 
-  const taskItems: InboxItem[] = myTasks.map((t) => ({
+  const taskItems: InboxItemRecord[] = myTasks.map((t) => ({
     id: `task:${t.tId}`,
     kind: "task",
+    priority: t.tStatus === "in_review" ? 0 : 4,
     createdAt: t.tCreatedAt instanceof Date ? t.tCreatedAt.getTime() : Number(t.tCreatedAt),
     channelId: t.tChannelId,
     channelName: t.cName,
     channelType: t.cType,
     preview: (t.mContent ?? `Task #${t.tNumber}`).slice(0, 140),
     href: `/s/${slug}/${t.cType === "dm" ? "dm" : "channel"}/${t.tChannelId}`,
+    status: t.tStatus,
   }));
 
-  const items = [...dmItems, ...taskItems]
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, 50);
+  // ── 3. Agent run blockers / failures ──────────────────────────────────
+  const runRows = visibleChannelIds.length === 0 ? [] : await db
+    .select({
+      rId: agentRuns.id,
+      rStatus: agentRuns.status,
+      rCreatedAt: agentRuns.createdAt,
+      rUpdatedAt: agentRuns.updatedAt,
+      rAgentId: agentRuns.agentId,
+      rRuntimeMode: agentRuns.runtimeMode,
+      rInputPreview: agentRuns.inputPreview,
+      rError: agentRuns.error,
+      cId: channels.id,
+      cName: channels.name,
+      cType: channels.type,
+      aDisplayName: agents.displayName,
+    })
+    .from(agentRuns)
+    .innerJoin(channels, eq(channels.id, agentRuns.channelId))
+    .leftJoin(agents, eq(agents.id, agentRuns.agentId))
+    .where(and(
+      eq(channels.serverId, serverIdParam),
+      inArray(agentRuns.channelId, visibleChannelIds),
+      inArray(agentRuns.status, ["waiting_input", "failed"]),
+    ))
+    .orderBy(desc(agentRuns.updatedAt));
 
-  return c.json({ items, count: items.length });
+  const runItems: InboxItemRecord[] = runRows.map((r) => {
+    const agentName = r.aDisplayName ?? `Agent ${r.rAgentId.slice(0, 6)}`;
+    const status = r.rStatus;
+    const waiting = status === "waiting_input";
+    const safeInput = sanitizeUserVisibleError(r.rInputPreview, 160);
+    const safeError = sanitizeUserVisibleError(r.rError, 160);
+    const detail = waiting
+      ? (safeInput ? ` · ${safeInput}` : "")
+      : (safeError ? ` · ${safeError}` : "");
+    return {
+      id: `run:${r.rId}`,
+      kind: "agent_run",
+      priority: waiting ? 1 : 2,
+      createdAt: r.rUpdatedAt instanceof Date ? r.rUpdatedAt.getTime() : Number(r.rUpdatedAt ?? r.rCreatedAt),
+      channelId: r.cId,
+      channelName: r.cName,
+      channelType: r.cType,
+      preview: `${agentName} ${waiting ? "is waiting for input" : "failed"}${detail}`.slice(0, 160),
+      href: `/s/${slug}/agents/${r.rAgentId}?tab=runs&runId=${r.rId}`,
+      status,
+      agentId: r.rAgentId,
+      runtimeMode: r.rRuntimeMode,
+    };
+  });
+
+  const allItems = [...dmItems, ...taskItems, ...runItems]
+    .sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return b.createdAt - a.createdAt;
+    });
+  const items = allItems.slice(0, limit);
+
+  return c.json(inboxResponse.parse({ items, count: items.length, totalCount: allItems.length }));
 });

@@ -13,6 +13,7 @@ import {
   researchChannel,
   server,
   setupMockWorkspace,
+  starterWorkflowChannel,
 } from "./helpers/heroui-workspace";
 import { isLocalWebTarget, isPreDeployProductionTarget } from "./helpers/env";
 
@@ -390,12 +391,61 @@ test("sidebar destination pages fill the workspace main column and keep navigati
   for (const destination of destinations) {
     await page.goto(destination.path, { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole("heading", { name: destination.heading })).toBeVisible();
+    await expect(page.getByRole("heading", { name: destination.heading, exact: true })).toBeVisible();
+    if (destination.path.endsWith("/inbox")) {
+      await expect(page.getByRole("toolbar", { name: "Work queue filters" })).toBeVisible();
+      await expect(page.getByRole("button", { name: /All 5/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /Review 1/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /Agent runs 2/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /Tasks 1/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /Handoffs 1/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /All 5/ })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByText("Review onboarding handoff")).toBeVisible();
+      await expect(page.getByText("review", { exact: true })).toBeVisible();
+      await expect(page.getByText("waiting", { exact: true })).toBeVisible();
+      await expect(page.getByText("failed", { exact: true })).toBeVisible();
+      await expect(page.getByText("task", { exact: true })).toBeVisible();
+      await expect(page.getByText("handoff", { exact: true })).toBeVisible();
+      const queueLinks = await page.getByTestId("work-queue-list").locator("li a").evaluateAll((links) => links.map((link) => link.textContent?.replace(/\s+/g, " ").trim() ?? ""));
+      expect(queueLinks.join(" | ")).toMatch(/review.*waiting.*failed.*task.*handoff/i);
+      await page.getByRole("button", { name: /Agent runs 2/ }).click();
+      await expect(page.getByRole("button", { name: /Agent runs 2/ })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByText("Cloud Test Agent failed")).toBeVisible();
+      await expect(page.getByText("Collect research notes")).toBeHidden();
+      await page.getByRole("button", { name: /Review 1/ }).click();
+      await expect(page.getByRole("button", { name: /Review 1/ })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByText("Review onboarding handoff")).toBeVisible();
+      await expect(page.getByText("Cloud Test Agent failed")).toBeHidden();
+      await page.getByRole("button", { name: /Tasks 1/ }).click();
+      await expect(page.getByText("Collect research notes")).toBeVisible();
+      await expect(page.getByText("Review onboarding handoff")).toBeHidden();
+      await page.getByRole("button", { name: /Handoffs 1/ }).click();
+      await expect(page.getByText("Cloud Test Agent left a handoff")).toBeVisible();
+      await expect(page.getByText("Collect research notes")).toBeHidden();
+    }
+    if (destination.path.endsWith("/channels")) {
+      await expect(page.getByRole("heading", { name: "My workflows" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Discover public workflows" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "onboarding" })).toHaveCount(0);
+      await expect(page.getByText("Needs human review")).toHaveCount(0);
+      await expect(page.getByText("Agent run failed")).toBeVisible();
+      await expect(page.getByRole("link", { name: "customer-risk" })).toBeVisible();
+      await expect(page.getByRole("button", { name: /Join/ })).toBeVisible();
+    }
+    if (destination.path.endsWith("/agents")) {
+      await expect(page.getByRole("heading", { name: "Workspace run log" })).toBeVisible();
+      await expect(page.getByText("Workflow mention").first()).toBeVisible();
+      await expect(page.getByText("#onboarding").first()).toBeVisible();
+    }
     await expect(
       page
         .getByRole("navigation", { name: "Workspace navigation" })
         .getByRole("link", { name: "Work queue", exact: true }),
     ).toBeVisible();
+    const queueLink = page
+      .getByRole("navigation", { name: "Workspace navigation" })
+      .getByRole("link", { name: "Work queue", exact: true });
+    await expect(queueLink.locator("[data-count]")).toHaveAttribute("data-count", "3");
     await expect(
       page
         .getByRole("navigation", { name: "Workspace navigation" })
@@ -481,13 +531,90 @@ test("sidebar destination pages fill the workspace main column and keep navigati
   }
 });
 
+test("work queue surfaces API truncation instead of pretending the first page is complete", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const items = Array.from({ length: 50 }, (_, index) => ({
+    id: `task:overflow-${index}`,
+    kind: "task",
+    priority: 4,
+    createdAt: Date.now() - index,
+    channelId: "ch-research",
+    channelName: "research",
+    channelType: "public",
+    preview: `Overflow task ${index + 1}`,
+    href: "/s/demo/channel/ch-research",
+    status: "in_progress",
+  }));
+  await setupMockWorkspace(page, context, {
+    inboxResponse: { items, count: 50, totalCount: 60 },
+  });
+
+  await page.goto("/s/demo/inbox", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: /All 60/ })).toBeVisible();
+  await expect(page.getByText("Showing the first 50 of 60 queue items.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Refresh queue" })).toBeVisible();
+});
+
+test("joining a public workflow moves it into My workflows and refreshes the sidebar", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  await page.goto("/s/demo/channels", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  const myWorkflows = page.locator("section", { has: page.getByRole("heading", { name: "My workflows" }) });
+  const discoverWorkflows = page.locator("section", { has: page.getByRole("heading", { name: "Discover public workflows" }) });
+  await expect(discoverWorkflows.getByRole("link", { name: "customer-risk" })).toBeVisible();
+  await expect(myWorkflows.getByRole("link", { name: "customer-risk" })).toHaveCount(0);
+
+  const joinRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels/ch-customer-risk/join",
+  );
+  await discoverWorkflows.getByRole("button", { name: /Join/ }).click();
+  await joinRequest;
+
+  await expect(myWorkflows.getByRole("link", { name: "customer-risk" })).toBeVisible();
+  await expect(discoverWorkflows.getByRole("link", { name: "customer-risk" })).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Workspace navigation" })
+      .getByRole("link", { name: "customer-risk" }),
+  ).toBeVisible();
+});
+
+test("agent run deep links from queue and run log land on the focused run", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context);
+
+  await page.goto("/s/demo/inbox", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("link", { name: /Onboarding Assistant is waiting for input/ }).click();
+  await expect(page).toHaveURL(/\/s\/demo\/agents\/agent-onboard\?tab=runs&runId=run-onboarding-waiting/);
+  await expect(page.locator('[data-run-id="run-onboarding-waiting"]')).toBeVisible();
+  await expect(page.getByText("Waiting input")).toBeVisible();
+
+  await page.goto("/s/demo/agents", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "Workspace run log" })).toBeVisible();
+  await page.getByRole("link", { name: /Cloud Test Agent Failed/ }).click();
+  await expect(page).toHaveURL(/\/s\/demo\/agents\/agent-cloud\?tab=runs&runId=run-research-failed/);
+  await expect(page.locator('[data-run-id="run-research-failed"]')).toBeVisible();
+  await expect(page.getByText("[redacted token]")).toBeVisible();
+});
+
 test("workspace home carries the workflow activation narrative", async ({ page, context }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await setupMockWorkspace(page, context, { hasConnectedBridge: false });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [onboardingChannel, researchChannel, dmChannel],
+  });
 
   await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Start a workflow." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Start your next workflow room." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Running work" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Continue workflows" })).toBeVisible();
+  await expect(page.getByText("Cards below create the room and prefill the starter brief.")).toBeVisible();
   await expect(
     page
       .getByRole("navigation", { name: "Workspace navigation" })
@@ -495,10 +622,10 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
   ).toHaveAttribute("aria-current", "page");
   const sidebar = page.getByTestId("workspace-sidebar");
   await expect(sidebar.getByText(/active workflows/i)).toBeVisible();
-  await expect(sidebar.getByRole("link", { name: /onboarding.*1 needs review.*review/i })).toBeVisible();
-  await expect(sidebar.getByRole("link", { name: /research.*1 agent run active.*1 open.*running/i })).toBeVisible();
+  await expect(sidebar.getByRole("link", { name: /onboarding.*needs review/i })).toHaveCount(0);
+  await expect(sidebar.getByRole("link", { name: /research.*1 failed run.*1 open.*failed/i })).toBeVisible();
   await expect(sidebar.getByText(/messages/i)).toBeVisible();
-  for (const label of ["Brief", "Agents", "Approval", "Memory"]) {
+  for (const label of ["Pick", "Send", "Review", "Keep"]) {
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }
   await expect(page.getByRole("article", { name: /Customer-risk brief workflow starter/ })).toBeVisible();
@@ -507,12 +634,72 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
   await expect(page.getByText("Local runtime is optional.")).toBeVisible();
 
   const launchStarter = page.getByRole("article", { name: /Launch readiness workflow starter/ });
+  const createRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+  );
   await launchStarter.getByRole("button", { name: /Start workflow/ }).click();
+  expect((await createRequest).postDataJSON()).toMatchObject({
+    serverId: "srv-demo",
+    name: "launch-readiness",
+    type: "public",
+    initialAgentIds: ["agent-onboard"],
+  });
   await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-new\?starter=launch-readiness$/);
   await expect(page.getByRole("heading", { name: "launch-readiness" })).toBeVisible();
   await expect(page.getByText("Starter brief")).toBeVisible();
   await page.getByRole("button", { name: "Use brief" }).click();
   await expect(page.getByTestId("message-composer-input").getByText(/Turn this launch into a visible readiness workflow/)).toBeVisible();
+});
+
+test("workspace home joins an existing public starter before opening it", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [
+      onboardingChannel,
+      researchChannel,
+      { ...starterWorkflowChannel, isMember: false },
+      dmChannel,
+    ],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  const launchStarter = page.getByRole("article", { name: /Launch readiness workflow starter/ });
+  await expect(launchStarter.getByRole("button", { name: /Join workflow/ })).toBeVisible();
+
+  const joinRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels/ch-new/join",
+  );
+  const createRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+    { timeout: 1_000 },
+  ).catch(() => null);
+  await launchStarter.getByRole("button", { name: /Join workflow/ }).click();
+  await joinRequest;
+  expect(await createRequest).toBeNull();
+  await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-new\?starter=launch-readiness$/);
+  await expect(page.getByRole("heading", { name: "launch-readiness" })).toBeVisible();
+});
+
+test("workspace home does not count the seeded onboarding channel as a business workflow", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [onboardingChannel, dmChannel],
+    tasks: [],
+    agentRuns: [],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Start your first workflow room." })).toBeVisible();
+  await expect(page.getByText("No open workflow rooms yet. Start with one of the templates below.")).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Workspace navigation" })
+      .getByRole("link", { name: /onboarding/i }),
+  ).toHaveCount(0);
 });
 
 test("settings sections expose every destination and keep the active state in one layer", async ({ page, context }) => {
@@ -595,7 +782,7 @@ test("workspace entity icon frames use semantic token surfaces with readable con
   const routes = [
     { path: "/s/demo/settings/agents", marker: "onboarding" },
     { path: "/s/demo/settings/connectors", marker: "personal-gh" },
-    { path: "/s/demo/channels", marker: "onboarding" },
+    { path: "/s/demo/channels", marker: "research" },
   ];
 
   for (const viewport of [{ width: 1024, height: 768 }, { width: 390, height: 844 }]) {
@@ -1386,38 +1573,29 @@ for (const width of [768, 769]) {
 test("active channel, unread count, online status, and runtime badge do not shift shell layout", async ({ page, context }) => {
   await page.setViewportSize({ width: 1280, height: 820 });
   await setupWorkspaceWithUnread(page, context);
-  await openMockChannel(page);
+  await openMockChannel(page, "ch-research");
 
-  const onboarding = page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: /onboarding/i }).first();
   const research = page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: /research/i }).first();
+  const dm = page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: /Cloud Test Agent/i }).first();
+  const workQueue = page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: "Work queue", exact: true });
   const userPill = page.getByTestId("user-pill-trigger");
   const onlineBadge = userPill.getByText("Online", { exact: true });
-  await expect(onboarding).toHaveAttribute("aria-current", "page");
-  await expect(research.getByText("3", { exact: true }), "seeded unread badge should render").toBeVisible();
+  await expect(research).toHaveAttribute("aria-current", "page");
+  await expect(workQueue.locator("[data-count]"), "seeded work queue badge should render").toHaveAttribute("data-count", "3");
+  await expect(
+    page
+      .getByRole("navigation", { name: "Workspace navigation" })
+      .getByRole("link", { name: /onboarding/i }),
+  ).toHaveCount(0);
   await expect(onlineBadge, "user online badge should render").toBeVisible();
   await expect(page.getByLabel("Runtime: Claude")).toBeVisible();
   await expect(page.getByTestId("message-composer-footer")).toBeVisible();
 
   const initialMetrics = await shellMetrics(page);
-  const onboardingBox = await visibleLinkBox(page, /onboarding/i);
-  const researchBox = await visibleLinkBox(page, /research/i);
-  expect(researchBox.height).toBeCloseTo(onboardingBox.height, 1);
 
-  await research.click();
-  await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-research$/);
-  await expect(research).toHaveAttribute("aria-current", "page");
-  await expect(onlineBadge, "user online badge should survive channel navigation").toBeVisible();
-  await expect(page.getByTestId("message-composer-footer")).toBeVisible();
-
-  const afterChannelChange = await shellMetrics(page);
-  assertNoDocumentOverflow(afterChannelChange);
-  expect(afterChannelChange.sidebar!.width).toBeCloseTo(initialMetrics.sidebar!.width, 1);
-  expect(afterChannelChange.main!.left).toBeCloseTo(initialMetrics.main!.left, 1);
-  expect(afterChannelChange.composerFooter!.bottom).toBeCloseTo(initialMetrics.composerFooter!.bottom, 1);
-
-  const dm = page.getByRole("navigation", { name: "Workspace navigation" }).getByRole("link", { name: /Cloud Test Agent/i }).first();
   await dm.click();
   await expect(page).toHaveURL(/\/s\/demo\/dm\/dm-agent$/);
+  await expect(dm).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("heading", { name: "Cloud Test Agent" })).toBeVisible();
   await expect(page.getByLabel("Runtime: Claude")).toBeVisible();
   await expect(page.getByTestId("message-composer-footer")).toBeVisible();

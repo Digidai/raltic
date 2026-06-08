@@ -7,6 +7,7 @@ import { and, desc, eq, inArray, isNull, like, or } from "drizzle-orm";
 import type { Env, Variables } from "../lib/env";
 import { requireAuth, ctxFor } from "../lib/auth";
 import { rateLimit } from "../lib/rate-limit";
+import { listVisibleChannelIds } from "../lib/visible-channels";
 
 export const tasksRoutes = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -49,33 +50,21 @@ tasksRoutes.get("/api/v1/tasks", requireAuth, async (c) => {
     ) });
   }
 
-  // No channel filter → list across channels visible to subject's agents/self.
-  // Membership join below already constrains to subject's channels (humans).
-  // For machine subjects we additionally constrain via the channel's serverId
-  // so a key for serverA can't enumerate serverB tasks even if the user is
-  // a member of both servers.
-  const conds = [
-    eq(channelMembers.channelId, tasks.channelId),
-  ];
-  if (subject.kind === "bridge") {
-    if (subject.agentIds.length === 0) return c.json({ tasks: [] });
-    conds.push(eq(channelMembers.memberType, "agent"));
-  } else {
-    conds.push(eq(channelMembers.memberId, subject.userId));
-    conds.push(eq(channelMembers.memberType, "human"));
-  }
+  // No channel filter → list across the same active visible channels used by
+  // Work Queue and agent runs. This includes public workflows in a readable
+  // workspace, owned-agent private rooms, and bridge-scoped agent rooms while
+  // excluding archived channels.
+  const visibleChannelIds = await listVisibleChannelIds(db, subject, { serverId: q.serverId });
+  if (visibleChannelIds.length === 0) return c.json({ tasks: [] });
   const rows = await db
     .select({ t: tasks, content: messages.content, serverId: channels.serverId })
     .from(tasks)
-    .innerJoin(channelMembers, and(...conds))
     .innerJoin(channels, eq(channels.id, tasks.channelId))
     .leftJoin(messages, eq(messages.id, tasks.messageId))
     .where(and(
+      inArray(tasks.channelId, visibleChannelIds),
       q.status ? eq(tasks.status, q.status) : undefined,
-      subject.kind === "machine" ? eq(channels.serverId, subject.serverId) : undefined,
-      subject.kind === "bridge" ? eq(channels.serverId, subject.serverId) : undefined,
       q.serverId ? eq(channels.serverId, q.serverId) : undefined,
-      subject.kind === "bridge" ? inArray(channelMembers.memberId, subject.agentIds) : undefined,
       q.assigneeId ? eq(tasks.assigneeId, q.assigneeId) : undefined,
       q.taskId ? eq(tasks.id, q.taskId) : undefined,
     ))

@@ -42,7 +42,7 @@ export const WORKFLOW_STARTERS: WorkflowStarterTemplate[] = [
     output: "Decision log, checklist, owner map.",
     type: "public",
     draftFocus: "Turn this launch into a visible readiness workflow.",
-    draftNeed: "A launch checklist, proof gaps, owner map, support risks, and the approval gate before anything public ships.",
+    draftNeed: "A launch checklist, proof gaps, owner map, support risks, and the approval boundary before anything public ships.",
     draftContext: "Paste the launch brief, docs links, target date, and current blockers here.",
   },
   {
@@ -83,6 +83,6 @@ ${starter.draftNeed}
 Context:
 ${starter.draftContext}
 
-Approval gate:
+Approval boundary:
 ${starter.gate}`;
 }

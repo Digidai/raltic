@@ -427,6 +427,10 @@ serversRoutes.get("/api/v1/servers/by-slug/:slug", requireAuth, async (c) => {
       unread: isMember
         ? Math.max(0, maxSeq - lastReadSeq)
         : 0,
+      // true only for an explicit human channel_members row. Public
+      // channels can be visible without membership; the web UI uses this
+      // to keep "My workflows" separate from public discovery.
+      isMember,
       // null for non-DM channels; populated for DMs so the client can
       // skip an extra per-channel members fetch on render.
       peer: dmPeerByChannel.get(c.id) ?? null,

@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { drizzle } from "drizzle-orm/d1";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { requirePolicy, policy, type Subject } from "@raltic/auth-core";
-import { agentRuns, agents, channelMembers, channels, messages, serverMembers, tasks } from "@raltic/db";
+import { requirePolicy, policy } from "@raltic/auth-core";
+import { agentRuns, agents, channelMembers, channels, messages, tasks } from "@raltic/db";
 import { createAgentRunRequest, listAgentRunsQuery, sanitizeUserVisibleError, updateAgentRunRequest } from "@raltic/protocol";
 import type { Env, Variables } from "../lib/env";
 import { ctxFor, requireAuth } from "../lib/auth";
+import { listVisibleChannelIds } from "../lib/visible-channels";
 
 export const agentRunsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>();
 const TERMINAL_AGENT_RUN_STATUSES = ["completed", "failed", "cancelled"] as const;
@@ -70,7 +71,7 @@ agentRunsRoutes.post("/api/v1/agent-runs", requireAuth, async (c) => {
     callerType: caller.type,
     triggerMessageId: body.triggerMessageId ?? null,
     outputMessageId: null,
-    inputPreview: body.inputPreview ?? null,
+    inputPreview: sanitizeUserVisibleError(body.inputPreview, 500),
     error: null,
     metadata: null,
     startedAt: null,
@@ -165,7 +166,7 @@ agentRunsRoutes.get("/api/v1/agent-runs", requireAuth, async (c) => {
   ].filter(Boolean);
 
   if (!q.channelId) {
-    const visibleChannelIds = await listVisibleRunChannelIds(db, subject, q.serverId);
+    const visibleChannelIds = await listVisibleChannelIds(db, subject, { serverId: q.serverId });
     if (visibleChannelIds.length === 0) return c.json({ runs: [] });
     conds.push(inArray(agentRuns.channelId, visibleChannelIds));
   }
@@ -197,67 +198,6 @@ agentRunsRoutes.get("/api/v1/agent-runs/:id", requireAuth, async (c) => {
 
 type AgentRunRow = typeof agentRuns.$inferSelect;
 type DB = ReturnType<typeof drizzle>;
-
-async function listVisibleRunChannelIds(
-  db: DB,
-  subject: Subject,
-  serverId?: string,
-): Promise<string[]> {
-  const scopedServerId = subject.kind === "user" ? serverId : subject.serverId;
-  const ids = new Set<string>();
-
-  if (subject.kind === "bridge") {
-    if (subject.agentIds.length === 0) return [];
-    const rows = await db
-      .select({ id: channelMembers.channelId })
-      .from(channelMembers)
-      .innerJoin(channels, eq(channels.id, channelMembers.channelId))
-      .where(and(
-        eq(channelMembers.memberType, "agent"),
-        inArray(channelMembers.memberId, subject.agentIds),
-        scopedServerId ? eq(channels.serverId, scopedServerId) : undefined,
-      ));
-    for (const row of rows) ids.add(row.id);
-    return [...ids];
-  }
-
-  const humanRows = await db
-    .select({ id: channelMembers.channelId })
-    .from(channelMembers)
-    .innerJoin(channels, eq(channels.id, channelMembers.channelId))
-    .where(and(
-      eq(channelMembers.memberId, subject.userId),
-      eq(channelMembers.memberType, "human"),
-      scopedServerId ? eq(channels.serverId, scopedServerId) : undefined,
-    ));
-  for (const row of humanRows) ids.add(row.id);
-
-  const ownedAgentRows = await db
-    .select({ id: channelMembers.channelId })
-    .from(channelMembers)
-    .innerJoin(agents, eq(agents.id, channelMembers.memberId))
-    .innerJoin(channels, eq(channels.id, channelMembers.channelId))
-    .where(and(
-      eq(channelMembers.memberType, "agent"),
-      eq(agents.ownerId, subject.userId),
-      scopedServerId ? eq(channels.serverId, scopedServerId) : undefined,
-    ));
-  for (const row of ownedAgentRows) ids.add(row.id);
-
-  const publicRows = await db
-    .select({ id: channels.id })
-    .from(channels)
-    .innerJoin(serverMembers, eq(serverMembers.serverId, channels.serverId))
-    .where(and(
-      eq(channels.type, "public"),
-      eq(serverMembers.memberId, subject.userId),
-      eq(serverMembers.memberType, "human"),
-      scopedServerId ? eq(channels.serverId, scopedServerId) : undefined,
-    ));
-  for (const row of publicRows) ids.add(row.id);
-
-  return [...ids];
-}
 
 async function resolveTaskIdForMessage(
   db: DB,
@@ -334,7 +274,7 @@ function serializeRun(row: AgentRunRow) {
     callerType: row.callerType,
     triggerMessageId: row.triggerMessageId,
     outputMessageId: row.outputMessageId,
-    inputPreview: row.inputPreview,
+    inputPreview: sanitizeUserVisibleError(row.inputPreview, 500),
     error: sanitizeUserVisibleError(row.error),
     metadata: row.metadata,
     startedAt: dateToIso(row.startedAt),

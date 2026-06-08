@@ -4,6 +4,7 @@ import { machineKeys } from "@raltic/db";
 
 const KEY_PREFIX = "ck_";
 const KEY_BYTES = 24;     // base62-ish length ~32 chars after encoding
+const MIN_PEPPER_LENGTH = 32;
 
 export interface MachineKeyEnv {
   DB: D1Database;
@@ -30,7 +31,7 @@ export async function issueMachineKey(env: MachineKeyEnv, args: {
   const keyBody = base62(random);
   const apiKey = KEY_PREFIX + keyBody;
   const prefix = apiKey.slice(0, KEY_PREFIX.length + 8); // ck_a1b2c3d4
-  const hash = await pepperedHash(apiKey, env.MACHINE_KEY_PEPPER);
+  const hash = await pepperedHash(apiKey, requireMachineKeyPepper(env));
 
   const id = crypto.randomUUID();
   const db = drizzle(env.DB);
@@ -55,7 +56,7 @@ export async function resolveMachineKey(env: MachineKeyEnv, apiKey: string): Pro
   id: string; userId: string; serverId: string;
 } | null> {
   if (!apiKey.startsWith(KEY_PREFIX)) return null;
-  const hash = await pepperedHash(apiKey, env.MACHINE_KEY_PEPPER);
+  const hash = await pepperedHash(apiKey, requireMachineKeyPepper(env));
   const db = drizzle(env.DB);
   const rows = await db
     .select({ id: machineKeys.id, userId: machineKeys.userId, serverId: machineKeys.serverId, revokedAt: machineKeys.revokedAt })
@@ -79,6 +80,14 @@ export async function revokeMachineKey(env: MachineKeyEnv, args: { id: string; o
 }
 
 // ---------------------------------------------------------------------------
+export function requireMachineKeyPepper(env: Pick<MachineKeyEnv, "MACHINE_KEY_PEPPER">): string {
+  const pepper = env.MACHINE_KEY_PEPPER;
+  if (typeof pepper !== "string" || pepper.length < MIN_PEPPER_LENGTH) {
+    throw new Error(`MACHINE_KEY_PEPPER must be at least ${MIN_PEPPER_LENGTH} characters`);
+  }
+  return pepper;
+}
+
 async function pepperedHash(input: string, pepper: string): Promise<string> {
   const data = new TextEncoder().encode(pepper + ":" + input);
   const digest = await crypto.subtle.digest("SHA-256", data);

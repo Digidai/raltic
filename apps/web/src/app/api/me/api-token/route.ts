@@ -18,7 +18,15 @@ import { createAuth, signWsToken } from "@raltic/auth-core";
  */
 export async function GET(req: Request): Promise<Response> {
   const { env } = getCloudflareContext();
-  const auth = createAuth(env as never);
+  let auth: ReturnType<typeof createAuth>;
+  try {
+    auth = createAuth(env as never);
+  } catch (err) {
+    if (canReturnLocalUnauthenticated(req, err)) {
+      return Response.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
+    }
+    throw err;
+  }
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user) {
     return Response.json({ error: { code: "UNAUTHENTICATED" } }, { status: 401 });
@@ -31,4 +39,11 @@ export async function GET(req: Request): Promise<Response> {
     ttlSeconds: ttl,
   });
   return Response.json({ token, expiresIn: ttl });
+}
+
+function canReturnLocalUnauthenticated(req: Request, err: unknown): boolean {
+  return process.env.NODE_ENV === "development"
+    && !req.headers.get("cookie")
+    && err instanceof Error
+    && err.message.includes("BETTER_AUTH_SECRET is missing");
 }

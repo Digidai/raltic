@@ -8,6 +8,7 @@ import {
 } from "@/components/heroui-pro/dialog";
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
+import { Textarea } from "@/components/heroui-pro/textarea";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
 import { Checkbox } from "@/components/heroui-pro/checkbox";
@@ -31,6 +32,7 @@ type WorkspaceMember = { userId: string; name: string; email: string | null; ima
 export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }: Props) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [approvalBoundary, setApprovalBoundary] = useState("");
   const [type, setType] = useState<"public" | "private">("public");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
   // expects a clean slate). Keep `name` blank too.
   useEffect(() => {
     if (!open) return;
-    setName(""); setDescription(""); setType("public");
+    setName(""); setDescription(""); setApprovalBoundary(""); setType("public");
     setSelectedMembers(new Set()); setSelectedAgents(new Set());
     setQuery(""); setError(null);
     let cancelled = false;
@@ -116,7 +118,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
       const res = await api.createChannel({
         serverId,
         name,
-        description: description || undefined,
+        description: buildWorkflowDescription(description, approvalBoundary),
         type,
         initialMemberIds: selectedMembers.size > 0 ? [...selectedMembers] : undefined,
         initialAgentIds: selectedAgents.size > 0 ? [...selectedAgents] : undefined,
@@ -168,14 +170,26 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                   </p>
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="channel-desc">Description <span className="text-muted-foreground">(optional)</span></FieldLabel>
-                  <Input
+                  <FieldLabel htmlFor="channel-desc">Goal / brief <span className="text-muted-foreground">(optional)</span></FieldLabel>
+                  <Textarea
                     id="channel-desc"
                     aria-label="Room description"
                     value={description}
-                    onChange={(e) => setDescription((e.target as HTMLInputElement).value)}
-                    placeholder="What business workflow does this own?"
-                    maxLength={2000}
+                    onChange={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+                    placeholder="What business workflow does this own? Include inputs, expected output, and the first decision needed."
+                    maxLength={1200}
+                    rows={3}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="channel-approval-boundary">Approval boundary <span className="text-muted-foreground">(optional)</span></FieldLabel>
+                  <Input
+                    id="channel-approval-boundary"
+                    aria-label="Approval boundary"
+                    value={approvalBoundary}
+                    onChange={(e) => setApprovalBoundary((e.target as HTMLInputElement).value)}
+                    placeholder="What should a human check before the agent output ships?"
+                    maxLength={400}
                   />
                 </Field>
                 <Field>
@@ -322,6 +336,15 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
       </DialogPortal>
     </Dialog>
   );
+}
+
+function buildWorkflowDescription(goal: string, approvalBoundary: string): string | undefined {
+  const parts = [
+    goal.trim(),
+    approvalBoundary.trim() ? `Approval boundary: ${approvalBoundary.trim()}` : "",
+  ].filter(Boolean);
+  const description = parts.join("\n");
+  return description.length > 0 ? description.slice(0, 2000) : undefined;
 }
 
 function PickerRow({ checked, onToggle, avatar, primary, secondary }: {

@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import { resolve } from "node:path";
+
+initOpenNextCloudflareForDev();
 
 // Workspace root = two levels up from apps/web (this file's location).
 // Hardcoding an absolute path breaks CI on a different machine.

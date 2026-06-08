@@ -330,6 +330,46 @@ export const updateAgentRunRequest = z.object({
 });
 export type UpdateAgentRunRequest = z.infer<typeof updateAgentRunRequest>;
 
+// ---- GET /api/v1/inbox ----
+
+export const listInboxQuery = z.object({
+  serverId: z.string(),
+  limit: z.coerce.number().int().min(1).max(50).default(50),
+});
+export type ListInboxQuery = z.infer<typeof listInboxQuery>;
+
+export const inboxKind = z.enum(["dm", "task", "agent_run"]);
+export type InboxKind = z.infer<typeof inboxKind>;
+
+export const inboxStatus = z.union([
+  z.enum(["todo", "in_progress", "in_review", "done"]),
+  agentRunStatus,
+]);
+export type InboxStatus = z.infer<typeof inboxStatus>;
+
+export const inboxItemRecord = z.object({
+  id: z.string(),
+  kind: inboxKind,
+  priority: z.number().int().min(0).max(100),
+  createdAt: z.number().int().nonnegative(),
+  channelId: z.string(),
+  channelName: z.string(),
+  channelType: z.enum(["public", "private", "dm"]),
+  preview: z.string().max(500),
+  href: z.string(),
+  status: inboxStatus.optional(),
+  agentId: z.string().nullable().optional(),
+  runtimeMode: z.string().nullable().optional(),
+});
+export type InboxItemRecord = z.infer<typeof inboxItemRecord>;
+
+export const inboxResponse = z.object({
+  items: z.array(inboxItemRecord),
+  count: z.number().int().nonnegative(),
+  totalCount: z.number().int().nonnegative().optional(),
+});
+export type InboxResponse = z.infer<typeof inboxResponse>;
+
 // ---- POST /api/v1/invites ----
 
 export const createInviteRequest = z.object({

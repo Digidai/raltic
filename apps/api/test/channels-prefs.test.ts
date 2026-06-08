@@ -149,6 +149,13 @@ async function browseChannels(authBearer: string, serverId: string) {
   });
 }
 
+async function joinChannel(authBearer: string, channelId: string) {
+  return request(app as never, `https://test.local/api/v1/channels/${channelId}/join`, {
+    method: "POST",
+    headers: { authorization: authBearer },
+  });
+}
+
 async function connectBridge(apiKey: string): Promise<{ token: string }> {
   const res = await request(app as never, "https://test.local/api/v1/bridge/connect", {
     method: "POST",
@@ -223,6 +230,63 @@ describe("human-only channel surfaces", () => {
 
     const membership = await humanChannelMember(channel.id, owner.id);
     expect(membership?.lastReadSeq).toBe(0);
+  });
+});
+
+describe("public channel browse and join", () => {
+  it("joins public channels persistently and treats repeat joins as idempotent", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const viewer = await seedUser({ name: "Viewer" });
+    const srv = await seedServer(owner);
+    await joinAsMember(srv.id, viewer.id);
+    const channel = await seedChannel(srv, "public", []);
+    const bearer = await userBearer(viewer);
+
+    const browseBefore = await browseChannels(bearer, srv.id);
+    expect(browseBefore.status).toBe(200);
+    const beforeBody = await browseBefore.json() as { channels: Array<{ id: string; isMember: boolean }> };
+    expect(beforeBody.channels.find((row) => row.id === channel.id)?.isMember).toBe(false);
+
+    const join = await joinChannel(bearer, channel.id);
+    expect(join.status).toBe(200);
+    expect(await join.json()).toEqual({ ok: true, alreadyMember: false });
+    expect(await humanChannelMember(channel.id, viewer.id)).toMatchObject({
+      channelId: channel.id,
+      memberId: viewer.id,
+      memberType: "human",
+    });
+
+    const repeatJoin = await joinChannel(bearer, channel.id);
+    expect(repeatJoin.status).toBe(200);
+    expect(await repeatJoin.json()).toEqual({ ok: true, alreadyMember: true });
+
+    const browseAfter = await browseChannels(bearer, srv.id);
+    expect(browseAfter.status).toBe(200);
+    const afterBody = await browseAfter.json() as { channels: Array<{ id: string; isMember: boolean }> };
+    expect(afterBody.channels.find((row) => row.id === channel.id)?.isMember).toBe(true);
+  });
+
+  it("hides archived public channels from browse and rejects direct join", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const active = await seedChannel(srv, "public", []);
+    const archived = await seedChannel(srv, "public", []);
+    await db().update(schema.channels)
+      .set({ archivedAt: new Date("2026-06-07T08:30:00.000Z"), archivedBy: owner.id })
+      .where(eq(schema.channels.id, archived.id));
+    const bearer = await userBearer(owner);
+
+    const browse = await browseChannels(bearer, srv.id);
+    expect(browse.status).toBe(200);
+    const body = await browse.json() as { channels: Array<{ id: string }> };
+    expect(body.channels.some((row) => row.id === active.id)).toBe(true);
+    expect(body.channels.some((row) => row.id === archived.id)).toBe(false);
+
+    const join = await joinChannel(bearer, archived.id);
+    expect(join.status).toBe(423);
+    const joinBody = await join.json() as { error: { code: string; message: string } };
+    expect(joinBody.error.code).toBe("ARCHIVED");
+    expect(joinBody.error.message).toBe("channel is archived");
   });
 });
 

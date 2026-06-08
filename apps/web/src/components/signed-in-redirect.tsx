@@ -4,6 +4,12 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { api } from "@/lib/api";
+import {
+  clearStoredOnboardingIntent,
+  readOnboardingIntentFromSearch,
+  readStoredOnboardingIntent,
+  workspaceEntryForIntent,
+} from "@/lib/onboarding-intent";
 
 /**
  * Mounted at the top of the marketing landing (`/`). For signed-in users,
@@ -45,12 +51,20 @@ export function SignedInRedirect(): null {
       try {
         const me = await api.me();
         if (cancelled) return;
-        const target =
-          me.defaultServerSlug
-          ?? me.personalServerSlug
-          ?? me.servers[0]?.slug
-          ?? null;
-        if (target) router.replace(`/s/${target}`);
+        const queryIntent = typeof window !== "undefined"
+          ? readOnboardingIntentFromSearch(new URLSearchParams(window.location.search))
+          : null;
+        const intent = queryIntent ?? readStoredOnboardingIntent();
+        const target = workspaceEntryForIntent({
+          intent,
+          defaultSlug: me.defaultServerSlug,
+          personalSlug: me.personalServerSlug,
+          fallbackSlug: me.servers[0]?.slug,
+        });
+        if (target) {
+          clearStoredOnboardingIntent();
+          router.replace(target);
+        }
         // No workspace at all — leave the user on marketing. They'll
         // see Get Started CTA. Genuinely shouldn't happen post-onboarding.
       } catch {

@@ -13,6 +13,7 @@ import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { SignedInRedirect } from "@/components/signed-in-redirect";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
+import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Marketing landing page.
@@ -133,8 +134,8 @@ function Hero(): React.ReactElement {
                 to bring their own daemon. Per marketing v2 plan +
                 codex review HIGH-1. */}
             <HomeCta />
-            <MarketingButton href="/signup?wizard=1" variant="secondary">
-              Connect your agents <ArrowRight className="h-3.5 w-3.5" />
+            <MarketingButton href={CONNECT_RUNTIME_SIGNUP_HREF} variant="secondary">
+              Connect a local runtime <ArrowRight className="h-3.5 w-3.5" />
             </MarketingButton>
           </div>
 
@@ -191,7 +192,7 @@ function TwoWaysToRun(): React.ReactElement {
           <RuntimePath
             title="Run a workflow"
             label="default"
-            body="Start with a cloud Agent when the workflow is low-risk and speed matters."
+            body="Start with a cloud runtime when the workflow is low-risk and speed matters."
             href="/signup"
             cta="Start a workflow"
             accent="accent"
@@ -200,13 +201,13 @@ function TwoWaysToRun(): React.ReactElement {
             title="Bring your agents"
             label="local bridge"
             body="Connect Claude Code, Codex, OpenClaw, or Hermes when code, keys, or customer context should stay in your environment."
-            href="/signup?wizard=1"
+            href={CONNECT_RUNTIME_SIGNUP_HREF}
             cta="Connect a local runtime"
             accent="default"
           />
         </div>
 
-        <p className="mt-6 text-center text-[12px] text-zinc-500">
+        <p className="mt-6 text-center text-[12px] text-zinc-400">
           Start with the business process. Choose cloud or local execution per agent.
         </p>
       </CardPanel>

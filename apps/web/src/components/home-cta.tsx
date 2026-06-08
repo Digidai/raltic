@@ -8,7 +8,7 @@ import { MarketingButton } from "@/components/marketing/marketing-button";
 /**
  * Auth-aware CTA pair shown in the homepage hero.
  *
- * Not signed in → "Start a cloud Agent" + "Bring your own daemon"
+ * Not signed in → "Start your first workflow"
  * Signed in    → "Open Raltic" (resolves to first workspace slug)
  */
 export function HomeCta(): React.ReactElement {
@@ -59,7 +59,7 @@ export function HomeCta(): React.ReactElement {
   if (!hydrated || isPending) {
     return (
       <MarketingButton href="/signup" className={CTA_MIN}>
-        Start a cloud Agent <span aria-hidden="true">→</span>
+        Start your first workflow <span aria-hidden="true">→</span>
       </MarketingButton>
     );
   }
@@ -82,12 +82,12 @@ export function HomeCta(): React.ReactElement {
     );
   }
 
-  // Primary CTA — labels the actual default path (cloud-native Agent)
-  // instead of a generic "Get started". Codex GTM H2: makes the dual-mode
-  // story explicit at the click, not just in the page body.
+  // Primary CTA names the workflow the user starts after signup. The
+  // runtime choice still appears in the hero/body, but the first click
+  // should match the authenticated Start page.
   return (
     <MarketingButton href="/signup" className={CTA_MIN}>
-      Start a cloud Agent <span aria-hidden="true">→</span>
+      Start your first workflow <span aria-hidden="true">→</span>
     </MarketingButton>
   );
 }

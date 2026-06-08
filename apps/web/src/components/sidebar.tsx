@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useId, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { Sidebar as HeroSidebar, useSidebar } from "@heroui-pro/react/sidebar";
 import { Sheet } from "@heroui-pro/react/sheet";
 import { api, type Channel, type Agent, type AgentRun, type TaskRow } from "@/lib/api";
@@ -28,11 +28,14 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
   const { seedChannel, setMutedChannelIds } = useGateway();
   const params = useParams();
   const pathname = usePathname();
+  const router = useRouter();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [workDataError, setWorkDataError] = useState<string | null>(null);
   const [loadedServerSlug, setLoadedServerSlug] = useState<string | null>(null);
   const activeChannelId = params.channelId as string | undefined;
 
@@ -49,18 +52,39 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
     let cancelled = false;
 
     async function load() {
+      setLoading(true);
+      setLoadError(null);
+      setWorkDataError(null);
       try {
         const data = await api.getServerBySlug(serverSlug);
-        const [agentData, taskData, runData] = await Promise.all([
+        const [agentData, taskResult, runResult] = await Promise.all([
           api.listAgents().catch(() => null),
-          api.listTasks({ serverId: data.server.id, limit: 200 }).catch(() => ({ tasks: [] as TaskRow[] })),
-          api.listAgentRuns({ serverId: data.server.id, limit: 200 }).catch(() => ({ runs: [] as AgentRun[] })),
+          api.listTasks({ serverId: data.server.id, limit: 200 }).then(
+            (value) => ({ ok: true as const, value }),
+            (error) => ({ ok: false as const, error }),
+          ),
+          api.listAgentRuns({ serverId: data.server.id, limit: 200 }).then(
+            (value) => ({ ok: true as const, value }),
+            (error) => ({ ok: false as const, error }),
+          ),
         ]);
         if (cancelled) return;
+        const signalErrors: string[] = [];
         setChannels(data.channels);
         setAgents((agentData?.agents ?? data.agents).filter((a) => a.serverId === data.server.id));
-        setTasks(taskData.tasks);
-        setAgentRuns(runData.runs);
+        if (taskResult.ok) {
+          setTasks(taskResult.value.tasks);
+        } else {
+          setTasks([]);
+          signalErrors.push(`tasks: ${errorMessage(taskResult.error)}`);
+        }
+        if (runResult.ok) {
+          setAgentRuns(runResult.value.runs);
+        } else {
+          setAgentRuns([]);
+          signalErrors.push(`agent runs: ${errorMessage(runResult.error)}`);
+        }
+        setWorkDataError(signalErrors.length > 0 ? signalErrors.join("; ") : null);
         // Phase F HIGH (codex G2) — publish muted channel set to the
         // gateway so the channel_new Notification gate suppresses
         // toasts for channels the user has muted.
@@ -76,12 +100,14 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
           seedChannel(c.id, maxSeq, lastReadSeq);
         }
         setLoadedServerSlug(serverSlug);
-      } catch {
+      } catch (error) {
         if (cancelled) return;
         setChannels([]);
         setAgents([]);
         setTasks([]);
         setAgentRuns([]);
+        setLoadError(errorMessage(error));
+        setWorkDataError(null);
         setMutedChannelIds(new Set());
         setLoadedServerSlug(serverSlug);
       } finally {
@@ -120,8 +146,15 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
     if (signal !== 0) return signal;
     return sortStarredFirst(a, b);
   };
-  const workflowChannels = channels.filter((c) => c.type !== "dm").sort(sortWorkflowFirst);
+  const workflowChannels = channels
+    .filter((c) => c.type !== "dm" && c.isMember !== false && !isSystemOnboardingWorkflow(c))
+    .sort(sortWorkflowFirst);
   const dmChannels = channels.filter((c) => c.type === "dm").sort(sortStarredFirst);
+  const workQueueAttentionCount = useMemo(
+    () => tasks.filter((task) => task.status === "in_review").length
+      + agentRuns.filter((run) => run.status === "waiting_input" || run.status === "failed").length,
+    [agentRuns, tasks],
+  );
   const existingDmPeers = new Set<string>([
     ...dmChannels.flatMap((c) => c.peer ? [`${c.peer.type}:${c.peer.id}`] : []),
     ...agents.filter((a) => a.dmChannelId).map((a) => `agent:${a.id}`),
@@ -177,6 +210,10 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
         <nav aria-label="Workspace navigation" className="text-sm">
           {isLoading ? (
             <p className="rounded-xl border border-border bg-default px-3 py-2 text-xs text-muted-foreground">Loading...</p>
+          ) : loadError ? (
+            <p className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger-text">
+              Workspace navigation unavailable: {loadError}
+            </p>
           ) : (
             <>
               {/* Work cockpit destinations. Chat remains available below,
@@ -195,6 +232,7 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                   icon={<Activity className="h-4 w-4" />}
                   label="Work queue"
                   active={pathname === `/s/${serverSlug}/inbox`}
+                  badge={workQueueAttentionCount}
                 />
                 <TopLevelLink
                   href={`/s/${serverSlug}/channels`}
@@ -215,6 +253,11 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
                   active={pathname === `/s/${serverSlug}/agents` || pathname.startsWith(`/s/${serverSlug}/agents/`)}
                 />
               </HeroSidebar.Menu>
+              {workDataError && (
+                <p className="mt-2 rounded-lg border border-warning/30 bg-[var(--warning-soft)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                  Work signals unavailable: {workDataError}
+                </p>
+              )}
               <ChannelGroup
                 label="Active workflows"
                 icon={<Workflow className="h-3.5 w-3.5" />}
@@ -340,9 +383,10 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
         serverId={serverId}
         open={openCreate}
         onOpenChange={setOpenCreate}
-        onCreated={() => {
+        onCreated={(id) => {
           setOpenCreate(false);
           reloadChannels();
+          router.push(`/s/${serverSlug}/channel/${id}`);
         }}
       />
       {/* DM picker. Existing peers come from DM channel peer metadata so
@@ -402,10 +446,11 @@ function SidebarGroup({
  *  Threads that lives at the same hierarchy as workflow and message
  *  lists. Uses the same row rhythm as channel rows so the cyan accent +
  *  hover treatment match. */
-function TopLevelLink({ href, icon, label, active }: {
-  href: string; icon: React.ReactNode; label: string; active: boolean;
+function TopLevelLink({ href, icon, label, active, badge = 0 }: {
+  href: string; icon: React.ReactNode; label: string; active: boolean; badge?: number;
 }) {
   const { isMobile, setMobileOpen } = useSidebar();
+  const badgeDescriptionId = useId();
 
   return (
     <HeroSidebar.MenuItem
@@ -419,6 +464,7 @@ function TopLevelLink({ href, icon, label, active }: {
       <Link
         href={href}
         aria-current={active ? "page" : undefined}
+        aria-describedby={badge > 0 ? badgeDescriptionId : undefined}
         data-current={active ? "true" : undefined}
         className={cn(SIDEBAR_LINK_CLASS, "font-medium")}
         onClick={() => {
@@ -427,7 +473,21 @@ function TopLevelLink({ href, icon, label, active }: {
       >
         <HeroSidebar.MenuIcon className="shrink-0 text-current">{icon}</HeroSidebar.MenuIcon>
         <HeroSidebar.MenuLabel className="min-w-0 flex-1 truncate !text-current [&_[data-slot=sidebar-menu-label-text]]:!text-current">{label}</HeroSidebar.MenuLabel>
+        {badge > 0 && (
+          <HeroSidebar.MenuChip
+            aria-hidden="true"
+            data-count={badge > 99 ? "99+" : String(badge)}
+            className="min-w-5 justify-center !bg-[var(--warning-soft)] !text-[var(--warning-soft-foreground)] text-[10px] before:content-[attr(data-count)]"
+          >
+            {null}
+          </HeroSidebar.MenuChip>
+        )}
       </Link>
+      {badge > 0 && (
+        <span id={badgeDescriptionId} className="sr-only">
+          {badge} work queue attention item{badge === 1 ? "" : "s"}
+        </span>
+      )}
     </HeroSidebar.MenuItem>
   );
 }
@@ -597,6 +657,7 @@ interface WorkflowSummary {
   openTasks: number;
   reviewTasks: number;
   activeRuns: number;
+  waitingRuns: number;
   failedRuns: number;
   agentCount: number;
   label: string;
@@ -611,21 +672,26 @@ function buildWorkflowSummaryByChannel(
 ): Map<string, WorkflowSummary> {
   const map = new Map<string, WorkflowSummary>();
   for (const channel of channels) {
-    if (channel.type === "dm") continue;
+    if (channel.type === "dm" || channel.isMember === false || isSystemOnboardingWorkflow(channel)) continue;
     const channelTasks = tasks.filter((task) => task.channelId === channel.id);
     const channelRuns = runs.filter((run) => run.channelId === channel.id);
     const openTasks = channelTasks.filter((task) => task.status !== "done").length;
     const reviewTasks = channelTasks.filter((task) => task.status === "in_review").length;
     const activeRuns = channelRuns.filter((run) => isActiveRunStatus(run.status)).length;
+    const waitingRuns = channelRuns.filter((run) => run.status === "waiting_input").length;
     const failedRuns = channelRuns.filter((run) => run.status === "failed").length;
     const agentCount = channel.agentIds?.length ?? 0;
-    map.set(channel.id, summarizeWorkflow({ openTasks, reviewTasks, activeRuns, failedRuns, agentCount }));
+    map.set(channel.id, summarizeWorkflow({ openTasks, reviewTasks, activeRuns, waitingRuns, failedRuns, agentCount }));
   }
   return map;
 }
 
-function summarizeWorkflow(input: Pick<WorkflowSummary, "openTasks" | "reviewTasks" | "activeRuns" | "failedRuns" | "agentCount">): WorkflowSummary {
-  const { openTasks, reviewTasks, activeRuns, failedRuns, agentCount } = input;
+function isSystemOnboardingWorkflow(channel: Pick<Channel, "name" | "type">): boolean {
+  return channel.type !== "dm" && channel.name === "onboarding";
+}
+
+function summarizeWorkflow(input: Pick<WorkflowSummary, "openTasks" | "reviewTasks" | "activeRuns" | "waitingRuns" | "failedRuns" | "agentCount">): WorkflowSummary {
+  const { openTasks, reviewTasks, activeRuns, waitingRuns, failedRuns, agentCount } = input;
   if (reviewTasks > 0) {
     return {
       ...input,
@@ -634,12 +700,12 @@ function summarizeWorkflow(input: Pick<WorkflowSummary, "openTasks" | "reviewTas
       tone: "warning",
     };
   }
-  if (activeRuns > 0) {
+  if (waitingRuns > 0) {
     return {
       ...input,
-      label: "Running",
-      meta: `${activeRuns} agent run${activeRuns === 1 ? "" : "s"} active${openTasks > 0 ? ` · ${openTasks} open` : ""}`,
-      tone: "accent",
+      label: "Waiting",
+      meta: `${waitingRuns} waiting for input${openTasks > 0 ? ` · ${openTasks} open` : ""}`,
+      tone: "warning",
     };
   }
   if (failedRuns > 0) {
@@ -648,6 +714,14 @@ function summarizeWorkflow(input: Pick<WorkflowSummary, "openTasks" | "reviewTas
       label: "Failed",
       meta: `${failedRuns} failed run${failedRuns === 1 ? "" : "s"}${openTasks > 0 ? ` · ${openTasks} open` : ""}`,
       tone: "danger",
+    };
+  }
+  if (activeRuns > 0) {
+    return {
+      ...input,
+      label: "Running",
+      meta: `${activeRuns} agent run${activeRuns === 1 ? "" : "s"} active${openTasks > 0 ? ` · ${openTasks} open` : ""}`,
+      tone: "accent",
     };
   }
   if (openTasks > 0) {
@@ -681,11 +755,12 @@ function isActiveRunStatus(status: AgentRun["status"]): boolean {
 function workflowPriority(summary: WorkflowSummary | undefined): number {
   if (!summary) return 10;
   if (summary.reviewTasks > 0) return 0;
-  if (summary.activeRuns > 0) return 1;
+  if (summary.waitingRuns > 0) return 1;
   if (summary.failedRuns > 0) return 2;
-  if (summary.openTasks > 0) return 3;
-  if (summary.agentCount > 0) return 4;
-  return 5;
+  if (summary.activeRuns > 0) return 3;
+  if (summary.openTasks > 0) return 4;
+  if (summary.agentCount > 0) return 5;
+  return 6;
 }
 
 function WorkflowStatusChip({ summary }: { summary: WorkflowSummary }) {
@@ -728,6 +803,10 @@ function workflowDotClass(tone: WorkflowTone): string {
 function iconForChannel(channel: Channel, fallback: React.ReactNode): React.ReactNode {
   if (channel.type === "private") return <Lock className="h-3.5 w-3.5" aria-label="Private workflow" />;
   return fallback;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 /** Tiny runtime indicator next to the agent name. Color + letter glyph

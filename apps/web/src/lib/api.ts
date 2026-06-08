@@ -11,6 +11,7 @@ import type {
   CreateMachineKeyRequest,
   CreateMachineKeyResponse,
   AgentRunRecord,
+  InboxResponse,
   ListAgentRunsQuery,
   SendMessageRequest,
   MessageRow,
@@ -220,6 +221,8 @@ export interface Channel {
   starredAt?: number | null;
   /** Agent member ids in this channel. Present on /servers/by-slug. */
   agentIds?: string[];
+  /** Explicit human membership. Public channels can be visible with false. */
+  isMember?: boolean;
   unread?: number; maxSeq?: number; lastReadSeq?: number;
   /** Per-user mute timestamp (Phase A). Null = not muted. Sidebar
    *  uses this to suppress unread badge + bold weight for muted channels. */
@@ -724,19 +727,7 @@ export const api = {
 
   // ---- inbox (unified DMs + task assignments) ----
   getInbox: (serverId: string) =>
-    call<{
-      items: Array<{
-        id: string;
-        kind: "dm" | "task";
-        createdAt: number;
-        channelId: string;
-        channelName: string;
-        channelType: "public" | "private" | "dm";
-        preview: string;
-        href: string;
-      }>;
-      count: number;
-    }>(`/api/v1/inbox?serverId=${encodeURIComponent(serverId)}`),
+    call<InboxResponse>(`/api/v1/inbox?serverId=${encodeURIComponent(serverId)}`),
 
   // ---- search ----
   search: (q: string, channelId?: string) => {
@@ -756,7 +747,7 @@ export const api = {
     }),
 
   // ---- updates / deletes ----
-  updateAgent: (id: string, patch: Partial<{ displayName: string; description: string | null; systemPrompt: string | null; model: string; runtime: RuntimeId; avatarSeed: string | null }>) =>
+  updateAgent: (id: string, patch: Partial<{ displayName: string; description: string | null; systemPrompt: string | null; model: string; runtime: RuntimeId; runtimeMode: "raltic" | "bridge"; avatarSeed: string | null }>) =>
     call<{ ok: true }>(`/api/v1/agents/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(patch) }),
 
   deleteAgent: (id: string) =>
