@@ -4,12 +4,12 @@ import { login, missingAuthSkipReason } from "./helpers/auth";
 const RUN = process.env.E2E_RUN_WORKSPACE === "1";
 const AUTH_SKIP = missingAuthSkipReason();
 
-async function openFirstChannel(page: import("@playwright/test").Page) {
+async function openFirstConversation(page: import("@playwright/test").Page) {
   const nav = page.getByRole("navigation", { name: "Workspace navigation" });
-  const firstChannel = nav.getByRole("link", { name: /^onboarding\b/i }).first();
-  await expect(firstChannel).toBeVisible({ timeout: 15000 });
-  await firstChannel.click();
-  await expect(page).toHaveURL(/\/s\/[^/]+\/channel\/[0-9a-f-]+$/, { timeout: 15000 });
+  const firstConversation = nav.getByRole("link", { name: /^onboarding\b/i }).first();
+  await expect(firstConversation).toBeVisible({ timeout: 15000 });
+  await firstConversation.click();
+  await expect(page).toHaveURL(/\/s\/[^/]+\/(?:channel|dm)\/[0-9a-f-]+$/, { timeout: 15000 });
   await waitForWorkspaceMainReady(page);
 }
 
@@ -20,6 +20,8 @@ async function waitForWorkspaceMainReady(page: import("@playwright/test").Page) 
 }
 
 test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (skipped — set E2E_RUN_WORKSPACE=1)", () => {
+  test.describe.configure({ mode: "serial" });
+
   test.skip(!RUN, "read-only authenticated workspace gate is opt-in");
   test.skip(RUN && Boolean(AUTH_SKIP), AUTH_SKIP ?? "");
 
@@ -93,7 +95,7 @@ test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (sk
   });
 
   test("keeps the message composer as a card composer surface", async ({ page }) => {
-    await openFirstChannel(page);
+    await openFirstConversation(page);
 
     const composer = page.getByTestId("message-composer");
     await expect(composer).toBeVisible({ timeout: 20000 });
