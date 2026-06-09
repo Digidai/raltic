@@ -134,15 +134,15 @@ async function assertMembersTextSamplesReadable(page: Page) {
 }
 
 test.describe("HeroUI Pro channel dialogs", () => {
-  test("start workflow dialog keeps overlay contrast and footer reachable above the mobile keyboard", async ({ page, context }) => {
+  test("create blank workflow dialog keeps overlay contrast and footer reachable above the mobile keyboard", async ({ page, context }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await setupMockWorkspace(page, context);
     await openMockChannel(page);
 
     await openMobileSidebar(page);
-    await clickVisible(page, 'button[aria-label="Start workflow"]');
+    await clickVisible(page, 'button[aria-label="Create blank workflow"]');
 
-    assertOverlayMetrics(await overlayMetrics(page, /Start workflow/));
+    assertOverlayMetrics(await overlayMetrics(page, /Create blank workflow/));
     await expect(page.getByRole("textbox", { name: "Room name" })).toHaveCSS("font-size", /16px/);
     const publicVisibility = page.getByRole("radio", { name: /Public/ });
     const privateVisibility = page.getByRole("radio", { name: /Private/ });
@@ -155,7 +155,7 @@ test.describe("HeroUI Pro channel dialogs", () => {
     const cloudAgentCheckbox = page.getByRole("checkbox", { name: /Cloud Test Agent/ });
     await page.locator('[data-slot="checkbox"]').filter({ hasText: "Cloud Test Agent" }).click();
     await assertSelectedCheckboxOwnsSingleSurface(cloudAgentCheckbox, "create channel agent picker");
-    const createDialog = page.getByRole("dialog", { name: /Start workflow/ });
+    const createDialog = page.getByRole("dialog", { name: /Create blank workflow/ });
     for (const label of ["Olivia", "Cloud Test Agent"]) {
       const chip = createDialog.locator("[data-slot='chip']").filter({ hasText: label });
       await expect(chip).toBeVisible();
@@ -163,19 +163,19 @@ test.describe("HeroUI Pro channel dialogs", () => {
       expect(chipClassName, `${label} selected chip should not use page-level cyan background`).not.toContain("bg-cyan");
       expect(chipClassName, `${label} selected chip should not use page-level cyan text`).not.toContain("text-cyan");
     }
-    await assertDialogFooterWithinVisualViewport(page, /Start workflow/);
+    await assertDialogFooterWithinVisualViewport(page, /Create blank workflow/);
 
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog", { name: /Start workflow/ })).toBeHidden();
+    await expect(page.getByRole("dialog", { name: /Create blank workflow/ })).toBeHidden();
   });
 
-  test("start workflow dialog sends brief, approval boundary, members, and agents", async ({ page, context }) => {
+  test("create blank workflow dialog sends brief, approval boundary, members, and agents", async ({ page, context }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await setupMockWorkspace(page, context);
     await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
 
-    await clickVisible(page, 'button[aria-label="Start workflow"]');
+    await clickVisible(page, 'button[aria-label="Create blank workflow"]');
     await page.getByRole("textbox", { name: "Room name" }).fill("launch-readiness-custom");
     await page.getByRole("textbox", { name: "Room description" }).fill("Launch proof");
     await page.getByRole("textbox", { name: "Approval boundary" }).fill("Human checks support-risk summary before public launch");
@@ -186,7 +186,7 @@ test.describe("HeroUI Pro channel dialogs", () => {
     const createRequest = page.waitForRequest((request) =>
       request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
     );
-    await page.getByRole("dialog", { name: /Start workflow/ }).getByRole("button", { name: "Start workflow" }).click();
+    await page.getByRole("dialog", { name: /Create blank workflow/ }).getByRole("button", { name: "Create workflow" }).click();
     const body = JSON.parse((await createRequest).postData() ?? "{}");
     expect(body).toMatchObject({
       serverId: "srv-demo",

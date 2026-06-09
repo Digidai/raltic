@@ -42,9 +42,9 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
 
   test("create → members → rename → leave full flow", async ({ page }) => {
     // Sidebar — the workspace landing redirects to the user's default
-    // workspace after login. Wait for the "Start workflow" button so
-    // we know the sidebar has hydrated.
-    const createBtn = page.getByRole("button", { name: "Start workflow" });
+    // workspace after login. Wait for the blank workflow button so we
+    // know the sidebar has hydrated.
+    const createBtn = page.getByRole("button", { name: "Create blank workflow" });
     await expect(createBtn).toBeVisible({ timeout: 15000 });
 
     const channelName = `ch-rt-${Date.now().toString(36)}`;
@@ -52,7 +52,7 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
 
     // -------- 1. Create the room via the dialog --------
     await createBtn.click();
-    const dialog = page.getByRole("dialog", { name: /create workflow room/i });
+    const dialog = page.getByRole("dialog", { name: /create blank workflow/i });
     await expect(dialog).toBeVisible();
     await dialog.getByLabel(/^name$/i).fill(channelName);
     // Create PRIVATE so the leave step at the end actually removes
@@ -61,7 +61,7 @@ test.describe(RUN ? "channels flow" : "channels flow (skipped — set E2E_RUN_CH
     await dialog.locator('[data-slot="radio"]').filter({ hasText: /Private/i }).click();
     // Skip member picker — pure self-create exercises the new
     // initialMemberIds=undefined path (the simplest backend codepath).
-    await dialog.getByRole("button", { name: /create room/i }).click();
+    await dialog.getByRole("button", { name: /create workflow/i }).click();
     await expect(dialog).toBeHidden({ timeout: 10000 });
 
     // Navigate to the new room via the sidebar link (the create

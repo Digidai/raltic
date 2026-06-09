@@ -621,6 +621,8 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
       .getByRole("link", { name: "Start", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   const sidebar = page.getByTestId("workspace-sidebar");
+  await expect(sidebar.getByRole("link", { name: "Start workflow" })).toHaveAttribute("href", "/s/demo");
+  await expect(sidebar.getByRole("button", { name: "Create blank workflow" })).toBeVisible();
   await expect(sidebar.getByText(/active workflows/i)).toBeVisible();
   await expect(sidebar.getByRole("link", { name: /onboarding.*needs review/i })).toHaveCount(0);
   await expect(sidebar.getByRole("link", { name: /research.*1 failed run.*1 open.*failed/i })).toBeVisible();
@@ -650,6 +652,132 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
   await expect(page.getByText("Starter brief")).toBeVisible();
   await page.getByRole("button", { name: "Use brief" }).click();
   await expect(page.getByTestId("message-composer-input").getByText(/Turn this launch into a visible readiness workflow/)).toBeVisible();
+  await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-new$/);
+});
+
+test("workspace home runtime-gates local starters without creating a room", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [onboardingChannel, researchChannel, dmChannel],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  const codeReviewStarter = page.getByRole("article", { name: /Local code review workflow starter/ });
+  await expect(codeReviewStarter.getByRole("button", { name: /Connect runtime/ })).toBeVisible();
+
+  const createRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+    { timeout: 1_000 },
+  ).catch(() => null);
+  await codeReviewStarter.getByRole("button", { name: /Connect runtime/ }).click();
+  await expect(page.getByRole("dialog", { name: /Connect a local runtime/ })).toBeVisible();
+  await expect(page.getByText("Your first cloud workflow works without this")).toBeVisible();
+  expect(await createRequest).toBeNull();
+});
+
+test("workspace home attaches a bridge agent to local runtime starter rooms", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: true,
+    channels: [onboardingChannel, researchChannel, dmChannel],
+    agents: [
+      { ...agents[0]!, runtimeMode: "bridge", status: "online", model: "sonnet" },
+    ],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  const codeReviewStarter = page.getByRole("article", { name: /Local code review workflow starter/ });
+  const createRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+  );
+  await codeReviewStarter.getByRole("button", { name: /Start workflow/ }).click();
+  expect((await createRequest).postDataJSON()).toMatchObject({
+    serverId: "srv-demo",
+    name: "code-review",
+    initialAgentIds: ["agent-onboard"],
+  });
+});
+
+test("workspace home attaches cloud starter to a cloud agent, not a legacy local onboarding row", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [onboardingChannel, researchChannel, dmChannel],
+    agents: [
+      { ...agents[0]!, runtimeMode: "bridge", status: "offline", model: "sonnet" },
+      { ...agents[1]!, isDefault: false },
+    ],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  const launchStarter = page.getByRole("article", { name: /Launch readiness workflow starter/ });
+  const createRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+  );
+  await launchStarter.getByRole("button", { name: /Start workflow/ }).click();
+  expect((await createRequest).postDataJSON()).toMatchObject({
+    serverId: "srv-demo",
+    name: "launch-readiness",
+    initialAgentIds: ["agent-cloud"],
+  });
+});
+
+test("workspace home repairs a legacy-only onboarding agent before creating the first cloud workflow", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [onboardingChannel, researchChannel, dmChannel],
+    agents: [
+      { ...agents[0]!, runtimeMode: "bridge", status: "offline", model: "sonnet" },
+    ],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  const launchStarter = page.getByRole("article", { name: /Launch readiness workflow starter/ });
+  const seedRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/servers/srv-demo/seed",
+  );
+  const createRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+  );
+  await launchStarter.getByRole("button", { name: /Start workflow/ }).click();
+
+  expect((await seedRequest).postDataJSON()).toMatchObject({ force: true });
+  expect((await createRequest).postDataJSON()).toMatchObject({
+    serverId: "srv-demo",
+    name: "launch-readiness",
+    initialAgentIds: ["agent-onboard"],
+  });
+});
+
+test("workspace home adds the starter cloud agent before opening an existing empty starter room", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [
+      onboardingChannel,
+      researchChannel,
+      { ...starterWorkflowChannel, agentIds: [] },
+      dmChannel,
+    ],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  const launchStarter = page.getByRole("article", { name: /Launch readiness workflow starter/ });
+  await expect(launchStarter.getByRole("button", { name: /Open workflow/ })).toBeVisible();
+
+  const memberRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels/ch-new/members",
+  );
+  await launchStarter.getByRole("button", { name: /Open workflow/ }).click();
+  expect((await memberRequest).postDataJSON()).toMatchObject({ agentIds: ["agent-onboard"] });
+  await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-new\?starter=launch-readiness/);
 });
 
 test("workspace home joins an existing public starter before opening it", async ({ page, context }) => {

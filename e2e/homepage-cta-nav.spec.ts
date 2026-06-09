@@ -122,6 +122,21 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 }
 
 test.describe("homepage CTAs", () => {
+  test("marketing endpoint accepts workspace PLG funnel events", async ({ request }) => {
+    for (const event of ["workflow_starter_runtime_gate_opened", "workflow_room_opened"]) {
+      const res = await request.post("/api/marketing/event", {
+        data: {
+          event,
+          path: "/s/demo",
+          target: "launch-readiness",
+          referrer: null,
+          ts: Date.now(),
+        },
+      });
+      expect(res.status(), event).toBe(204);
+    }
+  });
+
   test("anonymous hero CTA points at the first-value signup flow", async ({ page }) => {
     await page.goto("/");
 

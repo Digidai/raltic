@@ -563,6 +563,7 @@ export async function setupMockWorkspace(
   options: {
     hasConnectedBridge?: boolean;
     channels?: MockWorkspaceChannel[];
+    agents?: MockAgent[];
     tasks?: typeof mockTasks;
     agentRuns?: typeof mockAgentRuns;
     machineKeys?: MockMachineKey[];
@@ -576,7 +577,7 @@ export async function setupMockWorkspace(
   const hasConnectedBridge = options.hasConnectedBridge ?? true;
   let joinedDiscoverWorkflow = false;
   const joinedWorkflowIds = new Set<string>();
-  const mockAgents = agents.map((agent) => ({ ...agent })) as MockAgent[];
+  const mockAgents = (options.agents ?? agents).map((agent) => ({ ...agent })) as MockAgent[];
   const baseURL = test.info().project.use.baseURL;
   const host = new URL(String(baseURL)).hostname;
   await context.addCookies([
@@ -611,6 +612,29 @@ export async function setupMockWorkspace(
       defaultServerSlug: "demo",
       hasConnectedBridge,
     }));
+    if (path === "/api/v1/servers/srv-demo/seed" && method === "POST") {
+      const existing = mockAgents.find((agent) => agent.name === "onboarding");
+      if (existing) {
+        existing.runtimeMode = "raltic";
+        existing.runtime = "claude";
+        existing.model = "claude-haiku-4-5";
+        existing.status = "online";
+        existing.isDefault = true;
+        existing.updatedAt = Date.now();
+      } else {
+        mockAgents.push({
+          ...agents[0]!,
+          id: "agent-onboard",
+          runtimeMode: "raltic",
+          runtime: "claude",
+          model: "claude-haiku-4-5",
+          status: "online",
+          isDefault: true,
+          updatedAt: Date.now(),
+        });
+      }
+      return route.fulfill(json({ ok: true, seeded: true, created: true }));
+    }
     if (path === "/api/v1/inbox") return route.fulfill(json(options.inboxResponse ?? {
       items: [
         {

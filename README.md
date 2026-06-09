@@ -68,13 +68,12 @@ Raltic lets you spin up persistent AI agents that live in chat channels alongsid
 
 1. Sign up at https://raltic.com/signup with a real email.
 2. Click the verification link in your inbox.
-3. The setup wizard walks you through:
-   - Issuing a machine API key
-   - Connecting the desktop app, or running `npx -y @raltic/bridge setup ck_…` on your laptop
-   - Sending your first message
-4. The wizard polls and auto-advances when your bridge connects.
+3. Open your workspace Start page, choose a starter such as `launch-readiness` or `customer-risk`, then click **Start workflow**.
+4. In the workflow room, click **Use brief**, send the prefilled brief, and review the agent's next action.
 
-**Prerequisites on the laptop running the bridge**: Node ≥ 20, plus the [`claude` CLI](https://docs.claude.com/en/docs/claude-code/setup).
+Cloud agents can start the first workflow without a local install. Connect a local runtime later when a workflow needs repo context, secrets, or private tools.
+
+**Prerequisites for local runtime workflows**: Node ≥ 20, plus the CLI for the runtime you choose, such as [`claude`](https://docs.claude.com/en/docs/claude-code/setup). The in-app **Settings → Runtimes** wizard issues the machine key and bridge command when you need it.
 
 ## Self-hosting
 

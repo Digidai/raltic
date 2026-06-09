@@ -673,35 +673,12 @@ serversRoutes.post("/api/v1/servers/:id/seed", requireAuth, requireUser, async (
     }
   } else {
     // force=true is used by the "Restore Onboarding Assistant" UI when
-    // the workspace is already seeded (seeded=1) but the agent was
-    // manually deleted. WITHOUT a duplicate-check here, a re-run would
-    // create a SECOND onboarding agent + a SECOND #onboarding channel
-    // alongside the existing ones — exactly the kind of "two of
-    // everything" mess users open support tickets about.
-    const existing = await db.select({ id: agents.id })
-      .from(agents)
-      .where(and(eq(agents.serverId, id), eq(agents.name, "onboarding")))
-      .limit(1);
-    if (existing.length > 0) {
-      return c.json({ ok: true, seeded: true, created: false, reason: "onboarding_agent_already_exists" });
-    }
-    // Also guard against half-restored state: an "onboarding" or
-    // "onboarding-assistant" channel sitting around from a prior
-    // partial run. Skip seeding if either exists; user must delete
-    // them manually first (preserves their history).
-    const stalChannels = await db.select({ id: channels.id })
-      .from(channels)
-      .where(and(
-        eq(channels.serverId, id),
-        inArray(channels.name, ["onboarding", "onboarding-assistant"]),
-      ))
-      .limit(1);
-    if (stalChannels.length > 0) {
-      return c.json({
-        ok: true, seeded: true, created: false,
-        reason: "starter_channel_already_exists",
-      });
-    }
+    // the workspace is already seeded. The seed function is now
+    // self-idempotent and also repairs legacy onboarding agents that
+    // were still marked runtimeMode='bridge', so this route must not
+    // return early just because an onboarding row or channel exists.
+    await c.env.DB.prepare("UPDATE servers SET seeded = 1 WHERE id = ?")
+      .bind(id).run();
   }
 
   // Resolve owner display name for the welcome message.

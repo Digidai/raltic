@@ -188,19 +188,34 @@ export function Sidebar({ serverSlug, serverId, serverName, serverIconUrl }: Sid
             />
           </Link>
         </div>
-        <Button
-          type="button"
-          onPress={openCreateDialog}
-          variant="outline"
-          size="sm"
-          fullWidth
-          className="h-9 justify-start rounded-[8px] border-border bg-surface px-2.5 text-sm font-medium text-foreground hover:border-accent/25 hover:bg-surface-secondary"
-          title="Start workflow"
-          aria-label="Start workflow"
-        >
-          <Plus className="h-4 w-4 text-[var(--accent-soft-foreground)]" />
-          Start workflow
-        </Button>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+          <Button
+            render={<Link href={`/s/${serverSlug}`} />}
+            variant="outline"
+            size="sm"
+            fullWidth
+            className="h-9 justify-start rounded-[8px] border-border bg-surface px-2.5 text-sm font-medium text-foreground hover:border-accent/25 hover:bg-surface-secondary"
+            title="Start workflow"
+            aria-label="Start workflow"
+            onClick={() => {
+              if (isMobile) setMobileOpen(false);
+            }}
+          >
+            <PlayCircle className="h-4 w-4 text-[var(--accent-soft-foreground)]" />
+            Start workflow
+          </Button>
+          <Button
+            type="button"
+            onPress={openCreateDialog}
+            variant="outline"
+            size="icon-sm"
+            className="h-9 w-9 min-w-9 rounded-[8px] border-border bg-surface text-muted-foreground hover:border-accent/25 hover:bg-surface-secondary hover:text-foreground"
+            title="Create blank workflow"
+            aria-label="Create blank workflow"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </HeroSidebar.Header>
 
       <HeroSidebar.Content

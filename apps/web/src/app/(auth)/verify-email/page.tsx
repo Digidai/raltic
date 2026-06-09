@@ -177,24 +177,20 @@ function ErrorPanel({
     setResending(true);
     setResendError(null);
     try {
-      await authClient.sendVerificationEmail({
+      const { error } = await authClient.sendVerificationEmail({
         email: email.trim(),
         callbackURL: buildAuthPath("/verify-email", {
           next: nextBasePath !== "/" ? nextBasePath : null,
           intent: onboardingIntent,
         }),
       });
-      setResentTo(email.trim());
-    } catch (err) {
-      // Avoid enumeration: regardless of whether the email exists,
-      // show "if an account exists, we sent a link" — but also surface
-      // raw network errors so users aren't stuck on a real outage.
-      const msg = err instanceof Error ? err.message : String(err);
-      if (/network|fetch|timeout/i.test(msg)) {
-        setResendError(msg);
-      } else {
+      if (error) {
         setResentTo(email.trim());
+        return;
       }
+      setResentTo(email.trim());
+    } catch {
+      setResendError("Couldn't resend — try again in a minute.");
     } finally {
       setResending(false);
     }

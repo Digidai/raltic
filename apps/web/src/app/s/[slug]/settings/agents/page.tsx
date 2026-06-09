@@ -90,7 +90,7 @@ export default function ChannelsAgentsPage() {
               </CardDescription>
             </div>
             <Button onClick={() => setOpenChannel(true)} size="sm" className="shrink-0">
-              <Plus className="me-1 h-3.5 w-3.5" /> Start workflow
+              <Plus className="me-1 h-3.5 w-3.5" /> Create blank workflow
             </Button>
           </div>
         </CardHeader>

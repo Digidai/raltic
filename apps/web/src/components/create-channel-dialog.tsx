@@ -141,7 +141,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
         <DialogBackdrop />
         <DialogPopup className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Start workflow</DialogTitle>
+            <DialogTitle>Create blank workflow</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
             <DialogPanel>
@@ -223,7 +223,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                 {/* Member / agent picker */}
                 <Field>
                   <FieldLabel htmlFor="create-channel-member-search">
-                    Add members <span className="text-muted-foreground">(optional)</span>
+                    Add people or agents <span className="text-muted-foreground">(optional)</span>
                     {totalSelected > 0 && (
                       <span className="ml-2 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium">
                         {totalSelected} selected
@@ -315,7 +315,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
                   )}
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     {myUserId
-                      ? "You'll be added automatically. Add others now or invite them later from workflow settings."
+                      ? "You'll be added automatically. Add an agent now if you want a reply, then @mention it in the workflow brief."
                       : "You'll be added automatically."}
                   </p>
                 </Field>
@@ -329,7 +329,7 @@ export function CreateChannelDialog({ serverId, open, onOpenChange, onCreated }:
             </DialogPanel>
             <DialogFooter className="flex justify-end gap-2">
               <DialogClose render={<Button variant="outline" type="button">Cancel</Button>} />
-              <Button type="submit" loading={loading}>Start workflow</Button>
+              <Button type="submit" loading={loading}>Create workflow</Button>
             </DialogFooter>
           </form>
         </DialogPopup>

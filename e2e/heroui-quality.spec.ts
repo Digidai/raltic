@@ -89,12 +89,12 @@ test.describe("HeroUI Pro global quality gates", () => {
     await setupMockWorkspace(page, context);
     await openMockChannel(page);
 
-    const createChannelTrigger = page.getByRole("button", { name: "Start workflow" }).first();
+    const createChannelTrigger = page.getByRole("button", { name: "Create blank workflow" }).first();
     await createChannelTrigger.focus();
     await createChannelTrigger.click();
-    const createDialog = page.getByRole("dialog", { name: /Start workflow/ });
+    const createDialog = page.getByRole("dialog", { name: /Create blank workflow/ });
     await createDialog.getByLabel("Name").fill("quality-check");
-    await assertNamedDialog(page, /Start workflow/);
+    await assertNamedDialog(page, /Create blank workflow/);
     await assertCloseControl(createDialog);
     await assertEnabledButtonsUsable(createDialog);
     await createDialog.getByRole("button", { name: "Close" }).first().click();

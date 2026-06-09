@@ -43,8 +43,10 @@ interface Props {
   /** Inviter workspace display name — only used when flavor === "invite"
    *  for the step-1 copy. */
   inviterWorkspaceName?: string;
-  /** Called when user clicks "I'll do this later" or finishes step 4. */
+  /** Called when user clicks the skip/close control or finishes step 4. */
   onDismiss?: () => void;
+  /** Called once this wizard observes a bridge connection for serverId. */
+  onBridgeConnected?: () => void;
 }
 
 /** Hard cap on bridge-connect polling — past this, surface a help panel
@@ -166,7 +168,7 @@ function runtimeTroubleshooting(runtime: RuntimeId): {
  */
 export function SetupWizard({
   serverId, serverSlug, hasExistingBridge = false,
-  flavor = "solo", inviterWorkspaceName, onDismiss,
+  flavor = "solo", inviterWorkspaceName, onDismiss, onBridgeConnected,
 }: Props) {
   const router = useRouter();
   const helpPanelId = useId();
@@ -302,6 +304,7 @@ export function SetupWizard({
           // Already connected. Skip the poll, but still run the same
           // runtime-configuration gate as the fresh-connect path.
           setBridgeOnline(true);
+          onBridgeConnected?.();
           setDetectedMachines(k.machines ?? []);
           setResumed(true);
           setStep(3);
@@ -320,7 +323,7 @@ export function SetupWizard({
       }
     })();
     return () => { cancelled = true; };
-  }, [serverId, hasExistingBridge, finishBridgeSetup]);
+  }, [serverId, hasExistingBridge, finishBridgeSetup, onBridgeConnected]);
   // Step-3 polling state — `pollStartedAtRef` is a ref (not state) so
   // setting it doesn't tear down + recreate the interval. Reviews #1/#2
   // both flagged the original useState version as eating the first poll
@@ -367,6 +370,7 @@ export function SetupWizard({
         }
         if (me.lastUsedAt) {
           setBridgeOnline(true);
+          onBridgeConnected?.();
           // Capture the latest detected machines for this key — wizard
           // step 4 renders a runtime strip from this. Polled every 3s
           // so a `codex login` in user's terminal shows up promptly.
@@ -388,7 +392,7 @@ export function SetupWizard({
     // deps keeps the effect honest if the user happens to change
     // runtime mid-poll (currently impossible from the UI, but the
     // lint contract still applies).
-  }, [issued, resumed, issuedKeyId, bridgeOnline, step, serverId, runtime, finishBridgeSetup]);
+  }, [issued, resumed, issuedKeyId, bridgeOnline, step, serverId, runtime, finishBridgeSetup, onBridgeConnected]);
 
   // ── Discover the seeded Onboarding DM channel id so step 4 can both
   // (a) deep-link the "Open the conversation" button and (b) actively
@@ -536,6 +540,7 @@ export function SetupWizard({
     : flavor === "invite"
     ? "Bring YOUR agents into workflows"
     : "Connect a local runtime";
+  const dismissLabel = hasExistingBridge ? "Close" : "Start without local runtime →";
   return (
     <Dialog open onOpenChange={(next) => { if (!next) handleDismiss(); }}>
       <DialogPortal>
@@ -554,7 +559,7 @@ export function SetupWizard({
                 size="xs"
                 className="text-xs text-muted-foreground"
               >
-                I'll do this later →
+                {dismissLabel}
               </Button>
             </div>
             <CardDescription>
@@ -563,12 +568,12 @@ export function SetupWizard({
                   You joined{" "}
                   <strong>{inviterWorkspaceName ?? "another workspace"}</strong>{" "}
                   — their agents are already online (their bridge handles those).
-                  To run agents <em>of your own</em> in workflows, connect your local runtime here.
+                  You can work there now; connect your own runtime only when your agents need local code, keys, or private tools.
                 </>
               ) : (
                 <>
                   Use this when a workflow needs local code, keys, or private tools.
-                  Cloud agents can work without this; local agents join workflows through your bridge.
+                  Your first cloud workflow works without this; local agents join later through your bridge.
                 </>
               )}
             </CardDescription>
@@ -581,7 +586,7 @@ export function SetupWizard({
               <Step n={3} active={step === 3} done={step > 3}
                 title={bridgeOnline ? "Local runtime connected ✓" : "Run the bridge on this computer"} />
               <Step n={4} active={step === 4 && !firstReplySeen} done={firstReplySeen}
-                title={firstReplySeen ? "First reply received ✓" : "Send a workflow message"} />
+                title={firstReplySeen ? "Local runtime reply received ✓" : "Verify local runtime"} />
             </ol>
 
             <Card render={<section />} className="mt-6 bg-[var(--surface-secondary)] !shadow-none">
@@ -1044,7 +1049,7 @@ export function SetupWizard({
                     </p>
                   ) : (
                     <p className="text-muted-foreground">
-                      Open the onboarding DM and send one real workflow brief. We&apos;ll mark this complete after the selected local runtime replies.
+                      To test local execution, open the onboarding DM and send a brief that mentions the local agent. You can also close this and start a cloud workflow from Start.
                     </p>
                   )}
                   <Button onClick={() => {
@@ -1052,7 +1057,7 @@ export function SetupWizard({
                     if (onboardingDmId) router.push(`/s/${serverSlug}/dm/${onboardingDmId}`);
                   }}>
                     <MessageSquare className="mr-1 h-3.5 w-3.5" />
-                    {onboardingDmId ? "Open DM and send first workflow brief" : "Open my workspace"}
+                    {onboardingDmId ? "Open onboarding DM" : "Open my workspace"}
                   </Button>
                 </div>
               )}

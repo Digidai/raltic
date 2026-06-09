@@ -1,5 +1,7 @@
 type ProductEvent =
   | "workflow_starter_click"
+  | "workflow_starter_runtime_gate_opened"
+  | "workflow_room_opened"
   | "workflow_room_created"
   | "workflow_room_joined"
   | "workflow_starter_draft_used";

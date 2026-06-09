@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/heroui-pro/button";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
-import { api, type AgentRun, type Channel, type TaskRow } from "@/lib/api";
+import { api, type Agent, type AgentRun, type Channel, type Server, type TaskRow } from "@/lib/api";
 import { SetupWizard } from "@/components/setup-wizard";
 import { BrandMonogram } from "@/components/brand";
-import { notifyThrown } from "@/lib/notify";
+import { notifyError, notifyThrown } from "@/lib/notify";
 import { trackProductEvent } from "@/lib/product-tracking";
 import { WORKFLOW_STARTERS, type WorkflowStarterKey, type WorkflowStarterTemplate } from "@/lib/workflow-starters";
 import {
@@ -33,12 +33,14 @@ interface ServerStats {
   id: string;
   name: string;
   description: string | null;
+  role?: Server["role"];
   agentCount: number;
   channelCount: number;
   roomCount: number;
   starterAgentId: string | null;
+  localStarterAgentId: string | null;
   onboardingDmId: string | null;
-  channels: Array<Pick<Channel, "id" | "name" | "type" | "description" | "isMember">>;
+  channels: ServerStatsChannel[];
 }
 
 interface PersonalRef {
@@ -47,26 +49,20 @@ interface PersonalRef {
   name: string;
 }
 
+type ServerStatsChannel = Pick<Channel, "id" | "name" | "type" | "description" | "isMember"> & {
+  agentIds: string[];
+};
+
 /**
- * 24h cool-down on the auto-popup. Snooze key is now keyed by the
- * PERSONAL workspace slug (where the wizard targets), not the current
- * page slug — otherwise an invitee bouncing between Gene's workspace
- * and their own would see the same wizard re-pop on every Gene visit.
+ * 24h marker for users who explicitly skip runtime setup from the desktop
+ * handoff or wizard close control. Keyed by PERSONAL workspace slug because
+ * the wizard always targets the user's owned workspace.
  */
 const WIZARD_SNOOZE_MS = 24 * 60 * 60 * 1000;
 const SNOOZE_KEY_PREFIX = "raltic:wizard:snoozedUntil:";
 
 function snoozeKey(userId: string, personalSlug: string): string {
   return `${SNOOZE_KEY_PREFIX}${userId}:${personalSlug}`;
-}
-
-function isWizardSnoozed(userId: string, personalSlug: string): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const raw = window.localStorage.getItem(snoozeKey(userId, personalSlug));
-    if (!raw) return false;
-    return Number(raw) > Date.now();
-  } catch { return false; }
 }
 
 function snoozeWizard(userId: string, personalSlug: string): void {
@@ -147,31 +143,7 @@ export default function ServerHomePage() {
           ),
         ]);
         if (cancelled) return;
-        const workflowChannels = data.channels.filter((channel) =>
-          channel.type !== "dm" && channel.isMember !== false && !isSystemOnboardingWorkflow(channel)
-        );
-        setStats({
-          id: data.server.id,
-          name: data.server.name,
-          description: data.server.description,
-          agentCount: data.agents.length,
-          channelCount: data.channels.length,
-          roomCount: workflowChannels.filter((c) => c.type !== "dm").length,
-          starterAgentId: (
-            data.agents.find((a) => a.name === "onboarding")
-            ?? data.agents.find((a) => a.isDefault)
-            ?? data.agents.find((a) => a.runtimeMode === "raltic")
-            ?? data.agents[0]
-          )?.id ?? null,
-          onboardingDmId: data.channels.find((c) => c.type === "dm" && c.name === "onboarding-assistant")?.id ?? null,
-          channels: data.channels.map((c) => ({
-            id: c.id,
-            name: c.name,
-            type: c.type,
-            description: c.description,
-            isMember: c.isMember,
-          })),
-        });
+        setStats(buildServerStats(data));
         const workErrors: string[] = [];
         if (taskResult.ok) {
           setTasks(taskResult.value.tasks);
@@ -199,27 +171,23 @@ export default function ServerHomePage() {
 
         // If we're already on personal, hasBridgeHere is the answer.
         // Otherwise fetch a second /me scoped to personal.
-        let personalBridge = me.hasConnectedBridge;
+        let personalBridge: boolean | null = me.hasConnectedBridge;
         if (personalRef && personalRef.id !== data.server.id) {
-          const me2 = await api.me({ serverId: personalRef.id });
-          if (cancelled) return;
-          personalBridge = me2.hasConnectedBridge;
+          try {
+            const me2 = await api.me({ serverId: personalRef.id });
+            if (cancelled) return;
+            personalBridge = me2.hasConnectedBridge;
+          } catch {
+            personalBridge = null;
+          }
         }
         setHasBridgeInPersonal(personalBridge);
 
-        // Auto-pop ONLY on personal workspace AND only if its bridge
-        // isn't connected AND not snoozed AND the user has at least
-        // one bridge-mode agent in this workspace. Cloud-only users
-        // shouldn't be forced through bridge setup just because they
-        // signed up — the seeded Onboarding Assistant is raltic-mode
-        // (codex P3 audit fix), so they can chat with it without
-        // installing anything (codex P3 audit Angle 6 HIGH).
-        //
-        // The key behavior change vs. the original bug: on an INVITED
-        // workspace, we no longer auto-pop. Olivia ran the wizard on
-        // Gene's because that's where she landed; the wizard happily
-        // minted a key bound to Gene's serverId. Now we only pop where
-        // the wizard's target (personal) IS the current workspace.
+        // Runtime setup is explicit. The Start page is the PLG first-value
+        // surface; users should not be interrupted by local runtime setup
+        // just because a workspace contains a bridge-mode agent. We still
+        // show the runtime boundary panel below, and explicit `?wizard=1`
+        // or a local-runtime starter opens the wizard when needed.
         const amOnPersonal = personalRef && personalRef.id === data.server.id;
         const hasBridgeAgentHere = data.agents?.some(a => (a as { runtimeMode?: string }).runtimeMode === "bridge") ?? false;
         setHasBridgeAgents(hasBridgeAgentHere);
@@ -228,13 +196,6 @@ export default function ServerHomePage() {
         } else if (skipBridgeSetup) {
           if (amOnPersonal && personalRef) snoozeWizard(me.subject.userId, personalRef.slug);
           setWizardOpen(false);
-        } else if (
-          amOnPersonal &&
-          !personalBridge &&
-          hasBridgeAgentHere &&
-          !isWizardSnoozed(me.subject.userId, personalRef.slug)
-        ) {
-          setWizardOpen(true);
         }
       } catch (e) {
         if (!cancelled) {
@@ -253,20 +214,86 @@ export default function ServerHomePage() {
     if (!forceWizard && userId && personal) snoozeWizard(userId, personal.slug);
   }
 
+  const handleBridgeConnected = useCallback(() => {
+    setHasBridgeInPersonal(true);
+    if (onPersonalWorkspace) setHasBridgeHere(true);
+  }, [onPersonalWorkspace]);
+
+  async function ensureCloudStarterAgentId(): Promise<string | null> {
+    if (!stats) return null;
+    if (stats.starterAgentId) return stats.starterAgentId;
+
+    if (stats.role !== "owner") {
+      notifyError(
+        "Cloud starter agent is missing",
+        "Ask a workspace owner to restore the Onboarding Assistant before starting a cloud workflow.",
+      );
+      return null;
+    }
+
+    try {
+      await api.seedServer(stats.id, { force: true });
+      const refreshed = await api.getServerBySlug(slug);
+      const nextStats = buildServerStats(refreshed);
+      setStats(nextStats);
+      if (nextStats.starterAgentId) return nextStats.starterAgentId;
+      notifyError(
+        "Cloud starter agent is missing",
+        "Raltic tried to restore the Onboarding Assistant, but no cloud agent is available yet.",
+      );
+      return null;
+    } catch (e) {
+      notifyThrown("Couldn't prepare cloud starter agent", e);
+      return null;
+    }
+  }
+
+  function ensureLocalStarterAgentId(): string | null {
+    if (!stats) return null;
+    if (stats.localStarterAgentId) return stats.localStarterAgentId;
+    notifyError(
+      "Local runtime agent is missing",
+      "Connect a local runtime from Start or Settings -> Runtimes before starting a code-review workflow.",
+    );
+    return null;
+  }
+
+  async function resolveStarterAgentId(starter: WorkflowStarterTemplate): Promise<string | null> {
+    if (starter.requiresLocalRuntime) return ensureLocalStarterAgentId();
+    if (stats?.starterAgentId) return stats.starterAgentId;
+    if (hasBridgeHere && stats?.localStarterAgentId) return stats.localStarterAgentId;
+    return ensureCloudStarterAgentId();
+  }
+
+  async function ensureStarterAgentMembership(channel: ServerStatsChannel, agentId: string | null): Promise<void> {
+    if (!agentId || channel.agentIds.includes(agentId)) return;
+    await api.addChannelMembers(channel.id, { agentIds: [agentId] });
+    setStats((prev) => prev ? {
+      ...prev,
+      channels: prev.channels.map((c) => c.id === channel.id
+        ? { ...c, agentIds: Array.from(new Set([...c.agentIds, agentId])) }
+        : c),
+    } : prev);
+  }
+
   async function startWorkflowRoom(starter: WorkflowStarterTemplate) {
     if (!stats || startingWorkflow) return;
     trackProductEvent("workflow_starter_click", starter.key);
     const existing = stats.channels.find((c) => c.type !== "dm" && c.name === starter.channelName);
-    if (existing && existing.isMember !== false) {
-      router.push(`/s/${slug}/channel/${existing.id}?starter=${starter.key}`);
-      return;
-    }
 
     setStartingWorkflow(starter.key);
     try {
+      const starterAgentId = await resolveStarterAgentId(starter);
+      if (!starterAgentId) return;
+
       let channelId: string;
-      if (existing) {
+      if (existing && existing.isMember !== false) {
+        await ensureStarterAgentMembership(existing, starterAgentId);
+        channelId = existing.id;
+        trackProductEvent("workflow_room_opened", starter.key);
+      } else if (existing) {
         await api.joinChannel(existing.id);
+        await ensureStarterAgentMembership(existing, starterAgentId);
         channelId = existing.id;
         trackProductEvent("workflow_room_joined", starter.key);
       } else {
@@ -275,7 +302,7 @@ export default function ServerHomePage() {
           name: starter.channelName,
           description: starter.description,
           type: starter.type,
-          initialAgentIds: stats.starterAgentId ? [stats.starterAgentId] : undefined,
+          initialAgentIds: starterAgentId ? [starterAgentId] : undefined,
         });
         channelId = res.id;
         trackProductEvent("workflow_room_created", starter.key);
@@ -309,6 +336,7 @@ export default function ServerHomePage() {
 
   function handleStarterAction(starter: WorkflowStarterTemplate) {
     if (starter.requiresLocalRuntime && !hasBridgeHere) {
+      trackProductEvent("workflow_starter_runtime_gate_opened", starter.key);
       setWizardOpen(true);
       return;
     }
@@ -502,6 +530,7 @@ export default function ServerHomePage() {
           flavor={onPersonalWorkspace ? "solo" : "invite"}
           inviterWorkspaceName={stats.name}
           onDismiss={handleWizardDismiss}
+          onBridgeConnected={handleBridgeConnected}
         />
       )}
     </div>
@@ -523,6 +552,50 @@ function WorkSignalsWarning({ message }: { message: string }) {
       </CardPanel>
     </Card>
   );
+}
+
+function pickCloudStarterAgentId(agents: Agent[]): string | null {
+  const cloudAgents = agents.filter((agent) => agent.runtimeMode === "raltic");
+  return (
+    cloudAgents.find((agent) => agent.name === "onboarding")
+    ?? cloudAgents.find((agent) => agent.isDefault)
+    ?? cloudAgents[0]
+  )?.id ?? null;
+}
+
+function pickLocalStarterAgentId(agents: Agent[]): string | null {
+  const bridgeAgents = agents.filter((agent) => agent.runtimeMode === "bridge");
+  return (
+    bridgeAgents.find((agent) => agent.name === "onboarding")
+    ?? bridgeAgents.find((agent) => agent.isDefault)
+    ?? bridgeAgents[0]
+  )?.id ?? null;
+}
+
+function buildServerStats(data: { server: Server; channels: Channel[]; agents: Agent[] }): ServerStats {
+  const workflowChannels = data.channels.filter((channel) =>
+    channel.type !== "dm" && channel.isMember !== false && !isSystemOnboardingWorkflow(channel)
+  );
+  return {
+    id: data.server.id,
+    name: data.server.name,
+    description: data.server.description,
+    role: data.server.role,
+    agentCount: data.agents.length,
+    channelCount: data.channels.length,
+    roomCount: workflowChannels.filter((c) => c.type !== "dm").length,
+    starterAgentId: pickCloudStarterAgentId(data.agents),
+    localStarterAgentId: pickLocalStarterAgentId(data.agents),
+    onboardingDmId: data.channels.find((c) => c.type === "dm" && c.name === "onboarding-assistant")?.id ?? null,
+    channels: data.channels.map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      description: c.description,
+      isMember: c.isMember,
+      agentIds: c.agentIds ?? [],
+    })),
+  };
 }
 
 function starterState(channels: ServerStats["channels"], starter: WorkflowStarterTemplate): "member" | "joinable" | "new" {

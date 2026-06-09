@@ -61,6 +61,7 @@ function LoginInner() {
   const nextPath = addOnboardingIntentToPath(nextBasePath, onboardingIntent);
   const desktopClient = sp.get("client") === "desktop" || nextBasePath.startsWith("/desktop");
   const [justReset, setJustReset] = useState(sp.get("reset") === "ok");
+  const emailFromUrl = sp.get("email") ?? "";
 
   // Surface OAuth-callback errors better-auth bounces back through the
   // `?error=` query — mainly hit when an unauthenticated user clicks
@@ -83,6 +84,11 @@ function LoginInner() {
       clearStoredOnboardingIntent();
     }
   }, [onboardingIntent]);
+
+  useEffect(() => {
+    if (!emailFromUrl) return;
+    setEmail((current) => current || emailFromUrl);
+  }, [emailFromUrl]);
 
   // First *real* character keystroke clears the "Password updated"
   // banner. We use `onKeyDown` (not `onChange`) because Safari fires
@@ -129,16 +135,20 @@ function LoginInner() {
     if (!email) return;
     setResendingVerify(true); setResentMsg(null);
     try {
-      await authClient.sendVerificationEmail({
+      const { error } = await authClient.sendVerificationEmail({
         email,
         callbackURL: buildAuthPath("/verify-email", {
           next: nextBasePath !== "/" ? nextBasePath : null,
           intent: onboardingIntent,
         }),
       });
+      if (error) {
+        setResentMsg("If an account exists and still needs verification, a new link is on its way.");
+        return;
+      }
       setResentMsg("Verification email sent.");
-    } catch (e) {
-      setResentMsg(e instanceof Error ? e.message : String(e));
+    } catch {
+      setResentMsg("Couldn't resend — try again in a minute.");
     } finally { setResendingVerify(false); }
   }
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Chip } from "@/components/heroui-pro/chip";
 import { Card } from "@/components/heroui-pro/card";
 import { ScrollShadow } from "@/components/heroui-pro/scroll-shadow";
@@ -44,6 +44,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
   // MessageArea is always rendered under /s/[slug]/{channel,dm}/[id] so
   // the param is always present.
   const params = useParams<{ slug?: string }>();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const serverSlug = params?.slug ?? "";
   const { bumpRead, seedChannel } = useGateway();
@@ -506,6 +507,15 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     && channel?.name === starterTemplate.channelName;
   const showStarterPanel = Boolean(starterMatchesRoom && !starterDismissed && !isReadOnly);
 
+  useEffect(() => {
+    setStarterDismissed(false);
+  }, [channelId, starterTemplate?.key]);
+
+  const clearStarterParam = useCallback(() => {
+    if (!channelId || !serverSlug || !starterTemplate) return;
+    router.replace(`/s/${serverSlug}/channel/${channelId}`, { scroll: false });
+  }, [channelId, router, serverSlug, starterTemplate]);
+
   const bringComposerIntoView = useCallback(() => {
     requestAnimationFrame(() => {
       const footer = document.querySelector<HTMLElement>("[data-testid='message-composer-footer']");
@@ -519,9 +529,10 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     inputRef.current?.setText(draft);
     setComposerText(draft);
     setStarterDismissed(true);
+    clearStarterParam();
     trackProductEvent("workflow_starter_draft_used", starterTemplate.key);
     bringComposerIntoView();
-  }, [bringComposerIntoView, channelAgents, starterTemplate]);
+  }, [bringComposerIntoView, channelAgents, clearStarterParam, starterTemplate]);
 
   if (!channelId) {
     return (
@@ -839,13 +850,16 @@ export function MessageArea({ channelId }: MessageAreaProps) {
               <StarterBriefPanel
                 starter={starterTemplate}
                 onUse={applyStarterDraft}
-                onDismiss={() => setStarterDismissed(true)}
+                onDismiss={() => {
+                  setStarterDismissed(true);
+                  clearStarterParam();
+                }}
               />
             )}
             {!loading && !loadError && messages.length === 0 && !showStarterPanel && (
               <div className="flex min-h-64 items-center justify-center">
                 <p className="max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
-                  No messages yet. Send the starter brief or describe the business outcome you want the agent to prepare.
+                  No messages yet. Send the starter brief, or add and @mention an agent before expecting a reply in a blank workflow.
                 </p>
               </div>
             )}
@@ -1083,7 +1097,7 @@ function StarterBriefPanel({
         </div>
         {starter.requiresLocalRuntime && (
           <p className="mt-3 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-            Repo inspection needs a connected local runtime. You can still create the room now and connect the runtime before asking for code review.
+            Repo inspection needs a connected local runtime. Connect one from Start or Settings → Runtimes before asking for code review.
           </p>
         )}
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">

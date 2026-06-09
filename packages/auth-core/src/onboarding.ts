@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/d1";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   user,
   servers,
@@ -42,12 +42,13 @@ export interface OnboardingEnv {
 //      navigation hints like "click **Settings → Workflows & agents**".
 const ONBOARDING_AGENT_PROMPT = `You are the Onboarding Assistant inside Raltic, a workflow-room product where humans direct work, AI agents execute, approvals stay visible, and decisions become team memory. The user is talking to you in the web UI — they type messages in a chat box inside a room. They do NOT have a terminal open.
 
-Your job: help a brand-new user start one useful workflow room in 3-5 short messages. Be warm, concrete, and brief.
+Your job: help a brand-new user start one useful agent workflow in 3-5 short messages. Be warm, concrete, and brief.
 
 Language: reply in whatever language the user wrote in. Do not ask which language they prefer — infer it.
 
 Things the user can do entirely in the web UI (always direct them here):
-- Start a workflow room: workspace home → choose a starter workflow, or click **+** in the sidebar to create a room.
+- Start the first workflow: sidebar → **Start** → choose **Launch readiness** or **Customer risk** → click **Start workflow** → click **Use brief** in the room → send.
+- Create a blank workflow after they understand the model: workspace sidebar → **Create blank workflow**.
 - Create a new agent: sidebar → **Settings** → **Workflows & agents** → **New agent**.
 - Talk to an agent directly: click the agent's name in the sidebar under **Messages** and type.
 - Invite a teammate: **Settings** → **Members & invites** → **Invite**.
@@ -187,15 +188,12 @@ export async function seedPersonalDefaults(
   // the call site (see below).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const batchOps: any[] = [];
-  // Migration for pre-fix existing Onboarding Assistants (codex P3
-  // final review HIGH): users who signed up BEFORE the runtime_mode
-  // fix have an Onboarding Assistant with runtimeMode='bridge' (or
-  // unset → schema default 'bridge'), model='sonnet', status='offline'
-  // — silently dead air. When the existing-row branch is taken, also
-  // queue an idempotent UPDATE that lifts those rows into the new
-  // raltic-mode defaults. The cloud RalticAgent ignores the DB model
-  // anyway and resolves via tier policy, but stamping 'claude-haiku-4-5'
-  // here keeps the UI honest about what they're talking to.
+  // Migration for pre-fix existing Onboarding Assistants: users who
+  // signed up before cloud-first onboarding could have an untouched
+  // seed row with runtimeMode='bridge', model='sonnet', status='offline'.
+  // Only migrate that original shape. If the user has since configured
+  // the onboarding agent as a local runtime, PATCH /agents updates
+  // updatedAt, so this guard preserves their bridge setup.
   if (existingAgent[0]) {
     batchOps.push(
       db.update(agents)
@@ -207,9 +205,10 @@ export async function seedPersonalDefaults(
         })
         .where(and(
           eq(agents.id, existingAgent[0].id),
-          // Only touch rows still on the OLD seed shape — don't
-          // clobber an agent the user has since edited.
           eq(agents.runtimeMode, "bridge"),
+          eq(agents.model, "sonnet"),
+          eq(agents.status, "offline"),
+          sql`${agents.updatedAt} = ${agents.createdAt}`,
         )),
     );
   }
@@ -268,18 +267,20 @@ export async function seedPersonalDefaults(
   if (channelsToInsert.length > 0) {
     batchOps.push(db.insert(channels).values(channelsToInsert));
   }
-  // Memberships — only insert rows whose corresponding channel didn't
-  // already exist (assumption: if the channel pre-existed from a prior
-  // partial run, its memberships were also created in that same batch).
-  const memberRows: Array<{ channelId: string; memberId: string; memberType: "human" | "agent"; joinedAt: Date }> = [];
-  if (!existingOnboardingCh[0]) {
-    memberRows.push({ channelId: onboardingChannelId, memberId: opts.ownerId, memberType: "human", joinedAt: now });
-    memberRows.push({ channelId: onboardingChannelId, memberId: agentId,      memberType: "agent", joinedAt: now });
-  }
-  if (!existingDmCh[0]) {
-    memberRows.push({ channelId: dmChannelId,         memberId: opts.ownerId, memberType: "human", joinedAt: now });
-    memberRows.push({ channelId: dmChannelId,         memberId: agentId,      memberType: "agent", joinedAt: now });
-  }
+  const desiredMemberRows: Array<{ channelId: string; memberId: string; memberType: "human" | "agent"; joinedAt: Date }> = [
+    { channelId: onboardingChannelId, memberId: opts.ownerId, memberType: "human", joinedAt: now },
+    { channelId: onboardingChannelId, memberId: agentId,      memberType: "agent", joinedAt: now },
+    { channelId: dmChannelId,         memberId: opts.ownerId, memberType: "human", joinedAt: now },
+    { channelId: dmChannelId,         memberId: agentId,      memberType: "agent", joinedAt: now },
+  ];
+  const existingMembers = await db.select({ channelId: channelMembers.channelId, memberId: channelMembers.memberId })
+    .from(channelMembers)
+    .where(and(
+      inArray(channelMembers.channelId, [onboardingChannelId, dmChannelId]),
+      inArray(channelMembers.memberId, [opts.ownerId, agentId]),
+    ));
+  const existingMemberKeys = new Set(existingMembers.map((row) => `${row.channelId}:${row.memberId}`));
+  const memberRows = desiredMemberRows.filter((row) => !existingMemberKeys.has(`${row.channelId}:${row.memberId}`));
   if (memberRows.length > 0) {
     batchOps.push(db.insert(channelMembers).values(memberRows));
   }
@@ -305,7 +306,7 @@ export async function seedPersonalDefaults(
       welcomeMessage(agentId,
         `👋 Welcome to Raltic, **${opts.ownerName}**!\n\nThis room is a quick tour of the workflow model: brief → agents run → human approval → team memory.`),
       welcomeMessage(agentId,
-        `**1. Start from a real workflow.**\n\nGo to the workspace home and pick a starter like customer-risk, launch-readiness, or code-review. Raltic will create a room where the brief, agent updates, approvals, tasks, and decision stay together.`),
+        `**1. Start from a real workflow.**\n\nGo to **Start**, pick customer-risk or launch-readiness, and click **Start workflow**. Raltic will create a room where the brief, agent updates, approvals, tasks, and decision stay together.`),
       welcomeMessage(agentId,
         `**2. Choose where agents execute.**\n\nCloud agents can start low-risk workflow rooms immediately. When a workflow touches repo context, secrets, or private tools, go to **Settings → Runtimes** and connect your local runtime.`),
     ]));
@@ -317,7 +318,7 @@ export async function seedPersonalDefaults(
       // lead with concrete next-steps; mirror that here so the
       // user has something to react to BEFORE typing.
       welcomeMessage(agentId,
-        `Hi **${opts.ownerName}** 👋 — I'm your Onboarding Assistant. I run in Raltic's cloud, so this works before you connect anything else.\n\nTry asking me one of these:\n\n- "Help me start my first workflow room"\n- "Which workflow should I run first?"\n- "When do I need a local runtime?"\n\nOr tell me what your team is trying to build, and I'll suggest a concrete first room.`),
+        `Hi **${opts.ownerName}** — I'm your Onboarding Assistant. I run in Raltic's cloud, so your first workflow works before you connect a local runtime.\n\nFastest path: open **Start**, choose **Launch readiness** or **Customer risk**, click **Start workflow**, then use the prefilled brief in the room and send it. Ask me "Which workflow should I start?" or paste the work you want an agent to prepare.`),
     ]));
   }
   if (seedTasks.length > 0) {

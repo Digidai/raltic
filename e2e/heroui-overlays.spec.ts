@@ -641,11 +641,11 @@ test("mobile sidebar-launched dialogs render above the sidebar overlay", async (
   await openMockChannel(page);
 
   await page.getByRole("button", { name: "Open workspace navigation" }).click();
-  await clickVisible(page, 'button[aria-label="Start workflow"]');
-  assertOverlayMetrics(await overlayMetrics(page, /Start workflow/));
-  await assertDialogFooterReachable(page, /Start workflow/);
+  await clickVisible(page, 'button[aria-label="Create blank workflow"]');
+  assertOverlayMetrics(await overlayMetrics(page, /Create blank workflow/));
+  await assertDialogFooterReachable(page, /Create blank workflow/);
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: /Start workflow/ })).toBeHidden();
+  await expect(page.getByRole("dialog", { name: /Create blank workflow/ })).toBeHidden();
 
   await page.keyboard.press("Escape").catch(() => {});
   await page.getByRole("button", { name: "Open workspace navigation" }).click();
