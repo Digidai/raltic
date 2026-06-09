@@ -8,7 +8,7 @@ import { MarketingButton } from "@/components/marketing/marketing-button";
 /**
  * Auth-aware CTA pair shown in the homepage hero.
  *
- * Not signed in → "Start your first workflow"
+ * Not signed in → "Start in 3 minutes"
  * Signed in    → "Open Raltic" (resolves to first workspace slug)
  */
 export function HomeCta(): React.ReactElement {
@@ -48,18 +48,17 @@ export function HomeCta(): React.ReactElement {
   }, [session]);
 
   // One min-width across pending / signed-out / signed-in so the hero
-  // row never jumps when useSession() resolves. 184px fits the widest
-  // resolved label ("Open Raltic →"); signed-out "Get started →" sits
-  // a bit looser but stays visually centered inside the same chip.
-  const CTA_MIN = "min-w-[184px]";
+  // row never jumps when useSession() resolves. 212px fits the signed-out
+  // first-value label while signed-in "Open Raltic" stays centered.
+  const CTA_MIN = "min-w-[212px]";
 
   // Keep SSR and the first client render identical. better-auth may resolve
   // a session synchronously from cookies, so checking `session` before mount
   // can otherwise hydrate `/signup` into `Open Raltic` and throw.
   if (!hydrated || isPending) {
     return (
-      <MarketingButton href="/signup" className={CTA_MIN}>
-        Start your first workflow <span aria-hidden="true">→</span>
+      <MarketingButton href="/signup" className={CTA_MIN} ctaTarget="home_first_value">
+        Start in 3 minutes <span aria-hidden="true">→</span>
       </MarketingButton>
     );
   }
@@ -68,7 +67,7 @@ export function HomeCta(): React.ReactElement {
   // resolution, it stays on the homepage instead of showing a blank slot.
   if (session && openHref === null) {
     return (
-      <MarketingButton href="/" className={`${CTA_MIN} opacity-90`}>
+      <MarketingButton href="/" className={`${CTA_MIN} opacity-90`} ctaTarget="home_open_pending">
         Open Raltic <span aria-hidden="true">→</span>
       </MarketingButton>
     );
@@ -76,18 +75,17 @@ export function HomeCta(): React.ReactElement {
 
   if (session && openHref) {
     return (
-      <MarketingButton href={openHref} className={CTA_MIN}>
+      <MarketingButton href={openHref} className={CTA_MIN} ctaTarget="home_open_workspace">
         Open Raltic <span aria-hidden="true">→</span>
       </MarketingButton>
     );
   }
 
-  // Primary CTA names the workflow the user starts after signup. The
-  // runtime choice still appears in the hero/body, but the first click
-  // should match the authenticated Start page.
+  // Primary CTA names the first-value path after signup. Runtime choice
+  // is deliberately deferred until the user asks for private local work.
   return (
-    <MarketingButton href="/signup" className={CTA_MIN}>
-      Start your first workflow <span aria-hidden="true">→</span>
+    <MarketingButton href="/signup" className={CTA_MIN} ctaTarget="home_first_value">
+      Start in 3 minutes <span aria-hidden="true">→</span>
     </MarketingButton>
   );
 }

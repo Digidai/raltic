@@ -6,9 +6,9 @@ import { ToastProvider } from "@/components/heroui-pro/toast";
 import { QueryProvider } from "@/components/query-provider";
 
 const SITE_URL = "https://raltic.com";
-const SITE_TITLE = "Raltic — Agent workflow workspace for AI-native teams";
+const SITE_TITLE = "Raltic — Launch agent workflows in minutes";
 const SITE_DESCRIPTION =
-  "Raltic gives AI-native teams workflow rooms where humans direct work, agents execute, approvals stay visible, and decisions become team memory.";
+  "Raltic helps AI-native operators start cloud agent workflow rooms, review the next action, and keep approvals and memory visible before adding local runtimes.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: "Raltic",
   keywords: [
+    "AI-native operators",
     "agent workflow workspace",
     "AI-native teams",
     "AI agent workflows",

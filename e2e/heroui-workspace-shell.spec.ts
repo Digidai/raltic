@@ -610,11 +610,11 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
 
   await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Start your next workflow room." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Send your first agent workflow." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Running work" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Continue workflows" })).toBeVisible();
-  await expect(page.getByText("Cards below create the room and prefill the starter brief.")).toBeVisible();
+  await expect(page.getByText("No local runtime is required for the first workflow.")).toBeVisible();
   await expect(
     page
       .getByRole("navigation", { name: "Workspace navigation" })
@@ -625,9 +625,10 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
   await expect(sidebar.getByRole("link", { name: /onboarding.*needs review/i })).toHaveCount(0);
   await expect(sidebar.getByRole("link", { name: /research.*1 failed run.*1 open.*failed/i })).toBeVisible();
   await expect(sidebar.getByText(/messages/i)).toBeVisible();
-  for (const label of ["Pick", "Send", "Review", "Keep"]) {
+  for (const label of ["1. Pick", "2. Send", "3. Review"]) {
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }
+  await expect(page.getByRole("heading", { name: "Start with one workflow your team can finish today." })).toBeVisible();
   await expect(page.getByRole("article", { name: /Customer-risk brief workflow starter/ })).toBeVisible();
   await expect(page.getByRole("article", { name: /Launch readiness workflow starter/ })).toBeVisible();
   await expect(page.getByRole("article", { name: /Local code review workflow starter/ })).toBeVisible();
@@ -693,7 +694,7 @@ test("workspace home does not count the seeded onboarding channel as a business 
 
   await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Start your first workflow room." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Send your first agent workflow." })).toBeVisible();
   await expect(page.getByText("No open workflow rooms yet. Start with one of the templates below.")).toBeVisible();
   await expect(
     page

@@ -142,7 +142,7 @@ function VerifyEmailInner() {
           <CardDescription>
           {onboardingIntent
             ? "Your email is confirmed. Sign in here to connect your local runtime, or return to the original signup tab and it will continue automatically."
-            : "Your email is confirmed. Sign in here to start your first workflow room, or return to the original signup tab and it will continue automatically."}
+            : "Your email is confirmed. Sign in here to send your first workflow brief, or return to the original signup tab and it will continue automatically."}
           </CardDescription>
         </CardHeader>
         <CardFooter className="justify-center">

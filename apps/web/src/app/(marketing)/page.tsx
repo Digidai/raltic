@@ -5,7 +5,6 @@ import {
   X, Minus,
 } from "lucide-react";
 import { HomeCta } from "@/components/home-cta";
-import { MarketingButton } from "@/components/marketing/marketing-button";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { SectionHeader } from "@/components/marketing/section-header";
 import { WorkflowMiniMap, WorkflowPreview } from "@/components/marketing/workflow-preview";
@@ -110,33 +109,24 @@ function Hero(): React.ReactElement {
                 into repeatable operations, not for generic "chat with AI". */}
             <Chip size="sm" variant="soft" color="default" className="gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" aria-hidden="true" />
-              Built for <span className="text-white">AI-native teams</span>
+              Built for <span className="text-white">AI-native operators</span>
               <span className="mx-1 text-zinc-400">·</span>
               Private beta · Free
             </Chip>
 
           <h1 className="mt-8 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-7xl">
-            Build your business<br />
-            {" "}<span className="text-cyan-400">with agent workflows.</span>
+            Launch your first<br />
+            {" "}<span className="text-cyan-400">agent workflow.</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-balance text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Raltic gives AI-native teams workflow rooms where humans set direction,
-            agents run the work, approvals stay visible, and decisions become team memory.
-            <span className="text-zinc-200"> Start with a cloud Agent</span>, or{" "}
-            <span className="text-zinc-200">bring Claude Code, Codex, OpenClaw, or Hermes</span> from your own environment.
+            Raltic turns one business process into a workflow room: send the brief,
+            let a cloud Agent produce the next action, keep approval and memory visible.
+            Bring local runtimes later when private code or keys need to stay on your machine.
           </p>
 
           <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            {/* Primary CTA — defaults to cloud-native onboarding (zero
-                local install). Secondary CTA below routes to /signup
-                with the bridge wizard pre-opened for users who want
-                to bring their own daemon. Per marketing v2 plan +
-                codex review HIGH-1. */}
             <HomeCta />
-            <MarketingButton href={CONNECT_RUNTIME_SIGNUP_HREF} variant="secondary">
-              Connect a local runtime <ArrowRight className="h-3.5 w-3.5" />
-            </MarketingButton>
           </div>
 
           {/* Trust line. The install command used to live here too, but
@@ -147,7 +137,7 @@ function Hero(): React.ReactElement {
               technical context makes the command concrete, and kept in
               the final CTA where the user has already committed to act. */}
           <p className="mt-5 text-xs text-zinc-400">
-            No credit card · first workflow room in minutes · cloud or local runtimes
+            No credit card · no local install to start · first workflow in minutes
           </p>
         </div>
 

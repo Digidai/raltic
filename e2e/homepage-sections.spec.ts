@@ -19,10 +19,10 @@ test.describe("homepage full section render", () => {
   test("Hero is visible with the core positioning copy", async ({ page }) => {
     await gotoHome(page);
 
-    const hero = page.locator("section", { hasText: /Build your business/i }).first();
-    await expect(hero.getByRole("heading", { name: /Build your business.*agent workflows/i })).toBeVisible();
-    await expect(hero.getByText(/workflow rooms/i)).toBeVisible();
-    await expect(hero.getByText(/Claude Code, Codex, OpenClaw, or Hermes/i)).toBeVisible();
+    const hero = page.locator("section", { hasText: /Launch your first/i }).first();
+    await expect(hero.getByRole("heading", { name: /Launch your first.*agent workflow/i })).toBeVisible();
+    await expect(hero.getByText(/turns one business process into a workflow room/i)).toBeVisible();
+    await expect(hero.getByText(/no local install to start/i)).toBeVisible();
     await expect(hero.getByTestId("workflow-preview")).toBeVisible();
   });
 
@@ -197,7 +197,7 @@ test.describe("homepage full section render", () => {
     await expect(lead.getByRole("heading", { name: /Turn useful agents/i })).toBeVisible();
     // Primary CTA follows the authenticated Start page language.
     // (signed-out branch); signed-in branch is "Open Raltic".
-    await expect(lead.getByRole("link", { name: /Start your first workflow|Open Raltic/i })).toBeVisible();
+    await expect(lead.getByRole("link", { name: /Start in 3 minutes|Open Raltic/i })).toBeVisible();
     const metrics = await footer.evaluate((el) => {
       const footerRect = el.getBoundingClientRect();
       const lead = el.querySelector<HTMLElement>("[data-raltic-footer-lead]");

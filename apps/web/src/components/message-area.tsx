@@ -845,7 +845,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
             {!loading && !loadError && messages.length === 0 && !showStarterPanel && (
               <div className="flex min-h-64 items-center justify-center">
                 <p className="max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
-                  No messages yet. Drop the workflow brief, @mention an agent, or record the approval you need.
+                  No messages yet. Send the starter brief or describe the business outcome you want the agent to prepare.
                 </p>
               </div>
             )}

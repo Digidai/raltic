@@ -234,7 +234,7 @@ function SignupInner() {
                   ? "Create an account to connect this computer"
                   : onboardingIntent
                     ? "Create your account, then connect this computer's runtime"
-                    : "Create your account, then start your first workflow room"}
+                    : "Create your account, then start a workflow in 3 minutes"}
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSignup}>
@@ -377,7 +377,7 @@ function CheckInboxCard({
           <p className="text-sm text-muted-foreground">
             {onboardingIntent
               ? "Click the link in the email. After verification we'll take you straight to the local runtime setup."
-              : "Click the link in the email. After verification you can start your first workflow room."}
+              : "Click the link in the email. After verification you can send your first workflow brief."}
             {" "}It can take a minute to arrive — check your spam folder if you don&apos;t see it.
           </p>
           {resendNotice && (

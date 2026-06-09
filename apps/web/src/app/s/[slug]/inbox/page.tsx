@@ -117,8 +117,14 @@ export default function InboxPage() {
               title="You're caught up."
               description={
                 <>
-                No review gates, blocked runs, assigned tasks, or unread handoffs.
+                No review gates, blocked runs, assigned tasks, or unread handoffs. Start another workflow when you are ready for the next agent run.
                 </>
+              }
+              action={
+                <Button render={<Link href={`/s/${slug}`} />} size="sm" className="justify-center">
+                  Start a workflow
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
               }
             />
           )}

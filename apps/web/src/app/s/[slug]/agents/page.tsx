@@ -303,9 +303,13 @@ function WorkspaceRunLog({
             Work log unavailable: {error}
           </p>
         ) : sortedRuns.length === 0 ? (
-          <p className="mt-4 rounded-lg border border-dashed border-border/70 bg-background/60 px-3 py-3 text-xs text-muted-foreground">
-            No agent runs yet. Mention an agent in a workflow room to create a traceable run.
-          </p>
+          <div className="mt-4 flex flex-col gap-2 rounded-lg border border-dashed border-border/70 bg-background/60 px-3 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>No agent runs yet. Start a workflow and send the first brief to create a traceable run.</span>
+            <Button render={<Link href={`/s/${slug}`} />} size="xs" variant="outline" className="w-full justify-center sm:w-auto">
+              Start workflow
+              <ArrowRight className="h-3 w-3" />
+            </Button>
+          </div>
         ) : (
           <ul className="mt-4 divide-y divide-border/60 overflow-hidden rounded-lg border border-border/60">
             {sortedRuns.map((run) => {

@@ -122,13 +122,14 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 }
 
 test.describe("homepage CTAs", () => {
-  test("anonymous hero CTAs point at signup flows", async ({ page }) => {
+  test("anonymous hero CTA points at the first-value signup flow", async ({ page }) => {
     await page.goto("/");
 
-    const primaryCta = hero(page).getByRole("link", { name: /^Start your first workflow$/ });
+    const primaryCta = hero(page).getByRole("link", { name: /^Start in 3 minutes$/ });
     await expect(primaryCta).toBeVisible();
     await expect(primaryCta).toHaveAttribute("href", "/signup");
     await expect(hero(page).getByRole("status", { name: "Loading" })).toHaveCount(0);
+    await expect(hero(page).getByRole("link", { name: /^Connect a local runtime$/ })).toHaveCount(0);
 
     const primaryStyles = await primaryCta.evaluate((element) => {
       const styles = window.getComputedStyle(element);
@@ -138,18 +139,28 @@ test.describe("homepage CTAs", () => {
         text: element.textContent?.trim() ?? "",
       };
     });
-    expect(primaryStyles.text).toContain("Start your first workflow");
+    expect(primaryStyles.text).toContain("Start in 3 minutes");
     expect(contrastRatio(primaryStyles.color, primaryStyles.backgroundColor)).toBeGreaterThanOrEqual(4.5);
 
-    const secondaryCta = hero(page).getByRole("link", { name: /^Connect a local runtime$/ });
-    await expect(secondaryCta).toBeVisible();
-    await expect(secondaryCta).toHaveAttribute("href", "/signup?intent=connect-runtime");
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "sendBeacon", { value: undefined, configurable: true });
+    });
+    const ctaRequest = page.waitForRequest((request) =>
+      request.method() === "POST"
+      && new URL(request.url()).pathname === "/api/marketing/event"
+      && (request.postData() ?? "").includes('"event":"cta_click"')
+      && (request.postData() ?? "").includes('"target":"home_first_value"'),
+    );
+    await primaryCta.click();
+    const request = await ctaRequest;
+    expect(request.postData()).toContain('"path":"/"');
+    await expectPathname(page, "/signup");
   });
 
-  test("hero secondary CTA navigates to the bridge wizard", async ({ page }) => {
+  test("runtime path CTA still navigates to the bridge wizard", async ({ page }) => {
     await page.goto("/");
 
-    await hero(page).getByRole("link", { name: /^Connect a local runtime$/ }).click();
+    await page.getByRole("link", { name: /^Connect a local runtime$/ }).first().click();
     await expectPathAndSearch(page, "/signup", "?intent=connect-runtime");
     await expect(page.getByRole("link", { name: /^Sign in$/ })).toHaveAttribute("href", "/login?intent=connect-runtime");
   });
@@ -187,8 +198,8 @@ test.describe("homepage top navigation", () => {
     { name: "Security", path: "/security" },
     { name: "Sign in", path: "/login" },
     // Top-nav primary kept as generic "Get started" for compactness
-    // even though the hero primary uses the more specific "Start a
-    // cloud Agent" copy. (Keeps the nav from getting too wide.)
+    // even though the hero primary uses the more specific
+    // "Start in 3 minutes" copy. (Keeps the nav from getting too wide.)
     { name: "Get started", path: "/signup" },
   ]) {
     test(`${name} link navigates to ${path}`, async ({ page }) => {

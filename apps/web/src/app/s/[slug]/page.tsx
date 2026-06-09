@@ -22,7 +22,6 @@ import {
   FileText,
   GitPullRequest,
   LineChart,
-  ListChecks,
   Loader2,
   MessageSquare,
   ShieldCheck,
@@ -305,6 +304,16 @@ export default function ServerHomePage() {
   const continueWorkflows = workflowSnapshots
     .filter((workflow) => !workflow.needsAttention && workflow.activeRuns === 0)
     .slice(0, 4);
+  const recommendedStarter = WORKFLOW_STARTERS.find((starter) => starter.key === "launch-readiness") ?? WORKFLOW_STARTERS[0];
+  const recommendedState = starterState(stats.channels, recommendedStarter);
+
+  function handleStarterAction(starter: WorkflowStarterTemplate) {
+    if (starter.requiresLocalRuntime && !hasBridgeHere) {
+      setWizardOpen(true);
+      return;
+    }
+    void startWorkflowRoom(starter);
+  }
 
   return (
     <div className="relative h-full w-full min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 lg:px-10">
@@ -316,38 +325,53 @@ export default function ServerHomePage() {
                 <BrandMonogram letter={stats.name} size="lg" className="mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <Chip size="sm" variant="soft" color="accent" className="font-mono text-[10px] uppercase tracking-wider">
-                    Agent workflow workspace
+                    Start in 3 minutes
                   </Chip>
                   <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                    {stats.roomCount > 0 ? "Start your next workflow room." : "Start your first workflow room."}
+                    Send your first agent workflow.
                   </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    Pick a real business process, let agents run the work, keep human approval visible,
-                    and turn the result into team memory inside {stats.name}.
+                    Pick one cloud starter, send the prefilled brief, and review the agent&apos;s next action inside {stats.name}.
                     <span className="block pt-1">
-                      Cards below create the room and prefill the starter brief.
+                      No local runtime is required for the first workflow.
                     </span>
                   </p>
                   {stats.description && (
                     <p className="mt-3 text-xs text-muted-foreground">{stats.description}</p>
                   )}
+                  <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      onClick={() => handleStarterAction(recommendedStarter)}
+                      loading={startingWorkflow === recommendedStarter.key}
+                      disabled={startingWorkflow !== null}
+                      className="w-full justify-center sm:w-auto"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {recommendedState === "member" ? "Open launch workflow" : recommendedState === "joinable" ? "Join launch workflow" : "Start launch workflow"}
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                    {stats.onboardingDmId && (
+                      <Button
+                        render={<Link href={`/s/${slug}/dm/${stats.onboardingDmId}`} />}
+                        variant="outline"
+                        className="w-full justify-center sm:w-auto"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Ask the onboarding agent
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="mt-6 grid gap-2 sm:grid-cols-3">
-                <Stat label="Needs attention" value={workDataUnavailable ? "?" : attentionWorkflows.length} />
-                <Stat label="Running" value={workDataUnavailable ? "?" : runningWorkflows.length} />
-                <Stat label="Workflows" value={stats.roomCount} />
               </div>
             </CardPanel>
           </Card>
 
           <div className="rounded-xl border border-border bg-surface/80 p-4 shadow-surface">
             <div className="grid gap-2">
-              <WorkflowStep icon={<FileText className="h-4 w-4" />} label="Pick" body="Choose a starter that matches real work." />
-              <WorkflowStep icon={<Sparkles className="h-4 w-4" />} label="Send" body="Use the brief, edit it, then send." />
-              <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="Review" body="Handle approval and blocked-agent gates." />
-              <WorkflowStep icon={<ListChecks className="h-4 w-4" />} label="Keep" body="Tasks and decisions stay with the room." />
+              <WorkflowStep icon={<FileText className="h-4 w-4" />} label="1. Pick" body="Choose a business starter, not an empty chat." />
+              <WorkflowStep icon={<Sparkles className="h-4 w-4" />} label="2. Send" body="Use the starter brief and send the first message." />
+              <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="3. Review" body="Turn the agent reply into a task, decision, or teammate review." />
             </div>
           </div>
         </header>
@@ -355,6 +379,44 @@ export default function ServerHomePage() {
         {workDataUnavailable && (
           <WorkSignalsWarning message={workLoadError ?? "Work signals are still loading."} />
         )}
+
+        <section aria-labelledby="starter-workflows-heading">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                First value
+              </p>
+              <h2 id="starter-workflows-heading" className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+                Start with one workflow your team can finish today.
+              </h2>
+            </div>
+            {stats.onboardingDmId && (
+              <Button
+                render={<Link href={`/s/${slug}/dm/${stats.onboardingDmId}`} />}
+                variant="outline"
+                size="sm"
+                className="w-full justify-center sm:w-auto"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Ask which workflow to start
+              </Button>
+            )}
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            {WORKFLOW_STARTERS.map((starter) => (
+              <WorkflowStarterCard
+                key={starter.key}
+                starter={starter}
+                hasLocalRuntime={Boolean(hasBridgeHere)}
+                state={starterState(stats.channels, starter)}
+                loading={startingWorkflow === starter.key}
+                disabled={startingWorkflow !== null}
+                onStart={() => handleStarterAction(starter)}
+              />
+            ))}
+          </div>
+        </section>
 
         <section aria-labelledby="workflow-command-heading" className="grid gap-3 lg:grid-cols-2">
           <WorkflowFocusPanel
@@ -384,44 +446,6 @@ export default function ServerHomePage() {
           slug={slug}
           countLabel={workDataUnavailable ? "?" : undefined}
         />
-
-        <section aria-labelledby="starter-workflows-heading">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                Start here
-              </p>
-              <h2 id="starter-workflows-heading" className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-                Choose the first workflow your team can finish today.
-              </h2>
-            </div>
-            {stats.onboardingDmId && (
-              <Button
-                render={<Link href={`/s/${slug}/dm/${stats.onboardingDmId}`} />}
-                variant="outline"
-                size="sm"
-                className="w-full justify-center sm:w-auto"
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                Ask which workflow to start
-              </Button>
-            )}
-          </div>
-
-          <div className="mt-4 grid gap-3 lg:grid-cols-3">
-            {WORKFLOW_STARTERS.map((starter) => (
-              <WorkflowStarterCard
-                key={starter.key}
-                starter={starter}
-                hasLocalRuntime={Boolean(hasBridgeHere)}
-                state={starterState(stats.channels, starter)}
-                loading={startingWorkflow === starter.key}
-                disabled={startingWorkflow !== null}
-                onStart={() => { void startWorkflowRoom(starter); }}
-              />
-            ))}
-          </div>
-        </section>
 
         {onPersonalWorkspace ? (
           <RuntimeBoundaryPanel
@@ -480,15 +504,6 @@ export default function ServerHomePage() {
           onDismiss={handleWizardDismiss}
         />
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-lg border border-border bg-surface/70 px-3 py-2 text-center">
-      <div className="text-2xl font-semibold text-foreground">{value}</div>
-      <Chip size="sm" variant="soft" color="default" className="mt-1 justify-center">{label}</Chip>
     </div>
   );
 }
@@ -587,7 +602,7 @@ function WorkflowStarterCard({
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}
-          {loading ? "Starting..." : existing ? "Open workflow" : joinable ? "Join workflow" : runtimePending ? "Create review room" : "Start workflow"}
+          {loading ? "Starting..." : existing ? "Open workflow" : joinable ? "Join workflow" : runtimePending ? "Connect runtime" : "Start workflow"}
           {!loading && <ArrowRight className="h-3.5 w-3.5" />}
         </Button>
         <p className="mt-2 truncate text-center font-mono text-[10px] text-muted-foreground">

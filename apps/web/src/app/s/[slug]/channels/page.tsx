@@ -184,7 +184,13 @@ export default function ChannelsBrowsePage() {
                     icon={<Hash className="h-8 w-8" />}
                     tone="accent"
                     title="No workflows yet."
-                    description={<>Start a workflow from the sidebar or join a public workflow below.</>}
+                    description={<>Start with a cloud starter, send the first brief, and come back here when the room is ready to reuse.</>}
+                    action={
+                      <Button render={<Link href={`/s/${slug}`} />} size="sm" className="justify-center">
+                        Start a workflow
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    }
                   />
                 ) : (
                   <ul className="space-y-2">

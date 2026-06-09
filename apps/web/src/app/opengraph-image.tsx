@@ -7,7 +7,7 @@ import { ImageResponse } from "next/og";
  *
  * Auto-served by Next.js app router as the og:image for `/`.
  */
-export const alt = "Raltic — agent workflow workspace for AI-native teams";
+export const alt = "Raltic — launch your first agent workflow";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -61,11 +61,10 @@ export default async function OG() {
             flexDirection: "column",
           }}
         >
-          <span>Build your business</span>
+          <span>Launch your first</span>
           <span style={{ fontStyle: "italic", fontWeight: 300, color: "#d4d4d8" }}>
-            with{" "}
             <span style={{ background: "linear-gradient(90deg, #67e8f9, #fcd34d)", backgroundClip: "text", color: "transparent" }}>
-              agent workflows.
+              agent workflow.
             </span>
           </span>
         </div>

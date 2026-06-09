@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { Button } from "@/components/heroui-pro/button";
+import { trackCtaClick } from "@/components/marketing/tracking";
 import { cn } from "@/lib/utils";
 
 type MarketingButtonVariant =
@@ -19,6 +20,7 @@ type MarketingButtonProps = {
   className?: string;
   target?: string;
   rel?: string;
+  ctaTarget?: string;
 };
 
 const variants: Record<MarketingButtonVariant, string> = {
@@ -57,6 +59,7 @@ export function MarketingButton({
   className,
   target,
   rel,
+  ctaTarget,
 }: MarketingButtonProps) {
   const render = target ? (
     <a href={href} target={target} rel={rel ?? "noreferrer"} />
@@ -68,6 +71,9 @@ export function MarketingButton({
     <Button
       variant={buttonVariants[variant]}
       render={render}
+      onClick={() => {
+        if (ctaTarget) trackCtaClick(ctaTarget);
+      }}
       className={cn(
         "inline-flex items-center justify-center gap-1.5 transition-[transform,box-shadow,background-color,border-color,color] duration-150 active:translate-y-px",
         variants[variant],
