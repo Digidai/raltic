@@ -306,7 +306,7 @@ export async function seedPersonalDefaults(
       welcomeMessage(agentId,
         `👋 Welcome to Raltic, **${opts.ownerName}**!\n\nThis room is a quick tour of the workflow model: brief → agents run → human approval → team memory.`),
       welcomeMessage(agentId,
-        `**1. Start from a real workflow.**\n\nGo to **Start**, pick customer-risk or launch-readiness, and click **Start workflow**. Raltic will create a room where the brief, agent updates, approvals, tasks, and decision stay together.`),
+        `**1. Start from a real workflow.**\n\nGo to **Start**, choose the outcome you need first, then pick customer-risk, launch-readiness, research-synthesis, or code-review. Raltic will create a room where the brief, agent updates, approvals, tasks, and decision stay together.`),
       welcomeMessage(agentId,
         `**2. Choose where agents execute.**\n\nCloud agents can start low-risk workflow rooms immediately. When a workflow touches repo context, secrets, or private tools, go to **Settings → Runtimes** and connect your local runtime.`),
     ]));

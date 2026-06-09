@@ -123,7 +123,7 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 
 test.describe("homepage CTAs", () => {
   test("marketing endpoint accepts workspace PLG funnel events", async ({ request }) => {
-    for (const event of ["workflow_starter_runtime_gate_opened", "workflow_room_opened"]) {
+    for (const event of ["workflow_starter_match_selected", "workflow_starter_runtime_gate_opened", "workflow_room_opened"]) {
       const res = await request.post("/api/marketing/event", {
         data: {
           event,

@@ -102,12 +102,14 @@ test.describe(RUN ? "workspace shell read-only" : "workspace shell read-only (sk
     await nav.getByRole("link", { name: "Start", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/s/${slug}$`), { timeout: 15000 });
     await waitForWorkspaceMainReady(page);
-    await expect(page.getByRole("heading", { name: "Send your first agent workflow." })).toBeVisible();
-    await expect(page.getByText("No local runtime is required for the first workflow.")).toBeVisible();
-    for (const step of ["1. Pick", "2. Send", "3. Review"]) {
+    await expect(page.getByRole("heading", { name: "Pick one workflow and make the agent work visible." })).toBeVisible();
+    await expect(page.getByText("Start on cloud; bring local runtimes later")).toBeVisible();
+    for (const step of ["1. Pick", "2. Send", "3. Prove"]) {
       await expect(page.getByText(step, { exact: true }).first()).toBeVisible();
     }
     await expect(page.getByRole("heading", { name: "Start with one workflow your team can finish today." })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Workflow outcome picker" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Make a decision/ })).toBeVisible();
     await expect(page.getByRole("article", { name: /workflow starter/i }).first().getByRole("button", {
       name: /Start workflow|Join workflow|Open workflow|Connect runtime/i,
     })).toBeVisible();

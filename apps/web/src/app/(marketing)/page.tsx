@@ -424,7 +424,7 @@ function UseCases(): React.ReactElement {
           title={<>Start with one workflow your team <span className="text-zinc-500">already owns</span>.</>}
           description="The first customer should not buy an abstract workspace. They should recognize a process they run every week."
         />
-        <div className="mt-14 grid gap-4 lg:grid-cols-3">
+        <div className="mt-14 grid gap-4 lg:grid-cols-4">
           <WorkflowUseCase
             tag="revenue"
             title="Customer-risk brief"
@@ -440,6 +440,14 @@ function UseCases(): React.ReactElement {
             agent="reviewer + writer"
             gate="block public send"
             output="decision log + checklist"
+          />
+          <WorkflowUseCase
+            tag="research"
+            title="Research synthesis"
+            input="notes + sources + quotes"
+            agent="research assistant"
+            gate="review source quality"
+            output="decision memo + evidence gaps"
           />
           <WorkflowUseCase
             tag="engineering"

@@ -24,6 +24,7 @@ import {
   LineChart,
   Loader2,
   MessageSquare,
+  Search,
   ShieldCheck,
   Sparkles,
   type LucideIcon,
@@ -75,6 +76,7 @@ function snoozeWizard(userId: string, personalSlug: string): void {
 const STARTER_ICONS: Record<WorkflowStarterKey, LucideIcon> = {
   "customer-risk": LineChart,
   "launch-readiness": ClipboardCheck,
+  "research-synthesis": Search,
   "code-review": GitPullRequest,
 };
 
@@ -105,6 +107,7 @@ export default function ServerHomePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [personal, setPersonal] = useState<PersonalRef | null>(null);
   const [startingWorkflow, setStartingWorkflow] = useState<WorkflowStarterKey | null>(null);
+  const [selectedStarterKey, setSelectedStarterKey] = useState<WorkflowStarterKey>("launch-readiness");
   const [tasks, setTasks] = useState<TaskRow[] | null>(null);
   const [agentRuns, setAgentRuns] = useState<AgentRun[] | null>(null);
   const [workLoadError, setWorkLoadError] = useState<string | null>(null);
@@ -331,8 +334,9 @@ export default function ServerHomePage() {
   const continueWorkflows = workflowSnapshots
     .filter((workflow) => !workflow.needsAttention && workflow.activeRuns === 0)
     .slice(0, 4);
-  const recommendedStarter = WORKFLOW_STARTERS.find((starter) => starter.key === "launch-readiness") ?? WORKFLOW_STARTERS[0];
-  const recommendedState = starterState(stats.channels, recommendedStarter);
+  const defaultStarter = WORKFLOW_STARTERS.find((starter) => starter.key === "launch-readiness") ?? WORKFLOW_STARTERS[0]!;
+  const selectedStarter = WORKFLOW_STARTERS.find((starter) => starter.key === selectedStarterKey) ?? defaultStarter;
+  const selectedState = starterState(stats.channels, selectedStarter);
 
   function handleStarterAction(starter: WorkflowStarterTemplate) {
     if (starter.requiresLocalRuntime && !hasBridgeHere) {
@@ -341,6 +345,11 @@ export default function ServerHomePage() {
       return;
     }
     void startWorkflowRoom(starter);
+  }
+
+  function handleStarterSelect(starter: WorkflowStarterTemplate) {
+    setSelectedStarterKey(starter.key);
+    trackProductEvent("workflow_starter_match_selected", starter.key);
   }
 
   return (
@@ -356,12 +365,12 @@ export default function ServerHomePage() {
                     Start in 3 minutes
                   </Chip>
                   <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                    Send your first agent workflow.
+                    Pick one workflow and make the agent work visible.
                   </h1>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    Pick one cloud starter, send the prefilled brief, and review the agent&apos;s next action inside {stats.name}.
+                    Choose the business outcome you own, send the starter brief, and review what the agent does next inside {stats.name}.
                     <span className="block pt-1">
-                      No local runtime is required for the first workflow.
+                      Start on cloud; bring local runtimes later when private code, keys, or customer context matter.
                     </span>
                   </p>
                   {stats.description && (
@@ -370,13 +379,13 @@ export default function ServerHomePage() {
                   <div className="mt-5 flex flex-col gap-2 sm:flex-row">
                     <Button
                       type="button"
-                      onClick={() => handleStarterAction(recommendedStarter)}
-                      loading={startingWorkflow === recommendedStarter.key}
+                      onClick={() => handleStarterAction(selectedStarter)}
+                      loading={startingWorkflow === selectedStarter.key}
                       disabled={startingWorkflow !== null}
                       className="w-full justify-center sm:w-auto"
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      {recommendedState === "member" ? "Open launch workflow" : recommendedState === "joinable" ? "Join launch workflow" : "Start launch workflow"}
+                      {selectedState === "member" ? "Open selected workflow" : selectedState === "joinable" ? "Join selected workflow" : selectedStarter.requiresLocalRuntime && !hasBridgeHere ? "Connect runtime" : "Start selected workflow"}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                     {stats.onboardingDmId && (
@@ -399,7 +408,7 @@ export default function ServerHomePage() {
             <div className="grid gap-2">
               <WorkflowStep icon={<FileText className="h-4 w-4" />} label="1. Pick" body="Choose a business starter, not an empty chat." />
               <WorkflowStep icon={<Sparkles className="h-4 w-4" />} label="2. Send" body="Use the starter brief and send the first message." />
-              <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="3. Review" body="Turn the agent reply into a task, decision, or teammate review." />
+              <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="3. Prove" body="Review the first proof before the workflow becomes repeatable." />
             </div>
           </div>
         </header>
@@ -417,6 +426,9 @@ export default function ServerHomePage() {
               <h2 id="starter-workflows-heading" className="mt-1 text-xl font-semibold tracking-tight text-foreground">
                 Start with one workflow your team can finish today.
               </h2>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                Pick the outcome first. Raltic creates the room, keeps the agent run visible, and leaves the approval decision with a human.
+              </p>
             </div>
             {stats.onboardingDmId && (
               <Button
@@ -431,12 +443,19 @@ export default function ServerHomePage() {
             )}
           </div>
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          <StarterChooser
+            starters={WORKFLOW_STARTERS}
+            selectedKey={selectedStarter.key}
+            onSelect={handleStarterSelect}
+          />
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-4">
             {WORKFLOW_STARTERS.map((starter) => (
               <WorkflowStarterCard
                 key={starter.key}
                 starter={starter}
                 hasLocalRuntime={Boolean(hasBridgeHere)}
+                selected={starter.key === selectedStarter.key}
                 state={starterState(stats.channels, starter)}
                 loading={startingWorkflow === starter.key}
                 disabled={startingWorkflow !== null}
@@ -604,6 +623,54 @@ function starterState(channels: ServerStats["channels"], starter: WorkflowStarte
   return existing.isMember === false ? "joinable" : "member";
 }
 
+function StarterChooser({
+  starters,
+  selectedKey,
+  onSelect,
+}: {
+  starters: WorkflowStarterTemplate[];
+  selectedKey: WorkflowStarterKey;
+  onSelect: (starter: WorkflowStarterTemplate) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-xl border border-border bg-surface/70 p-3 shadow-surface" role="group" aria-label="Workflow outcome picker">
+      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Choose by outcome</p>
+          <p className="mt-1 text-sm font-medium text-foreground">What should the agent help your team prove first?</p>
+        </div>
+        <p className="text-xs text-muted-foreground">This only changes the starter; it never creates a room until you click Start.</p>
+      </div>
+      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+        {starters.map((starter) => {
+          const selected = starter.key === selectedKey;
+          return (
+            <button
+              key={starter.key}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onSelect(starter)}
+              className={[
+                "min-h-[104px] rounded-lg border px-3 py-3 text-left transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                selected
+                  ? "border-accent bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]"
+                  : "border-border bg-background/70 text-foreground hover:border-accent/30 hover:bg-background",
+              ].join(" ")}
+            >
+              <span className="block text-sm font-semibold">{starter.selectorLabel}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{starter.selectorBody}</span>
+              <span className="mt-2 block font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                {starter.firstProof}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function WorkflowStep({ icon, label, body }: { icon: React.ReactNode; label: string; body: string }) {
   return (
     <div className="grid grid-cols-[36px_1fr] gap-3 rounded-lg border border-border bg-background/70 p-3">
@@ -621,6 +688,7 @@ function WorkflowStep({ icon, label, body }: { icon: React.ReactNode; label: str
 function WorkflowStarterCard({
   starter,
   hasLocalRuntime,
+  selected,
   state,
   loading,
   disabled,
@@ -628,6 +696,7 @@ function WorkflowStarterCard({
 }: {
   starter: WorkflowStarterTemplate;
   hasLocalRuntime: boolean;
+  selected: boolean;
   state: "member" | "joinable" | "new";
   loading: boolean;
   disabled: boolean;
@@ -640,20 +709,32 @@ function WorkflowStarterCard({
   return (
     <article
       aria-label={`${starter.title} workflow starter`}
-      className="flex min-h-[360px] flex-col rounded-xl border border-border bg-surface/80 p-4 shadow-surface transition-colors hover:border-accent/25"
+      className={[
+        "flex min-h-[396px] flex-col rounded-xl border bg-surface/80 p-4 shadow-surface transition-colors hover:border-accent/25",
+        selected ? "border-accent/70 ring-1 ring-accent/20" : "border-border",
+      ].join(" ")}
     >
       <div className="flex items-center justify-between gap-3">
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-[var(--accent-soft-foreground)]">
           <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
-        <Chip size="sm" variant="soft" color={starter.type === "private" ? "default" : "accent"} className="font-mono text-[10px] uppercase tracking-wider">
-          {runtimePending ? "local runtime" : starter.type}
-        </Chip>
+        <div className="flex flex-wrap justify-end gap-1.5">
+          {selected && (
+            <Chip size="sm" variant="soft" color="accent" className="font-mono text-[10px] uppercase tracking-wider">
+              selected
+            </Chip>
+          )}
+          <Chip size="sm" variant="soft" color={starter.type === "private" ? "default" : "accent"} className="font-mono text-[10px] uppercase tracking-wider">
+            {runtimePending ? "local runtime" : starter.type}
+          </Chip>
+        </div>
       </div>
       <h3 className="mt-4 text-lg font-semibold tracking-tight text-foreground">{starter.title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{starter.brief}</p>
 
       <div className="mt-4 space-y-2 text-xs">
+        <StarterRow label="for" body={starter.bestFor} />
+        <StarterRow label="proof" body={starter.firstProof} />
         <StarterRow label="agent" body={starter.agent} />
         <StarterRow label="gate" body={starter.gate} />
         <StarterRow label="output" body={starter.output} />

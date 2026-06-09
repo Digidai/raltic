@@ -25,6 +25,7 @@ const ALLOWED_EVENTS = new Set([
   "runtime_card_click",
   "wizard_start",
   "cloud_agent_start",
+  "workflow_starter_match_selected",
   "workflow_starter_click",
   "workflow_starter_runtime_gate_opened",
   "workflow_room_created",

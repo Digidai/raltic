@@ -610,11 +610,11 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
 
   await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Send your first agent workflow." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pick one workflow and make the agent work visible." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Needs attention" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Running work" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Continue workflows" })).toBeVisible();
-  await expect(page.getByText("No local runtime is required for the first workflow.")).toBeVisible();
+  await expect(page.getByText("Start on cloud; bring local runtimes later")).toBeVisible();
   await expect(
     page
       .getByRole("navigation", { name: "Workspace navigation" })
@@ -627,12 +627,15 @@ test("workspace home carries the workflow activation narrative", async ({ page, 
   await expect(sidebar.getByRole("link", { name: /onboarding.*needs review/i })).toHaveCount(0);
   await expect(sidebar.getByRole("link", { name: /research.*1 failed run.*1 open.*failed/i })).toBeVisible();
   await expect(sidebar.getByText(/messages/i)).toBeVisible();
-  for (const label of ["1. Pick", "2. Send", "3. Review"]) {
+  for (const label of ["1. Pick", "2. Send", "3. Prove"]) {
     await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
   }
   await expect(page.getByRole("heading", { name: "Start with one workflow your team can finish today." })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Workflow outcome picker" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Make a decision/ })).toBeVisible();
   await expect(page.getByRole("article", { name: /Customer-risk brief workflow starter/ })).toBeVisible();
   await expect(page.getByRole("article", { name: /Launch readiness workflow starter/ })).toBeVisible();
+  await expect(page.getByRole("article", { name: /Research synthesis workflow starter/ })).toBeVisible();
   await expect(page.getByRole("article", { name: /Local code review workflow starter/ })).toBeVisible();
   await expect(page.getByText("Local runtime is optional.")).toBeVisible();
 
@@ -675,6 +678,57 @@ test("workspace home runtime-gates local starters without creating a room", asyn
   await expect(page.getByRole("dialog", { name: /Connect a local runtime/ })).toBeVisible();
   await expect(page.getByText("Your first cloud workflow works without this")).toBeVisible();
   expect(await createRequest).toBeNull();
+});
+
+test("workspace home outcome picker changes the primary starter action", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [onboardingChannel, researchChannel, dmChannel],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+
+  const picker = page.getByRole("group", { name: "Workflow outcome picker" });
+  await picker.getByRole("button", { name: /Make a decision/ }).click();
+  await expect(picker.getByRole("button", { name: /Make a decision/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("article", { name: /Research synthesis workflow starter/ }).getByText("selected")).toBeVisible();
+
+  const createRequest = page.waitForRequest((request) =>
+    request.method() === "POST" && new URL(request.url()).pathname === "/api/v1/channels",
+  );
+  await page.getByRole("button", { name: "Start selected workflow" }).click();
+  expect((await createRequest).postDataJSON()).toMatchObject({
+    serverId: "srv-demo",
+    name: "research-synthesis",
+    type: "private",
+    initialAgentIds: ["agent-onboard"],
+  });
+  await expect(page).toHaveURL(/\/s\/demo\/channel\/ch-new\?starter=research-synthesis$/);
+});
+
+test("workspace home outcome picker stays usable on mobile", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    channels: [onboardingChannel, researchChannel, dmChannel],
+  });
+
+  await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "Pick one workflow and make the agent work visible." })).toBeVisible();
+
+  const picker = page.getByRole("group", { name: "Workflow outcome picker" });
+  await expect(picker).toBeVisible();
+  await expect(picker.getByRole("button")).toHaveCount(4);
+  await picker.getByRole("button", { name: /Make a decision/ }).click();
+  await expect(picker.getByRole("button", { name: /Make a decision/ })).toHaveAttribute("aria-pressed", "true");
+
+  const overflow = await page.evaluate(() =>
+    document.documentElement.scrollWidth > window.innerWidth + 1 || document.body.scrollWidth > window.innerWidth + 1
+  );
+  expect(overflow, "mobile Start page should not horizontally overflow").toBe(false);
 });
 
 test("workspace home attaches a bridge agent to local runtime starter rooms", async ({ page, context }) => {
@@ -822,7 +876,7 @@ test("workspace home does not count the seeded onboarding channel as a business 
 
   await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
   await expect(page.getByTestId("workspace-shell")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByRole("heading", { name: "Send your first agent workflow." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pick one workflow and make the agent work visible." })).toBeVisible();
   await expect(page.getByText("No open workflow rooms yet. Start with one of the templates below.")).toBeVisible();
   await expect(
     page
