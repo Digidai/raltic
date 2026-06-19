@@ -58,8 +58,8 @@ export function loadConfig(): DesktopConfig {
 /**
  * Normalize a server URL: trim, lowercase host, drop trailing slash on
  * the path, validate it parses as http(s). Returns undefined for inputs
- * that fail to parse — callers should treat that as "user gave us junk,
- * fall back to defaults".
+ * that fail to parse — callers should treat that as "user gave us junk",
+ * not as permission to fall back to another server.
  */
 function normalizeServerUrl(raw: string): string | undefined {
   const trimmed = raw.trim();
@@ -85,7 +85,8 @@ function normalizeBridgeKey(raw: Partial<DesktopBridgeKey>): DesktopBridgeKey | 
   const normalized: DesktopBridgeKey = { apiKey };
   if (raw.serverUrl?.trim()) {
     const u = normalizeServerUrl(raw.serverUrl);
-    if (u) normalized.serverUrl = u;
+    if (!u) return null;
+    normalized.serverUrl = u;
   }
   if (raw.serverId?.trim()) normalized.serverId = raw.serverId.trim();
   if (typeof raw.addedAt === "number" && Number.isFinite(raw.addedAt)) {
@@ -141,15 +142,34 @@ export function upsertBridgeKey(cfg: DesktopConfig, key: DesktopBridgeKey): Desk
 }
 
 export function replacePrimaryBridgeKey(cfg: DesktopConfig, key: DesktopConfig): DesktopConfig {
+  const existingPrimary = bridgeKeysFromConfig(cfg)[0];
+  const existingPrimaryEntry = existingPrimary && Array.isArray(cfg.keys)
+    ? cfg.keys.find((entry) => entry?.apiKey?.trim() === existingPrimary.apiKey)
+    : undefined;
+  const hasApiKey = Object.prototype.hasOwnProperty.call(key, "apiKey");
+  const apiKey = hasApiKey ? key.apiKey?.trim() : existingPrimary?.apiKey;
+  const sameApiKey = !!apiKey && apiKey === existingPrimary?.apiKey;
+  const hasServerUrl = Object.prototype.hasOwnProperty.call(key, "serverUrl") && key.serverUrl !== undefined;
+  const hasServerId = Object.prototype.hasOwnProperty.call(key, "serverId") && key.serverId !== undefined;
   const normalized = normalizeBridgeKey({
-    apiKey: key.apiKey,
-    serverUrl: key.serverUrl,
-    serverId: key.serverId,
-    addedAt: Date.now(),
+    apiKey,
+    serverUrl: hasServerUrl
+      ? key.serverUrl
+      : sameApiKey
+        ? existingPrimary?.serverUrl ?? existingPrimaryEntry?.serverUrl
+        : undefined,
+    serverId: hasServerId
+      ? key.serverId
+      : sameApiKey
+        ? existingPrimary?.serverId ?? existingPrimaryEntry?.serverId
+        : undefined,
+    addedAt: sameApiKey
+      ? existingPrimaryEntry?.addedAt ?? existingPrimary?.addedAt ?? Date.now()
+      : Date.now(),
   });
-  if (!normalized) return {};
 
   const rest = bridgeKeysFromConfig(cfg).slice(1);
+  if (!normalized) return configFromKeys(rest);
   return configFromKeys([normalized, ...rest]);
 }
 

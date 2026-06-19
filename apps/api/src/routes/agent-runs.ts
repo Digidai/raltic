@@ -48,12 +48,30 @@ agentRunsRoutes.post("/api/v1/agent-runs", requireAuth, async (c) => {
   if (rows.length === 0) {
     return c.json({ error: { code: "FORBIDDEN", message: "agent is not available in this channel" } }, 403);
   }
+  if (body.triggerMessageId) {
+    const triggerChannelId = await resolveMessageChannelId(db, body.triggerMessageId);
+    if (triggerChannelId !== null && triggerChannelId !== body.channelId) {
+      return c.json({
+        error: { code: "INVALID_TRIGGER_MESSAGE", message: "triggerMessageId must belong to the run channel" },
+      }, 400);
+    }
+    if (triggerChannelId === null && body.callerId && body.callerType) {
+      const callerOk = await channelMemberExists(db, body.channelId, body.callerId, body.callerType);
+      if (!callerOk) {
+        return c.json({
+          error: { code: "INVALID_RUN_CALLER", message: "caller must belong to the run channel" },
+        }, 400);
+      }
+    }
+  }
   const taskId = body.triggerMessageId
     ? await resolveTaskIdForMessage(db, body.channelId, body.triggerMessageId)
     : null;
   const caller = await resolveRunCaller(db, {
     channelId: body.channelId,
     triggerMessageId: body.triggerMessageId ?? null,
+    fallbackCallerId: body.callerId ?? null,
+    fallbackCallerType: body.callerType ?? null,
     fallbackUserId: subject.userId,
   });
 
@@ -110,6 +128,12 @@ agentRunsRoutes.patch("/api/v1/agent-runs/:id", requireAuth, async (c) => {
         error: { code: "INVALID_OUTPUT_MESSAGE", message: "outputMessageId must be an agent message in the run channel" },
       }, 400);
     }
+  }
+  const nextOutputMessageId = body.outputMessageId === undefined ? row.outputMessageId : body.outputMessageId;
+  if (body.status === "completed" && !nextOutputMessageId) {
+    return c.json({
+      error: { code: "MISSING_OUTPUT_MESSAGE", message: "completed bridge runs must reference a visible agent output message" },
+    }, 400);
   }
 
   const now = new Date();
@@ -199,6 +223,17 @@ agentRunsRoutes.get("/api/v1/agent-runs/:id", requireAuth, async (c) => {
 type AgentRunRow = typeof agentRuns.$inferSelect;
 type DB = ReturnType<typeof drizzle>;
 
+async function resolveMessageChannelId(
+  db: DB,
+  messageId: string,
+): Promise<string | null> {
+  const row = await db.select({ channelId: messages.channelId })
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1);
+  return row[0]?.channelId ?? null;
+}
+
 async function resolveTaskIdForMessage(
   db: DB,
   channelId: string,
@@ -216,9 +251,11 @@ async function resolveRunCaller(
   input: {
     channelId: string;
     triggerMessageId: string | null;
+    fallbackCallerId: string | null;
+    fallbackCallerType: "human" | "agent" | null;
     fallbackUserId: string;
   },
-): Promise<{ id: string; type: "human" | "agent" }> {
+): Promise<{ id: string | null; type: "human" | "agent" | null }> {
   if (input.triggerMessageId) {
     const rows = await db.select({
       senderId: messages.senderId,
@@ -231,9 +268,27 @@ async function resolveRunCaller(
     if (sender?.senderId && (sender.senderType === "human" || sender.senderType === "agent")) {
       return { id: sender.senderId, type: sender.senderType };
     }
+    return { id: null, type: null };
   }
 
   return { id: input.fallbackUserId, type: "human" };
+}
+
+async function channelMemberExists(
+  db: DB,
+  channelId: string,
+  memberId: string,
+  memberType: "human" | "agent",
+): Promise<boolean> {
+  const row = await db.select({ memberId: channelMembers.memberId })
+    .from(channelMembers)
+    .where(and(
+      eq(channelMembers.channelId, channelId),
+      eq(channelMembers.memberId, memberId),
+      eq(channelMembers.memberType, memberType),
+    ))
+    .limit(1);
+  return row.length > 0;
 }
 
 async function outputMessageBelongsToRun(

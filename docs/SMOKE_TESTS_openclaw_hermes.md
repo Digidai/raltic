@@ -84,10 +84,21 @@ The integration test (TODO: add at `apps/bridge/test/`) should:
 
 ## 4. End-to-end web test
 
+**Precondition:** public and production builds intentionally lock
+OpenClaw/Hermes agent creation until this runbook passes. Do not run
+these steps against normal production without a temporary internal
+verification override or a dedicated local test branch that disables the
+`EXPERIMENTAL_RUNTIME_LOCKED` gate. In the normal public state, verify
+that Create Agent, Edit Agent, and Setup Wizard show the locked runtime
+copy and that direct API POST/PATCH calls return
+`EXPERIMENTAL_RUNTIME_LOCKED`.
+
 1. Run the bridge: `pnpm dev:bridge`
 2. raltic.com → settings → runtimes — expect 4 rows: claude, codex,
-   openclaw, hermes. The two new ones show "Ready" status.
-3. Create a new agent → pick runtime: OpenClaw → save.
+   openclaw, hermes. The two new ones show locked/experimental status
+   unless the internal verification override is active.
+3. With the internal verification override active only: create a new
+   agent → pick runtime: OpenClaw → save.
 4. DM the new agent → send "hello". Reply within ~30s; activity
    feed shows tool/skill events if the agent uses them.
 5. Repeat with runtime: Hermes.

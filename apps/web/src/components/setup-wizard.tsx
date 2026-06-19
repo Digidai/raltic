@@ -2,7 +2,7 @@
 
 import { type ComponentProps, useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, ApiError, type RuntimeId } from "@/lib/api";
+import { api, ApiError, isExperimentalRuntime, type RuntimeId } from "@/lib/api";
 import { getApiOrigin } from "@/lib/auth-client";
 import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
@@ -34,6 +34,10 @@ interface Props {
    *  additional computer. Drives a copy change so we don't pretend the
    *  user is brand-new. */
   hasExistingBridge?: boolean;
+  /** True when a bridge exists but the personal workspace's starter
+   *  agent is still cloud-mode. In that case the wizard should configure
+   *  the existing bridge instead of issuing another key. */
+  needsStarterAgentSetup?: boolean;
   /** Tone + framing of the wizard. "solo" is the brand-new-user path
    *  (default). "invite" reframes step 1 to acknowledge the user just
    *  joined someone else's workspace and explain WHY they still need
@@ -71,15 +75,38 @@ interface ResumeState {
   at: number;
 }
 const RESUME_TTL_MS = 24 * 60 * 60 * 1000;
+const BRIDGE_RUNTIME_IDS = ["claude", "codex", "openclaw", "hermes"] as const satisfies readonly RuntimeId[];
+
+function isBridgeRuntimeId(value: unknown): value is RuntimeId {
+  return (BRIDGE_RUNTIME_IDS as readonly unknown[]).includes(value);
+}
 
 function readResume(serverId: string): ResumeState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.sessionStorage.getItem(RESUME_KEY_PREFIX + serverId);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as ResumeState;
-    if (!parsed?.issuedKeyId || Date.now() - parsed.at > RESUME_TTL_MS) return null;
-    return parsed;
+    const parsed = JSON.parse(raw) as Partial<ResumeState>;
+    if (
+      typeof parsed?.issuedKeyId !== "string" ||
+      parsed.issuedKeyId.length === 0 ||
+      typeof parsed.at !== "number" ||
+      Date.now() - parsed.at > RESUME_TTL_MS
+    ) {
+      clearResume(serverId);
+      return null;
+    }
+    const runtime = isBridgeRuntimeId(parsed.runtime) ? parsed.runtime : undefined;
+    if (runtime && isExperimentalRuntime(runtime)) {
+      clearResume(serverId);
+      return null;
+    }
+    return {
+      issuedKeyId: parsed.issuedKeyId,
+      runtime,
+      keyName: typeof parsed.keyName === "string" ? parsed.keyName : undefined,
+      at: parsed.at,
+    };
   } catch { return null; }
 }
 function writeResume(serverId: string, state: ResumeState): void {
@@ -167,7 +194,7 @@ function runtimeTroubleshooting(runtime: RuntimeId): {
  *   4. Send first workflow message
  */
 export function SetupWizard({
-  serverId, serverSlug, hasExistingBridge = false,
+  serverId, serverSlug, hasExistingBridge = false, needsStarterAgentSetup = false,
   flavor = "solo", inviterWorkspaceName, onDismiss, onBridgeConnected,
 }: Props) {
   const router = useRouter();
@@ -199,6 +226,11 @@ export function SetupWizard({
   const [configuringRuntime, setConfiguringRuntime] = useState(false);
   const [runtimeApplyError, setRuntimeApplyError] = useState<string | null>(null);
   const setRuntimeChoice = useCallback((next: typeof runtime) => {
+    if (isExperimentalRuntime(next)) {
+      setShowAdvancedRuntimes(true);
+      setError("OpenClaw and Hermes are locked until smoke verification completes. Choose Claude Code or Codex for now.");
+      return;
+    }
     setRuntime(next);
     setError(null);
     setRuntimeApplyError(null);
@@ -209,6 +241,8 @@ export function SetupWizard({
   const advancedRuntimeSelected = runtime === "openclaw" || runtime === "hermes";
   const showAdvancedRuntimeChoices = showAdvancedRuntimes || advancedRuntimeSelected;
   const runtimeHelp = runtimeTroubleshooting(runtime);
+  const needsExistingBridgeAgentConfig = hasExistingBridge && needsStarterAgentSetup;
+  const shouldShowRuntimeSelector = !hasExistingBridge || needsExistingBridgeAgentConfig;
   // Per-machine snapshots captured from the bridge's `/connect`.
   // Populated when step 4 fires; refreshed by the step-4 background poll
   // so `codex login` mid-wizard becomes visible within 3s.
@@ -226,10 +260,21 @@ export function SetupWizard({
     setRuntimeApplyError(null);
     setError(null);
 
-    if (hasExistingBridge) {
+    if (isExperimentalRuntime(runtimeForSetup)) {
+      clearResume(serverId);
+      setRuntime("claude");
+      setShowAdvancedRuntimes(true);
+      setRuntimeApplyError("OpenClaw and Hermes are locked until smoke verification completes. Choose Claude Code or Codex for now.");
+      setStep(1);
+      return;
+    }
+
+    if (hasExistingBridge && !needsStarterAgentSetup) {
       setConfiguringRuntime(false);
       clearResume(serverId);
+      setBridgeOnline(true);
       setStep(4);
+      onBridgeConnected?.();
       return;
     }
 
@@ -248,7 +293,9 @@ export function SetupWizard({
         model: defaultModelForRuntime(runtimeForSetup),
       });
       clearResume(serverId);
+      setBridgeOnline(true);
       setStep(4);
+      onBridgeConnected?.();
     } catch (e) {
       setRuntimeApplyError(
         e instanceof ApiError
@@ -260,7 +307,7 @@ export function SetupWizard({
     } finally {
       setConfiguringRuntime(false);
     }
-  }, [hasExistingBridge, serverId]);
+  }, [hasExistingBridge, needsStarterAgentSetup, onBridgeConnected, serverId]);
 
   // ── Resume after refresh: if sessionStorage carries an in-progress
   // key id from this server, validate it server-side BEFORE jumping into
@@ -304,7 +351,6 @@ export function SetupWizard({
           // Already connected. Skip the poll, but still run the same
           // runtime-configuration gate as the fresh-connect path.
           setBridgeOnline(true);
-          onBridgeConnected?.();
           setDetectedMachines(k.machines ?? []);
           setResumed(true);
           setStep(3);
@@ -323,7 +369,7 @@ export function SetupWizard({
       }
     })();
     return () => { cancelled = true; };
-  }, [serverId, hasExistingBridge, finishBridgeSetup, onBridgeConnected]);
+  }, [serverId, hasExistingBridge, finishBridgeSetup]);
   // Step-3 polling state — `pollStartedAtRef` is a ref (not state) so
   // setting it doesn't tear down + recreate the interval. Reviews #1/#2
   // both flagged the original useState version as eating the first poll
@@ -370,7 +416,6 @@ export function SetupWizard({
         }
         if (me.lastUsedAt) {
           setBridgeOnline(true);
-          onBridgeConnected?.();
           // Capture the latest detected machines for this key — wizard
           // step 4 renders a runtime strip from this. Polled every 3s
           // so a `codex login` in user's terminal shows up promptly.
@@ -392,7 +437,7 @@ export function SetupWizard({
     // deps keeps the effect honest if the user happens to change
     // runtime mid-poll (currently impossible from the UI, but the
     // lint contract still applies).
-  }, [issued, resumed, issuedKeyId, bridgeOnline, step, serverId, runtime, finishBridgeSetup, onBridgeConnected]);
+  }, [issued, resumed, issuedKeyId, bridgeOnline, step, serverId, runtime, finishBridgeSetup]);
 
   // ── Discover the seeded Onboarding DM channel id so step 4 can both
   // (a) deep-link the "Open the conversation" button and (b) actively
@@ -535,7 +580,9 @@ export function SetupWizard({
       ? `raltic-bridge setup ${issued}`
       : `raltic-bridge setup ${issued} --server-url ${API_URL}`
     : "";
-  const wizardTitle = hasExistingBridge
+  const wizardTitle = needsExistingBridgeAgentConfig
+    ? "Configure local runtime"
+    : hasExistingBridge
     ? "Connect another local runtime"
     : flavor === "invite"
     ? "Bring YOUR agents into workflows"
@@ -595,11 +642,22 @@ export function SetupWizard({
                 <div className="space-y-4 text-sm">
                   {hasExistingBridge && (
                     <Alert variant="info" className="text-xs">
-                      <AlertTitle>You already have a bridge connected.</AlertTitle>
-                      <AlertDescription>
-                        This will issue a new runtime key for an additional computer. Your existing
-                        key + bridge keep working — agents are leader-elected so you won&apos;t double-reply.
-                      </AlertDescription>
+                      {needsExistingBridgeAgentConfig ? (
+                        <>
+                          <AlertTitle>You already have a bridge connected.</AlertTitle>
+                          <AlertDescription>
+                            Raltic will use that bridge and move the onboarding agent to the runtime you pick. No new key is needed.
+                          </AlertDescription>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTitle>You already have a bridge connected.</AlertTitle>
+                          <AlertDescription>
+                            This will issue a new runtime key for an additional computer. Your existing
+                            key + bridge keep working — agents are leader-elected so you won&apos;t double-reply.
+                          </AlertDescription>
+                        </>
+                      )}
                     </Alert>
                   )}
 
@@ -611,7 +669,7 @@ export function SetupWizard({
                       path); the toggle isn't shown when the user is
                       adding a SECOND computer (their agents already have a
                       runtime set). */}
-                  {!hasExistingBridge && (
+                  {shouldShowRuntimeSelector && (
                     <div>
                       <p className="font-medium">Which runtime should power local workflows?</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
@@ -652,18 +710,20 @@ export function SetupWizard({
                             <RuntimePick
                               id="openclaw"
                               title="OpenClaw"
-                              chip="Advanced"
+                              chip="Locked"
                               chipTone="default"
-                              body="Local-first multi-channel assistant. Install separately; Raltic detects your daemon."
+                              body="Experimental daemon runtime. Locked until the OpenClaw/Hermes smoke runbook passes."
                               installHref="https://github.com/openclaw/openclaw"
+                              disabled
                             />
                             <RuntimePick
                               id="hermes"
                               title="Hermes Agent"
-                              chip="Advanced"
+                              chip="Locked"
                               chipTone="default"
-                              body="Nous Research's self-improving agent with persistent memory + auto skills. Install separately."
+                              body="Experimental daemon runtime. Locked until the OpenClaw/Hermes smoke runbook passes."
                               installHref="https://hermes-agent.nousresearch.com/"
+                              disabled
                             />
                           </div>
                         )}
@@ -728,8 +788,18 @@ export function SetupWizard({
                     </CardPanel>
                   </Card>
 
-                  <Button onClick={() => setStep(2)} className="mt-2">
-                    {hasExistingBridge ? "Issue a new runtime key" : "Continue"}
+                  <Button
+                    onClick={() => {
+                      if (needsExistingBridgeAgentConfig) {
+                        void finishBridgeSetup(runtime);
+                        return;
+                      }
+                      setStep(2);
+                    }}
+                    loading={needsExistingBridgeAgentConfig && configuringRuntime}
+                    className="mt-2"
+                  >
+                    {needsExistingBridgeAgentConfig ? "Use existing bridge" : hasExistingBridge ? "Issue a new runtime key" : "Continue"}
                   </Button>
                 </div>
               )}
@@ -1094,7 +1164,7 @@ function Step({ n, active, done, title }: { n: number; active: boolean; done: bo
  *  Card-style instead of a tight radio so the body copy + chip explain
  *  the trade-off inline rather than burying it in a tooltip. */
 function RuntimePick({
-  id, title, chip, chipTone, body, installHref,
+  id, title, chip, chipTone, body, installHref, disabled = false,
 }: {
   id: string;
   title: string;
@@ -1102,12 +1172,14 @@ function RuntimePick({
   chipTone: RuntimeChipTone;
   body: string;
   installHref: string;
+  disabled?: boolean;
 }) {
   return (
     <Radio
       value={id}
+      isDisabled={disabled}
       controlClassName="mt-0.5"
-      className="h-auto p-3 text-left hover:border-foreground/20"
+      className={cn("h-auto p-3 text-left hover:border-foreground/20", disabled && "opacity-75")}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{title}</span>

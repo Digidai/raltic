@@ -10,8 +10,32 @@ type MarketingRoute = {
 
 const marketingRoutes: MarketingRoute[] = [
   {
+    path: "/workflows",
+    heading: /AI agent workflows/i,
+  },
+  {
+    path: "/workflows/customer-risk",
+    heading: /AI customer-risk workflow/i,
+    headingSelector: "h1",
+  },
+  {
+    path: "/workflows/launch-readiness",
+    heading: /AI launch readiness workflow/i,
+    headingSelector: "h1",
+  },
+  {
+    path: "/workflows/research-synthesis",
+    heading: /AI research synthesis workflow/i,
+    headingSelector: "h1",
+  },
+  {
+    path: "/workflows/code-review",
+    heading: /Local AI code review workflow/i,
+    headingSelector: "h1",
+  },
+  {
     path: "/runtimes",
-    heading: /Four agent runtimes|One chat surface/i,
+    heading: /Verified bridge runtimes|Experimental daemons/i,
   },
   {
     path: "/runtimes/claude",
@@ -119,6 +143,20 @@ test.describe("marketing public access", () => {
     expect(metrics.firstSection!.right).toBeCloseTo(metrics.viewportWidth, 1);
   });
 
+  test("verified runtime pages preserve local-runtime signup intent", async ({ page }) => {
+    for (const runtimePath of ["/runtimes/claude", "/runtimes/codex"]) {
+      await page.goto(runtimePath, { waitUntil: "domcontentloaded" });
+
+      const ctas = page.getByRole("link", { name: /Connect this runtime/i });
+      await expect(ctas.first()).toBeVisible();
+      const count = await ctas.count();
+      expect(count, `${runtimePath} should expose runtime-intent CTAs`).toBeGreaterThan(0);
+      for (let i = 0; i < count; i++) {
+        await expect(ctas.nth(i)).toHaveAttribute("href", "/signup?intent=connect-runtime");
+      }
+    }
+  });
+
   test("/404 uses the token brand monogram and avoids mobile horizontal overflow", async ({ page }) => {
     const response = await page.goto("/connectors/missing-heroui-brand-check", { waitUntil: "domcontentloaded" });
 
@@ -175,26 +213,88 @@ test.describe("marketing public access", () => {
     const pillClass = await heroPill.getAttribute("class");
     expect(pillClass ?? "", "Hermes detail pill should not use danger/rose classes").not.toMatch(/danger|rose/);
 
-    const installHint = page.getByText(/Then sign up and pick Hermes/i);
+    const installHint = page.getByText(/This integration is visible for evaluation/i);
     await expect(installHint).toBeVisible();
     const hintMetrics = await installHint.evaluate((el) => {
-      const runtimeName = el.querySelector("span");
       const section = el.closest("section");
-      const runtimeStyle = runtimeName instanceof HTMLElement ? getComputedStyle(runtimeName) : null;
+      const hintStyle = getComputedStyle(el);
       const sectionStyle = section instanceof HTMLElement ? getComputedStyle(section) : null;
       return {
-        runtimeName: runtimeName?.textContent ?? "",
-        runtimeColor: runtimeStyle?.color ?? "",
+        hintText: el.textContent ?? "",
+        hintColor: hintStyle.color,
         sectionBackground: sectionStyle?.backgroundColor ?? "",
       };
     });
-    const foreground = parseRgb(hintMetrics.runtimeColor);
+    const foreground = parseRgb(hintMetrics.hintColor);
     const background = parseRgb(hintMetrics.sectionBackground);
-    expect(hintMetrics.runtimeName).toBe("Hermes");
+    expect(hintMetrics.hintText).toContain("agent creation is locked");
     expect(
       foreground && background ? contrast(foreground, background) : 0,
-      `install hint runtime name contrast ${JSON.stringify(hintMetrics)}`,
+      `install hint contrast ${JSON.stringify(hintMetrics)}`,
     ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("/runtimes experimental detail pages show locked evaluation copy", async ({ page }) => {
+    for (const runtimePath of ["/runtimes/openclaw", "/runtimes/hermes"]) {
+      await page.goto(runtimePath, { waitUntil: "domcontentloaded" });
+      await expect(page.getByText("Experimental runtime.")).toBeVisible();
+      await expect(page.getByText(/agent creation is locked/i)).toBeVisible();
+      await expect(page.getByText(/not production-critical work/i)).toBeVisible();
+    }
+  });
+
+  test("SEO discovery files expose indexable workflow pages and AI crawler guidance", async ({ request }) => {
+    const sitemap = await request.get("/sitemap.xml");
+    expect(sitemap.status()).toBe(200);
+    const sitemapText = await sitemap.text();
+    for (const path of [
+      "/workflows",
+      "/workflows/customer-risk",
+      "/workflows/launch-readiness",
+      "/workflows/research-synthesis",
+      "/workflows/code-review",
+    ]) {
+      expect(sitemapText).toContain(`https://raltic.com${path}`);
+    }
+    expect(sitemapText).not.toContain("https://raltic.com/teams");
+    expect(sitemapText).not.toContain("https://raltic.com/runtimes/openclaw");
+    expect(sitemapText).not.toContain("https://raltic.com/runtimes/hermes");
+
+    const robots = await request.get("/robots.txt");
+    expect(robots.status()).toBe(200);
+    const robotsText = await robots.text();
+    expect(robotsText).toContain("OAI-SearchBot");
+    expect(robotsText).toContain("Claude-SearchBot");
+    expect(robotsText).toContain("Disallow: /s/");
+    expect(robotsText).toContain("Sitemap: https://raltic.com/sitemap.xml");
+
+    const llms = await request.get("/llms.txt");
+    expect(llms.status()).toBe(200);
+    expect(llms.headers()["content-type"]).toContain("text/plain");
+    const llmsText = await llms.text();
+    expect(llmsText).toContain("# Raltic");
+    expect(llmsText).toContain("https://raltic.com/workflows/code-review");
+    expect(llmsText).toContain("Claude Code and OpenAI Codex are verified bridge runtimes");
+  });
+
+  test("workflow detail pages expose signup CTA, structured data, and mobile-safe layout", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/workflows/code-review", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByRole("link", { name: /Start this workflow free/i }).first()).toHaveAttribute("href", "/signup");
+    const jsonLd = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
+      scripts.map((script) => script.textContent ?? "").join("\n"),
+    );
+    expect(jsonLd).toContain("FAQPage");
+    expect(jsonLd).toContain("HowTo");
+    expect(jsonLd).toContain("Local AI code review workflow");
+
+    const metrics = await page.evaluate(() => ({
+      bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
+      documentOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
+    }));
+    expect(metrics.bodyOverflowX).toBe(false);
+    expect(metrics.documentOverflowX).toBe(false);
   });
 
   test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {

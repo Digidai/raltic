@@ -199,4 +199,64 @@ describe("PATCH /api/v1/agents/:id runtime mode", () => {
     expect(body.error.code).toBe("INVALID_RUNTIME_MODEL");
     expect(body.error.message).toContain("runtime \"claude\"");
   });
+
+  it("rejects OpenClaw and Hermes bridge runtime patches until smoke verification passes", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const server = await seedServer(owner);
+    const agent = await seedAgent(server, owner);
+
+    await db()
+      .update(schema.agents)
+      .set({ runtimeMode: "bridge", runtime: "claude", model: "sonnet" })
+      .where(eq(schema.agents.id, agent.id));
+
+    for (const runtime of ["openclaw", "hermes"] as const) {
+      const res = await request(app as never, `https://test.local/api/v1/agents/${agent.id}`, {
+        method: "PATCH",
+        headers: {
+          authorization: await userBearer(owner),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          runtimeMode: "bridge",
+          runtime,
+          model: "auto",
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json() as { error: { code: string; message: string } };
+      expect(body.error.code).toBe("EXPERIMENTAL_RUNTIME_LOCKED");
+      expect(body.error.message).toContain("smoke-test runbook");
+    }
+  });
+});
+
+describe("POST /api/v1/agents runtime validation", () => {
+  it("rejects OpenClaw and Hermes bridge agents until smoke verification passes", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const server = await seedServer(owner);
+
+    for (const runtime of ["openclaw", "hermes"] as const) {
+      const res = await request(app as never, "https://test.local/api/v1/agents", {
+        method: "POST",
+        headers: {
+          authorization: await userBearer(owner),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          serverId: server.id,
+          name: `${runtime}-agent`,
+          displayName: `${runtime} agent`,
+          runtimeMode: "bridge",
+          runtime,
+          model: "auto",
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const body = await res.json() as { error: { code: string; message: string } };
+      expect(body.error.code).toBe("EXPERIMENTAL_RUNTIME_LOCKED");
+    }
+  });
 });

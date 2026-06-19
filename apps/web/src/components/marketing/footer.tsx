@@ -42,6 +42,7 @@ export function MarketingFooter({ lead, leadId }: MarketingFooterProps = {}) {
         </div>
         <FooterCol label="Product" links={[
           { label: "Home", href: "/" },
+          { label: "Workflows", href: "/workflows" },
           { label: "Runtimes", href: "/runtimes" },
           { label: "Connectors", href: "/connectors" },
           { label: "Desktop beta", href: "/desktop" },

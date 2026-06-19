@@ -1,4 +1,33 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/seo";
+
+const PUBLIC_DISALLOW = [
+  "/api/",
+  "/desktop/",
+  "/s/",
+  "/invite/",
+  "/verify-email",
+  "/reset-password",
+  // /teams is NOINDEX (waitlist-only) per codex MED-6 until
+  // P4 billing ships.
+  "/teams",
+  // OpenClaw + Hermes runtime pages are NOINDEX until smoke
+  // verification completes (codex review HIGH-2). Their
+  // page.tsx also carries `robots: { index: false }` for
+  // belt-and-braces.
+  "/runtimes/openclaw",
+  "/runtimes/hermes",
+];
+
+const SEARCH_AND_AI_USER_AGENTS = [
+  "Googlebot",
+  "Bingbot",
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "PerplexityBot",
+  "ClaudeBot",
+  "Claude-SearchBot",
+];
 
 /**
  * Robots policy — served at /robots.txt.
@@ -19,28 +48,17 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
+        userAgent: SEARCH_AND_AI_USER_AGENTS,
+        allow: "/",
+        disallow: PUBLIC_DISALLOW,
+      },
+      {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/desktop/",
-          "/s/",
-          "/invite/",
-          "/verify-email",
-          "/reset-password",
-          // /teams is NOINDEX (waitlist-only) per codex MED-6 until
-          // P4 billing ships.
-          "/teams",
-          // OpenClaw + Hermes runtime pages are NOINDEX until smoke
-          // verification completes (codex review HIGH-2). Their
-          // page.tsx also carries `robots: { index: false }` for
-          // belt-and-braces.
-          "/runtimes/openclaw",
-          "/runtimes/hermes",
-        ],
+        disallow: PUBLIC_DISALLOW,
       },
     ],
-    sitemap: "https://raltic.com/sitemap.xml",
-    host: "https://raltic.com",
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

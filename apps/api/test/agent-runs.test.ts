@@ -87,6 +87,33 @@ async function seedTaskMessage(input: {
   return { id, messageId };
 }
 
+async function seedMessage(input: {
+  channelId: string;
+  senderId: string;
+  senderType: "human" | "agent";
+  content?: string;
+}): Promise<string> {
+  const id = crypto.randomUUID();
+  const now = new Date();
+  await db().insert(schema.messages).values({
+    id,
+    channelId: input.channelId,
+    senderId: input.senderId,
+    senderType: input.senderType,
+    content: input.content ?? "message",
+    seq: 99,
+    threadParentId: null,
+    createdAt: now,
+    updatedAt: now,
+    editedAt: null,
+    deletedAt: null,
+    vectorIndexedAt: null,
+    pinnedAt: null,
+    pinnedBy: null,
+  });
+  return id;
+}
+
 describe("GET /api/v1/agent-runs", () => {
   it("lists only runs in channels the subject can read", async () => {
     const owner = await seedUser({ name: "Owner" });
@@ -379,6 +406,174 @@ describe("GET /api/v1/agent-runs", () => {
     const [stored] = await db().select().from(schema.agentRuns).where(eq(schema.agentRuns.id, createdBody.run.id)).limit(1);
     expect(stored.error).toBe(failedBody.run.error);
     expect(stored.metadata).toBeNull();
+  });
+
+  it("rejects triggerMessageId values that belong to another channel", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const channel = await seedChannel(srv, "public", [owner]);
+    const otherChannel = await seedChannel(srv, "public", [owner]);
+    const agent = await seedAgent(srv, owner);
+    await db().insert(schema.channelMembers).values({
+      channelId: channel.id,
+      memberId: agent.id,
+      memberType: "agent",
+      joinedAt: new Date(),
+      lastReadSeq: 0,
+    });
+    const otherMessageId = await seedMessage({
+      channelId: otherChannel.id,
+      senderId: owner.id,
+      senderType: "human",
+      content: "wrong channel trigger",
+    });
+    const key = await bridgeKey(owner, srv);
+    const connected = await request(app as never, "https://test.local/api/v1/bridge/connect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    expect(connected.status).toBe(200);
+    const { token } = await connected.json() as { token: string };
+
+    const res = await request(app as never, "https://test.local/api/v1/agent-runs", {
+      method: "POST",
+      headers: { authorization: `Bearer sy_bridge_${token}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        channelId: channel.id,
+        agentId: agent.id,
+        source: "channel_message",
+        status: "queued",
+        triggerMessageId: otherMessageId,
+        inputPreview: "please do the work",
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe("INVALID_TRIGGER_MESSAGE");
+  });
+
+  it("accepts bridge output messages from the same channel and same agent", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const channel = await seedChannel(srv, "public", [owner]);
+    const agent = await seedAgent(srv, owner);
+    await db().insert(schema.channelMembers).values({
+      channelId: channel.id,
+      memberId: agent.id,
+      memberType: "agent",
+      joinedAt: new Date(),
+      lastReadSeq: 0,
+    });
+    const key = await bridgeKey(owner, srv);
+    const connected = await request(app as never, "https://test.local/api/v1/bridge/connect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    expect(connected.status).toBe(200);
+    const { token } = await connected.json() as { token: string };
+    const auth = `Bearer sy_bridge_${token}`;
+    const created = await request(app as never, "https://test.local/api/v1/agent-runs", {
+      method: "POST",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({
+        channelId: channel.id,
+        agentId: agent.id,
+        source: "channel_message",
+        status: "queued",
+        inputPreview: "please do the work",
+      }),
+    });
+    expect(created.status).toBe(200);
+    const createdBody = await created.json() as { run: { id: string } };
+    const outputMessageId = await seedMessage({
+      channelId: channel.id,
+      senderId: agent.id,
+      senderType: "agent",
+      content: "done",
+    });
+
+    const patched = await request(app as never, `https://test.local/api/v1/agent-runs/${createdBody.run.id}`, {
+      method: "PATCH",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({
+        status: "completed",
+        outputMessageId,
+      }),
+    });
+    expect(patched.status).toBe(200);
+    const body = await patched.json() as { run: { status: string; outputMessageId: string | null } };
+    expect(body.run.status).toBe("completed");
+    expect(body.run.outputMessageId).toBe(outputMessageId);
+  });
+
+  it("requires a visible output message before completing a bridge run", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const channel = await seedChannel(srv, "public", [owner]);
+    const agent = await seedAgent(srv, owner);
+    await db().insert(schema.channelMembers).values({
+      channelId: channel.id,
+      memberId: agent.id,
+      memberType: "agent",
+      joinedAt: new Date(),
+      lastReadSeq: 0,
+    });
+    const key = await bridgeKey(owner, srv);
+    const connected = await request(app as never, "https://test.local/api/v1/bridge/connect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    expect(connected.status).toBe(200);
+    const { token } = await connected.json() as { token: string };
+    const auth = `Bearer sy_bridge_${token}`;
+    const created = await request(app as never, "https://test.local/api/v1/agent-runs", {
+      method: "POST",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({
+        channelId: channel.id,
+        agentId: agent.id,
+        source: "channel_message",
+        status: "queued",
+        inputPreview: "please do the work",
+      }),
+    });
+    expect(created.status).toBe(200);
+    const createdBody = await created.json() as { run: { id: string } };
+
+    const completedWithoutOutput = await request(app as never, `https://test.local/api/v1/agent-runs/${createdBody.run.id}`, {
+      method: "PATCH",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ status: "completed" }),
+    });
+    expect(completedWithoutOutput.status).toBe(400);
+    const missingBody = await completedWithoutOutput.json() as { error: { code: string } };
+    expect(missingBody.error.code).toBe("MISSING_OUTPUT_MESSAGE");
+
+    const outputMessageId = await seedMessage({
+      channelId: channel.id,
+      senderId: agent.id,
+      senderType: "agent",
+      content: "done",
+    });
+    const runningWithOutput = await request(app as never, `https://test.local/api/v1/agent-runs/${createdBody.run.id}`, {
+      method: "PATCH",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ status: "running", outputMessageId }),
+    });
+    expect(runningWithOutput.status).toBe(200);
+
+    const completedWithExistingOutput = await request(app as never, `https://test.local/api/v1/agent-runs/${createdBody.run.id}`, {
+      method: "PATCH",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ status: "completed" }),
+    });
+    expect(completedWithExistingOutput.status).toBe(200);
+    const body = await completedWithExistingOutput.json() as { run: { status: string; outputMessageId: string | null } };
+    expect(body.run.status).toBe("completed");
+    expect(body.run.outputMessageId).toBe(outputMessageId);
   });
 
   it("rejects bridge output messages from another channel", async () => {
@@ -691,6 +886,94 @@ describe("GET /api/v1/agent-runs", () => {
     const body = await created.json() as { run: { callerId: string | null; callerType: string | null } };
     expect(body.run.callerId).toBe(owner.id);
     expect(body.run.callerType).toBe("human");
+  });
+
+  it("records an unknown caller when the trigger message has not flushed yet", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const caller = await seedUser({ name: "Requester" });
+    const srv = await seedServer(owner);
+    await db().insert(schema.serverMembers).values({
+      serverId: srv.id,
+      memberId: caller.id,
+      memberType: "human",
+      role: "member",
+      joinedAt: new Date(),
+    });
+    const channel = await seedChannel(srv, "public", [owner, caller]);
+    const agent = await seedAgent(srv, owner);
+    await db().insert(schema.channelMembers).values({
+      channelId: channel.id,
+      memberId: agent.id,
+      memberType: "agent",
+      joinedAt: new Date(),
+      lastReadSeq: 0,
+    });
+    const key = await bridgeKey(owner, srv);
+    const connected = await request(app as never, "https://test.local/api/v1/bridge/connect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    expect(connected.status).toBe(200);
+    const { token } = await connected.json() as { token: string };
+
+    const created = await request(app as never, "https://test.local/api/v1/agent-runs", {
+      method: "POST",
+      headers: { authorization: `Bearer sy_bridge_${token}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        channelId: channel.id,
+        agentId: agent.id,
+        source: "channel_message",
+        status: "queued",
+        triggerMessageId: crypto.randomUUID(),
+        callerId: caller.id,
+        callerType: "human",
+      }),
+    });
+    expect(created.status).toBe(200);
+    const body = await created.json() as { run: { callerId: string | null; callerType: string | null } };
+    expect(body.run.callerId).toBeNull();
+    expect(body.run.callerType).toBeNull();
+  });
+
+  it("rejects bridge-provided caller for an unflushed trigger when the caller is not in the channel", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const outsider = await seedUser({ name: "Outsider" });
+    const srv = await seedServer(owner);
+    const channel = await seedChannel(srv, "public", [owner]);
+    const agent = await seedAgent(srv, owner);
+    await db().insert(schema.channelMembers).values({
+      channelId: channel.id,
+      memberId: agent.id,
+      memberType: "agent",
+      joinedAt: new Date(),
+      lastReadSeq: 0,
+    });
+    const key = await bridgeKey(owner, srv);
+    const connected = await request(app as never, "https://test.local/api/v1/bridge/connect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    expect(connected.status).toBe(200);
+    const { token } = await connected.json() as { token: string };
+
+    const created = await request(app as never, "https://test.local/api/v1/agent-runs", {
+      method: "POST",
+      headers: { authorization: `Bearer sy_bridge_${token}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        channelId: channel.id,
+        agentId: agent.id,
+        source: "channel_message",
+        status: "queued",
+        triggerMessageId: crypto.randomUUID(),
+        callerId: outsider.id,
+        callerType: "human",
+      }),
+    });
+    expect(created.status).toBe(400);
+    const body = await created.json() as { error: { code: string } };
+    expect(body.error.code).toBe("INVALID_RUN_CALLER");
   });
 });
 

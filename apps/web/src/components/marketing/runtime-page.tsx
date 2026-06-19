@@ -6,6 +6,7 @@ import { SectionHeader } from "./section-header";
 import type { RuntimeDoc } from "./runtime-data";
 import { MarketingFaqList } from "./faq-list";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
+import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
 
 /** Per-accent class lookups — kept inline (vs. dynamic class names) so
  *  Tailwind's purger sees the strings at build time. */
@@ -37,6 +38,14 @@ const LIGHT_SECTION = "bg-[var(--white)] text-[var(--eclipse)]";
 const LIGHT_SURFACE = "border-border bg-[var(--surface-secondary)]";
 const LIGHT_MUTED = "text-[color-mix(in_srgb,var(--eclipse)_64%,var(--white)_36%)]";
 const LIGHT_BODY = "text-[var(--eclipse)]";
+
+function runtimeSignupHref(doc: RuntimeDoc): string {
+  return doc.verification === "verified" ? CONNECT_RUNTIME_SIGNUP_HREF : "/signup";
+}
+
+function runtimeCtaLabel(doc: RuntimeDoc): string {
+  return doc.verification === "verified" ? "Connect this runtime" : "Join private beta";
+}
 
 /**
  * Shared template for /runtimes/[id]. Renders the per-runtime hero,
@@ -118,8 +127,8 @@ function Hero({ doc }: { doc: RuntimeDoc }) {
           </div>
         )}
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <MarketingButton href="/signup">
-            Start free <ArrowRight className="h-4 w-4" />
+          <MarketingButton href={runtimeSignupHref(doc)}>
+            {runtimeCtaLabel(doc)} <ArrowRight className="h-4 w-4" />
           </MarketingButton>
           <MarketingButton href="/runtimes" variant="secondary">
             See all runtimes
@@ -152,7 +161,15 @@ function InstallStrip({ doc }: { doc: RuntimeDoc }) {
             </CardPanel>
           </Card>
           <p className={`mt-4 text-center text-[12px] ${LIGHT_MUTED}`}>
-            Then sign up and pick <span className={`font-medium ${LIGHT_BODY}`}>{doc.shortName}</span> when creating your first agent.
+            {doc.verification === "experimental" ? (
+              <>
+                This integration is visible for evaluation, but agent creation is locked until the OpenClaw/Hermes smoke verification passes.
+              </>
+            ) : (
+              <>
+                Then sign up and pick <span className={`font-medium ${LIGHT_BODY}`}>{doc.shortName}</span> when creating your first agent.
+              </>
+            )}
           </p>
         </div>
       </CardPanel>
@@ -209,14 +226,18 @@ function Cta({ doc }: { doc: RuntimeDoc }) {
     <Card render={<section className={DARK_SECTION} />} className="w-full rounded-none border-0 shadow-none">
       <CardPanel className="mx-auto max-w-2xl px-6 py-24 text-center">
         <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
-          Bring {doc.shortName} into a workflow room.
+          {doc.verification === "experimental"
+            ? `${doc.shortName} is visible for evaluation.`
+            : `Bring ${doc.shortName} into a workflow room.`}
         </h2>
         <p className={`mt-4 ${DARK_MUTED}`}>
-          Free during private beta. {doc.lifecycle === "external_daemon" ? "Your daemon stays yours." : "Your CLI auth stays yours."} We never see your keys.
+          {doc.verification === "experimental"
+            ? "Agent creation stays locked until the OpenClaw/Hermes smoke verification passes. Your daemon stays yours; we never see your keys."
+            : `Free during private beta. ${doc.lifecycle === "external_daemon" ? "Your daemon stays yours." : "Your CLI auth stays yours."} We never see your keys.`}
         </p>
         <div className="mt-7 flex justify-center">
-          <MarketingButton href="/signup">
-            Start free <ArrowRight className="h-4 w-4" />
+          <MarketingButton href={runtimeSignupHref(doc)}>
+            {runtimeCtaLabel(doc)} <ArrowRight className="h-4 w-4" />
           </MarketingButton>
         </div>
       </CardPanel>

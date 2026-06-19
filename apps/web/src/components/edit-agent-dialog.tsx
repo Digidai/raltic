@@ -12,7 +12,8 @@ import { Textarea } from "@/components/heroui-pro/textarea";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
 import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
-import { api, ApiError, CLOUD_MODELS, RUNTIME_LABEL, RUNTIME_MODELS, type Agent, type RuntimeId } from "@/lib/api";
+import { Chip } from "@/components/heroui-pro/chip";
+import { api, ApiError, CLOUD_MODELS, RUNTIME_LABEL, RUNTIME_MODELS, isExperimentalRuntime, type Agent, type RuntimeId } from "@/lib/api";
 import { GeneratedAvatar } from "./generated-avatar";
 import { randomAvatarSeed } from "@/lib/avatar";
 import { Shuffle } from "lucide-react";
@@ -61,6 +62,7 @@ export function EditAgentDialog({ agent, open, onOpenChange, onSaved }: Props) {
   }, [agent, open]);
 
   function pickRuntime(r: RuntimeId) {
+    if (isExperimentalRuntime(r)) return;
     setRuntime(r);
     if (!RUNTIME_MODELS[r].includes(model)) setModel(RUNTIME_MODELS[r][0]);
   }
@@ -71,6 +73,10 @@ export function EditAgentDialog({ agent, open, onOpenChange, onSaved }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!agent) return;
+    if (!isCloud && isExperimentalRuntime(runtime)) {
+      setError("OpenClaw and Hermes are locked until smoke verification completes. Pick Claude Code or Codex before saving.");
+      return;
+    }
     setLoading(true); setError(null);
     try {
       await api.updateAgent(agent.id, {
@@ -153,18 +159,32 @@ export function EditAgentDialog({ agent, open, onOpenChange, onSaved }: Props) {
                       onValueChange={(next) => pickRuntime(next as RuntimeId)}
                       className="grid gap-2 sm:grid-cols-2"
                     >
-                      {(["claude", "codex", "openclaw", "hermes"] as RuntimeId[]).map((r) => (
-                        <Radio
-                          key={r}
-                          value={r}
-                          controlClassName="mt-1"
-                        >
-                          <div className="font-medium">{RUNTIME_LABEL[r]}</div>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            {RUNTIME_MODELS[r].join(" / ")}
-                          </p>
-                        </Radio>
-                      ))}
+                      {(["claude", "codex", "openclaw", "hermes"] as RuntimeId[]).map((r) => {
+                        const experimentalLocked = isExperimentalRuntime(r);
+                        return (
+                          <Radio
+                            key={r}
+                            value={r}
+                            isDisabled={experimentalLocked}
+                            controlClassName="mt-1"
+                            className={experimentalLocked ? "opacity-75" : undefined}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-medium">{RUNTIME_LABEL[r]}</span>
+                              {experimentalLocked && (
+                                <Chip size="sm" variant="soft" color="default" className="shrink-0 text-[10px]">
+                                  locked
+                                </Chip>
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                              {experimentalLocked
+                                ? "Experimental runtime. Locked until the OpenClaw/Hermes smoke runbook passes."
+                                : RUNTIME_MODELS[r].join(" / ")}
+                            </p>
+                          </Radio>
+                        );
+                      })}
                     </RadioGroup>
                   </Field>
                 )}

@@ -28,6 +28,7 @@ const PUBLIC_PATHS = [
 //
 // Prefix match (startsWith) — so /runtimes ALSO covers /runtimes/claude etc.
 const PUBLIC_MARKETING = [
+  "/workflows",               // workflow index + /workflows/{starter}
   "/runtimes",                // hub + /runtimes/{claude,codex,openclaw,hermes}
   "/indie",                   // indie-dev landing
   "/teams",                   // mid-market waitlist (noindex but still public)
@@ -44,7 +45,7 @@ const PUBLIC_MARKETING = [
 // SEO / crawler files served as-is. Without this carve-out, the middleware
 // redirects /sitemap.xml + /robots.txt to /login, breaking Google Search
 // Console submission + every crawler's robots discovery.
-const PUBLIC_FILES = new Set(["/sitemap.xml", "/robots.txt", "/favicon.ico"]);
+const PUBLIC_FILES = new Set(["/sitemap.xml", "/robots.txt", "/llms.txt", "/favicon.ico"]);
 
 // Next.js App Router icon / OG conventions. Each of these is generated
 // by a co-located file (icon.tsx, apple-icon.tsx, opengraph-image.tsx)

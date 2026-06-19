@@ -334,7 +334,7 @@ channelsRoutes.post("/api/v1/channels/:id/join", requireAuth, requireUser, async
   // Notify gateway so the user's sidebar picks up the new channel
   // without waiting for a refresh.
   void notifyGateway(c.env, subject.userId, {
-    v: 1, t: "member_add", channelId, memberId: subject.userId, memberType: "human" as const,
+    v: 1, t: "member_add", channelId, channelType: ch.type, memberId: subject.userId, memberType: "human" as const,
   }).catch(() => { /* swallow — channel still appears on next refresh */ });
   return c.json({ ok: true, alreadyMember: false });
 });
@@ -562,10 +562,10 @@ channelsRoutes.post("/api/v1/channels/:id/members", requireAuth, requireUser, as
   //
   // Build one notification per (recipient, event) pair: a human gets
   // an add for themselves; an agent's owner gets an add for the agent.
-  type Notify = { userId: string; ev: { v: 1; t: "member_add"; channelId: string; memberId: string; memberType: "human" | "agent" } };
+  type Notify = { userId: string; ev: { v: 1; t: "member_add"; channelId: string; channelType: "public" | "private" | "dm"; memberId: string; memberType: "human" | "agent" } };
   const notifs: Notify[] = newHumans.map((h) => ({
     userId: h,
-    ev: { v: 1, t: "member_add", channelId, memberId: h, memberType: "human" },
+    ev: { v: 1, t: "member_add", channelId, channelType: ch.type, memberId: h, memberType: "human" },
   }));
   if (newAgents.length > 0) {
     const ownerRows = await db.select({ id: agents.id, ownerId: agents.ownerId }).from(agents)
@@ -573,7 +573,7 @@ channelsRoutes.post("/api/v1/channels/:id/members", requireAuth, requireUser, as
     for (const r of ownerRows) {
       notifs.push({
         userId: r.ownerId,
-        ev: { v: 1, t: "member_add", channelId, memberId: r.id, memberType: "agent" },
+        ev: { v: 1, t: "member_add", channelId, channelType: ch.type, memberId: r.id, memberType: "agent" },
       });
     }
   }
@@ -587,7 +587,7 @@ channelsRoutes.post("/api/v1/channels/:id/members", requireAuth, requireUser, as
     // trigger. Cheaper than inventing a new "roster_changed" event.
     notifs.push({
       userId: subject.userId,
-      ev: { v: 1, t: "member_add", channelId, memberId: subject.userId, memberType: "human" },
+      ev: { v: 1, t: "member_add", channelId, channelType: ch.type, memberId: subject.userId, memberType: "human" },
     });
   }
   const results = await Promise.allSettled(notifs.map((n) =>
@@ -960,12 +960,12 @@ channelsRoutes.post("/api/v1/channels", requireAuth, async (c) => {
   // pick up the new channel without waiting for the next token refresh.
   const notifications: Array<{
     userId: string;
-    ev: { v: 1; t: "member_add"; channelId: string; memberId: string; memberType: "human" | "agent" };
+    ev: { v: 1; t: "member_add"; channelId: string; channelType: "public" | "private" | "dm"; memberId: string; memberType: "human" | "agent" };
   }> = [];
   for (const uid of new Set([subject.userId, ...(body.initialMemberIds ?? [])])) {
     notifications.push({
       userId: uid,
-      ev: { v: 1, t: "member_add", channelId: id, memberId: uid, memberType: "human" },
+      ev: { v: 1, t: "member_add", channelId: id, channelType: body.type, memberId: uid, memberType: "human" },
     });
   }
   // Each agent's owner also needs an agent membership event so local bridges
@@ -976,7 +976,7 @@ channelsRoutes.post("/api/v1/channels", requireAuth, async (c) => {
     for (const r of agentRows) {
       notifications.push({
         userId: r.ownerId,
-        ev: { v: 1, t: "member_add", channelId: id, memberId: r.id, memberType: "agent" },
+        ev: { v: 1, t: "member_add", channelId: id, channelType: body.type, memberId: r.id, memberType: "agent" },
       });
     }
   }
@@ -1161,11 +1161,11 @@ channelsRoutes.post("/api/v1/dm", requireAuth, requireUser, async (c) => {
   // (if they're an agent owner) see the new channel immediately.
   void Promise.allSettled([
     notifyGateway(c.env, body.peerType === "human" ? body.peerId : subject.userId, {
-      v: 1, t: "member_add", channelId: keeperId, memberId: subject.userId, memberType: "human" as const,
+      v: 1, t: "member_add", channelId: keeperId, channelType: "dm" as const, memberId: subject.userId, memberType: "human" as const,
     }),
     body.peerType === "agent" && peerAgentOwnerId
       ? notifyGateway(c.env, peerAgentOwnerId, {
-        v: 1, t: "member_add", channelId: keeperId, memberId: body.peerId, memberType: "agent" as const,
+        v: 1, t: "member_add", channelId: keeperId, channelType: "dm" as const, memberId: body.peerId, memberType: "agent" as const,
       })
       : Promise.resolve(),
   ]).catch(() => { /* swallow — channel still exists on next refresh */ });

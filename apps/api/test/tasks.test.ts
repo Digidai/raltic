@@ -493,4 +493,129 @@ describe("PATCH /api/v1/tasks/:ref", () => {
     const hiddenRows = await db().select().from(schema.tasks).where(eq(schema.tasks.id, hidden.id)).limit(1);
     expect(hiddenRows[0].status).toBe("todo");
   });
+
+  it("does not let many inaccessible same-number tasks crowd out a bridge-manageable task", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const agent = await seedAgent(srv, owner);
+    for (let i = 0; i < 25; i++) {
+      const hiddenChannel = await seedChannel(srv, "public", [owner]);
+      await seedTask(hiddenChannel.id, owner.id, 9);
+    }
+    const channel = await seedChannel(srv, "public", [owner]);
+    await db().insert(schema.channelMembers).values({
+      channelId: channel.id,
+      memberId: agent.id,
+      memberType: "agent",
+      joinedAt: new Date(),
+      lastReadSeq: 0,
+    });
+    const visible = await seedTask(channel.id, owner.id, 9);
+    const key = await bridgeKey(owner, srv);
+    const connected = await request(app as never, "https://test.local/api/v1/bridge/connect", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    expect(connected.status).toBe(200);
+    const { token } = await connected.json() as { token: string };
+
+    const res = await request(app as never, "https://test.local/api/v1/tasks/9", {
+      method: "PATCH",
+      headers: { authorization: `Bearer sy_bridge_${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ status: "in_progress" }),
+    });
+    expect(res.status).toBe(200);
+    const visibleRows = await db().select().from(schema.tasks).where(eq(schema.tasks.id, visible.id)).limit(1);
+    expect(visibleRows[0].status).toBe("in_progress");
+  });
+
+  it("hides exact task ids in unreadable channels but returns forbidden for readable unmanaged tasks", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const member = await seedUser({ name: "Member" });
+    const srv = await seedServer(owner);
+    await db().insert(schema.serverMembers).values({
+      serverId: srv.id,
+      memberId: member.id,
+      memberType: "human",
+      role: "member",
+      joinedAt: new Date(),
+    });
+    const readablePublic = await seedChannel(srv, "public", [owner]);
+    const hiddenPrivate = await seedChannel(srv, "private", [owner]);
+    const readableTask = await seedTask(readablePublic.id, owner.id, 21);
+    const hiddenTask = await seedTask(hiddenPrivate.id, owner.id, 22);
+    const auth = await userBearer(member);
+
+    const readablePatch = await request(app as never, `https://test.local/api/v1/tasks/${readableTask.id}`, {
+      method: "PATCH",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ status: "done" }),
+    });
+    expect(readablePatch.status).toBe(403);
+    const readableBody = await readablePatch.json() as { error: { code: string } };
+    expect(readableBody.error.code).toBe("FORBIDDEN");
+
+    const hiddenPatch = await request(app as never, `https://test.local/api/v1/tasks/${hiddenTask.id}`, {
+      method: "PATCH",
+      headers: { authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ status: "done" }),
+    });
+    expect(hiddenPatch.status).toBe(404);
+    const hiddenBody = await hiddenPatch.json() as { error: { code: string } };
+    expect(hiddenBody.error.code).toBe("NOT_FOUND");
+  });
+
+  it("rejects raw machine keys attempting to patch tasks directly", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const channel = await seedChannel(srv, "public", [owner]);
+    const task = await seedTask(channel.id, owner.id, 31);
+    const key = await bridgeKey(owner, srv);
+
+    const res = await request(app as never, `https://test.local/api/v1/tasks/${task.id}`, {
+      method: "PATCH",
+      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({ status: "done" }),
+    });
+
+    expect(res.status).toBe(403);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe("FORBIDDEN");
+    const rows = await db().select().from(schema.tasks).where(eq(schema.tasks.id, task.id)).limit(1);
+    expect(rows[0].status).toBe("todo");
+  });
+});
+
+describe("POST /api/v1/tasks auth boundaries", () => {
+  it("rejects raw machine keys attempting to create tasks directly", async () => {
+    const owner = await seedUser({ name: "Owner" });
+    const srv = await seedServer(owner);
+    const channel = await seedChannel(srv, "public", [owner]);
+    const agent = await seedAgent(srv, owner);
+    await db().insert(schema.channelMembers).values({
+      channelId: channel.id,
+      memberId: agent.id,
+      memberType: "agent",
+      joinedAt: new Date(),
+      lastReadSeq: 0,
+    });
+    const key = await bridgeKey(owner, srv);
+
+    const res = await request(app as never, "https://test.local/api/v1/tasks", {
+      method: "POST",
+      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        channelId: channel.id,
+        title: "raw machine key should not create tasks",
+        as: agent.id,
+      }),
+    });
+
+    expect(res.status).toBe(403);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe("FORBIDDEN");
+    const rows = await db().select().from(schema.tasks).where(eq(schema.tasks.channelId, channel.id));
+    expect(rows).toHaveLength(0);
+  });
 });

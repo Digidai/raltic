@@ -13,7 +13,7 @@ import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Radio, RadioGroup } from "@/components/heroui-pro/radio";
 import { Chip } from "@/components/heroui-pro/chip";
 import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
-import { api, ApiError, CLOUD_MODELS, RUNTIME_LABEL, RUNTIME_MODELS, type RuntimeId, type MachineRuntimeRow } from "@/lib/api";
+import { api, ApiError, CLOUD_MODELS, RUNTIME_LABEL, RUNTIME_MODELS, isExperimentalRuntime, type RuntimeId, type MachineRuntimeRow } from "@/lib/api";
 
 interface Props {
   serverId: string;
@@ -117,12 +117,17 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
   }, [machines]);
 
   function pickRuntime(r: RuntimeId) {
+    if (isExperimentalRuntime(r)) return;
     setRuntime(r);
     if (!RUNTIME_MODELS[r].includes(model)) setModel(RUNTIME_MODELS[r][0]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (runtimeMode === "bridge" && isExperimentalRuntime(runtime)) {
+      setError("OpenClaw and Hermes are locked until smoke verification completes.");
+      return;
+    }
     setLoading(true); setError(null);
     try {
       const res = await api.createAgent({
@@ -213,39 +218,50 @@ export function CreateAgentDialog({ serverId, open, onOpenChange, onCreated }: P
                     onValueChange={(next) => pickRuntime(next as RuntimeId)}
                     className="grid grid-cols-1 gap-2 sm:grid-cols-2"
                   >
-                    {(["claude", "codex", "openclaw", "hermes"] as RuntimeId[]).map((r) => (
-                      <Radio
-                        key={r}
-                        value={r}
-                        controlClassName="mt-1"
-                      >
-                        <div className="flex min-w-0 items-center justify-between gap-2">
-                          <span className="min-w-0 font-medium">{RUNTIME_LABEL[r]}</span>
-                          <RuntimeAvailabilityChip state={runtimeAvail[r]} />
-                        </div>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {RUNTIME_SHORT_DESC[r]}
-                        </p>
-                        {runtimeAvail[r] === "not_installed" && (
-                          <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
-                            Not installed on any of your bridges. Run on this computer:
-                            <code className="raltic-inline-token ml-1 break-all">
-                              {RUNTIME_INSTALL_CMD[r]}
-                            </code>
+                    {(["claude", "codex", "openclaw", "hermes"] as RuntimeId[]).map((r) => {
+                      const experimentalLocked = isExperimentalRuntime(r);
+                      return (
+                        <Radio
+                          key={r}
+                          value={r}
+                          isDisabled={experimentalLocked}
+                          controlClassName="mt-1"
+                          className={experimentalLocked ? "opacity-75" : undefined}
+                        >
+                          <div className="flex min-w-0 items-center justify-between gap-2">
+                            <span className="min-w-0 font-medium">{RUNTIME_LABEL[r]}</span>
+                            {experimentalLocked ? (
+                              <Chip size="sm" variant="soft" color="default" className="shrink-0 text-[10px]">
+                                locked
+                              </Chip>
+                            ) : (
+                              <RuntimeAvailabilityChip state={runtimeAvail[r]} />
+                            )}
+                          </div>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            {RUNTIME_SHORT_DESC[r]}
                           </p>
-                        )}
-                        {runtimeAvail[r] === "needs_login" && (
-                          <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
-                            {/* external_daemon runtimes (openclaw, hermes)
-                                aren't a `login` command — they're a daemon
-                                that's not running. */}
-                            {r === "openclaw" || r === "hermes"
-                              ? `Installed but daemon not running. Start: ${r === "openclaw" ? "openclaw onboard --install-daemon" : "hermes start"}`
-                              : <>Installed but not signed in. Run: <code className="raltic-inline-token">{r} login</code></>}
-                          </p>
-                        )}
-                      </Radio>
-                    ))}
+                          {experimentalLocked && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Experimental runtime. Agent creation is locked until the OpenClaw/Hermes smoke runbook passes.
+                            </p>
+                          )}
+                          {!experimentalLocked && runtimeAvail[r] === "not_installed" && (
+                            <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
+                              Not installed on any of your bridges. Run on this computer:
+                              <code className="raltic-inline-token ml-1 break-all">
+                                {RUNTIME_INSTALL_CMD[r]}
+                              </code>
+                            </p>
+                          )}
+                          {!experimentalLocked && runtimeAvail[r] === "needs_login" && (
+                            <p className="mt-1 text-[11px] text-[var(--warning-soft-foreground)]">
+                              Installed but not signed in. Run: <code className="raltic-inline-token">{r} login</code>
+                            </p>
+                          )}
+                        </Radio>
+                      );
+                    })}
                   </RadioGroup>
                 </Field>
                 )}

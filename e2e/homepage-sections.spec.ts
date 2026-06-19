@@ -13,6 +13,7 @@ test.describe("homepage full section render", () => {
     const header = page.locator("header");
     await expect(header).toBeVisible();
     await expect(header.getByRole("link", { name: "Raltic" })).toBeVisible();
+    await expect(header.getByRole("link", { name: "Workflows" })).toBeVisible();
     await expect(header.getByRole("link", { name: "Runtimes" })).toBeVisible();
   });
 
@@ -49,10 +50,10 @@ test.describe("homepage full section render", () => {
     await expect(section.getByRole("link", { name: /Connect a local runtime/i })).toBeVisible();
   });
 
-  test("RuntimeBadges lists all runtimes and experimental pills", async ({ page }) => {
+  test("RuntimeBadges lists verified and experimental runtimes", async ({ page }) => {
     await gotoHome(page);
 
-    const section = page.locator("section", { hasText: /Four runtimes/i });
+    const section = page.locator("section", { hasText: /Verified Claude \+ Codex/i });
     for (const runtime of ["Anthropic Claude", "OpenAI Codex", "OpenClaw", "Hermes"]) {
       await expect(section.getByText(runtime, { exact: true })).toBeVisible();
     }
@@ -77,14 +78,18 @@ test.describe("homepage full section render", () => {
     await expect(section.getByText("What stays out of the workspace", { exact: true })).toBeVisible();
   });
 
-  test("UseCases renders revenue, launch, and engineering workflow cards", async ({ page }) => {
+  test("UseCases renders revenue, launch, research, and engineering workflow cards", async ({ page }) => {
     await gotoHome(page);
 
     const section = page.locator("section#use-cases");
     await expect(section.getByText("revenue", { exact: true })).toBeVisible();
     await expect(section.getByText("launch", { exact: true })).toBeVisible();
+    await expect(section.getByText("research", { exact: true })).toBeVisible();
     await expect(section.getByText("engineering", { exact: true })).toBeVisible();
-    await expect(section.locator("h3")).toHaveCount(3);
+    await expect(section.locator("h3")).toHaveCount(4);
+    for (const href of ["/workflows/customer-risk", "/workflows/launch-readiness", "/workflows/research-synthesis", "/workflows/code-review"]) {
+      await expect(section.locator(`a[href="${href}"]`)).toBeVisible();
+    }
   });
 
   test("Workflow-first visual path makes the GTM model scannable", async ({ page }) => {
@@ -110,7 +115,7 @@ test.describe("homepage full section render", () => {
       expect(bodyText).not.toContain(oldCopy);
     }
     await expect(page.getByText("One room turns agent output into accountable work.")).toBeVisible();
-    await expect(page.getByText("Run workflows with your own AI daemon (OpenClaw / Hermes)")).toBeVisible();
+    await expect(page.getByText("Evaluate local daemon integrations (OpenClaw / Hermes)")).toBeVisible();
   });
 
   test("marketing icon chips keep readable icon contrast", async ({ page }) => {
@@ -231,7 +236,7 @@ test.describe("homepage full section render", () => {
     await gotoHome(page);
 
     const footer = page.locator("footer .raltic-marketing-footer-grid");
-    for (const href of ["/runtimes", "/connectors", "/security", "/privacy", "/terms", "/indie", "/teams", "/signup", "/login"]) {
+    for (const href of ["/workflows", "/runtimes", "/connectors", "/security", "/privacy", "/terms", "/indie", "/teams", "/signup", "/login"]) {
       await expect(footer.locator(`a[href="${href}"]`)).toBeVisible();
     }
   });

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { HomeCta } from "@/components/home-cta";
 import { MarketingFooter } from "@/components/marketing/footer";
+import { JsonLdScript } from "@/components/marketing/json-ld";
 import { SectionHeader } from "@/components/marketing/section-header";
 import { WorkflowMiniMap, WorkflowPreview } from "@/components/marketing/workflow-preview";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
@@ -13,6 +14,14 @@ import { Chip } from "@/components/heroui-pro/chip";
 import { SignedInRedirect } from "@/components/signed-in-redirect";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
+import {
+  faqPageJsonLd,
+  jsonLdGraph,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  webPageJsonLd,
+  type FaqEntry,
+} from "@/lib/seo";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Marketing landing page.
@@ -26,10 +35,10 @@ import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
 //
 // Truth audit (last reviewed for marketing v2 — OpenClaw+Hermes integration):
 //   • Bridge: `npx -y @raltic/bridge setup ck_…` works end-to-end.
-//   • Runtimes: 4 ship — Claude, Codex (verified), OpenClaw, Hermes
-//     (code shipped, smoke verification pending per
-//     docs/SMOKE_TESTS_openclaw_hermes.md — marked "Experimental" on
-//     this page until verified).
+//   • Runtimes: Claude + Codex are verified bridge runtimes. OpenClaw
+//     and Hermes have visible experimental pages/integrations, but
+//     agent creation is locked until docs/SMOKE_TESTS_openclaw_hermes.md
+//     passes.
 //   • Runtime modes: bridge (local CLI via user's bridge) AND raltic
 //     (cloud-native, zero install, runs in CF Container sandbox).
 //   • Runtime keys: machineKeys.serverId scope + revokedAt + KV
@@ -48,6 +57,16 @@ import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
 export default function Home(): React.ReactElement {
   return (
     <>
+      <JsonLdScript
+        data={jsonLdGraph([
+          webPageJsonLd({
+            path: "/",
+            name: SITE_TITLE,
+            description: SITE_DESCRIPTION,
+          }),
+          faqPageJsonLd(FAQS, "/"),
+        ])}
+      />
       {/* Signed-in users get redirected into their default workspace
           before marketing fully paints (small `/me` round-trip flash).
           `/` only — sub-pages stay browseable for signed-in users.
@@ -190,7 +209,7 @@ function TwoWaysToRun(): React.ReactElement {
           <RuntimePath
             title="Bring your agents"
             label="local bridge"
-            body="Connect Claude Code, Codex, OpenClaw, or Hermes when code, keys, or customer context should stay in your environment."
+            body="Connect Claude Code or Codex when code, keys, or customer context should stay in your environment. OpenClaw and Hermes are evaluation-only until smoke verification passes."
             href={CONNECT_RUNTIME_SIGNUP_HREF}
             cta="Connect a local runtime"
             accent="default"
@@ -246,7 +265,7 @@ function RuntimeBadges(): React.ReactElement {
     >
       <CardPanel className="mx-auto max-w-5xl text-center">
         <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-400">
-          Four runtimes · Bring your own daemon, or run on our cloud
+          Verified Claude + Codex · Experimental daemon integrations
         </p>
         {/* Four-runtime strip. Claude + Codex are verified (the original
             two). OpenClaw + Hermes ship the code but are flagged
@@ -427,6 +446,7 @@ function UseCases(): React.ReactElement {
         <div className="mt-14 grid gap-4 lg:grid-cols-4">
           <WorkflowUseCase
             tag="revenue"
+            href="/workflows/customer-risk"
             title="Customer-risk brief"
             input="Call notes + support context"
             agent="research + ops"
@@ -435,6 +455,7 @@ function UseCases(): React.ReactElement {
           />
           <WorkflowUseCase
             tag="launch"
+            href="/workflows/launch-readiness"
             title="Launch readiness"
             input="brief + open docs + roadmap"
             agent="reviewer + writer"
@@ -443,6 +464,7 @@ function UseCases(): React.ReactElement {
           />
           <WorkflowUseCase
             tag="research"
+            href="/workflows/research-synthesis"
             title="Research synthesis"
             input="notes + sources + quotes"
             agent="research assistant"
@@ -451,6 +473,7 @@ function UseCases(): React.ReactElement {
           />
           <WorkflowUseCase
             tag="engineering"
+            href="/workflows/code-review"
             title="Local code review"
             input="PR diff on your machine"
             agent="bridge-hosted reviewer"
@@ -463,8 +486,9 @@ function UseCases(): React.ReactElement {
   );
 }
 
-function WorkflowUseCase({ tag, title, input, agent, gate, output }: {
+function WorkflowUseCase({ tag, href, title, input, agent, gate, output }: {
   tag: string;
+  href: string;
   title: string;
   input: string;
   agent: string;
@@ -479,12 +503,12 @@ function WorkflowUseCase({ tag, title, input, agent, gate, output }: {
   ] as const;
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_20px_50px_-35px_rgba(24,24,27,0.35)]">
+    <Link href={href} className="group rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_20px_50px_-35px_rgba(24,24,27,0.35)] transition-colors hover:border-zinc-300 hover:bg-zinc-50">
       <div className="flex items-center justify-between gap-3">
         <Chip size="sm" variant="soft" color="default" className="font-mono text-[10px] uppercase tracking-wider">
           {tag}
         </Chip>
-        <span className="h-2 w-2 rounded-full bg-cyan-500" aria-hidden="true" />
+        <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-900" aria-hidden="true" />
       </div>
       <h3 className="mt-4 text-xl font-medium tracking-tight text-zinc-900">{title}</h3>
       <div className="mt-5 space-y-2">
@@ -498,7 +522,10 @@ function WorkflowUseCase({ tag, title, input, agent, gate, output }: {
           </div>
         ))}
       </div>
-    </div>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-700 group-hover:text-cyan-900">
+        Explore workflow <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </span>
+    </Link>
   );
 }
 
@@ -559,13 +586,13 @@ function Comparison(): React.ReactElement {
                   label="No per-seat markup on the AI you already pay for"
                   vals={["no", "no", "no", "yes"]}
                 />
-                {/* The two rows below are the OpenClaw + Hermes
-                    differentiator — neither competitor supports
-                    pointing a workflow at a daemon you run yourself,
-                    keeping provider keys entirely in your hands. */}
+                {/* OpenClaw + Hermes are visible differentiators, but
+                    still locked until the smoke runbook passes. Keep
+                    this row as a truth marker, not a production-ready
+                    claim. */}
                 <ComparisonRow
-                  label="Run workflows with your own AI daemon (OpenClaw / Hermes)"
-                  vals={["no", "no", "no", "yes"]}
+                  label="Evaluate local daemon integrations (OpenClaw / Hermes)"
+                  vals={["no", "no", "no", "partial"]}
                 />
                 <ComparisonRow
                   label="Provider keys never leave your machine"
@@ -782,7 +809,7 @@ function PricingCard({ tag, name, price, note, features, highlight }: {
 
 // ─────────────────────── FAQ ───────────────────────
 
-const FAQS: { q: string; a: string }[] = [
+const FAQS: FaqEntry[] = [
   {
     q: "What is a workflow room?",
     a: "A workflow room is a shared space for a repeatable business process: the brief, agent updates, approvals, tasks, artifacts, and final decision all stay together. It looks familiar like a channel, but it is organized around work getting done, not just messages passing by.",
@@ -793,11 +820,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Which AI providers does Raltic work with?",
-    a: "Four runtimes: Anthropic Claude and OpenAI Codex are verified and ship today. OpenClaw and Hermes are integrated but marked experimental until our smoke verification completes — they let you point at any local daemon you already run, with no provider key held by Raltic. Each agent picks its own runtime and model; you can mix them in the same workspace.",
+    a: "Anthropic Claude and OpenAI Codex are verified bridge runtimes and ship today. OpenClaw and Hermes are integrated but locked for agent creation until our smoke verification completes. Cloud agents run in Raltic's managed sandbox.",
   },
   {
     q: "Do I have to install anything to try Raltic?",
-    a: "No. Pick the cloud runtime when you sign up and your agent runs in our sandbox container — no local install, no daemon to manage. If you'd rather bring your own AI CLI (Claude Code, Codex, OpenClaw, Hermes), the bridge installs with one command and your agent runs entirely on your computer.",
+    a: "No. Pick the cloud runtime when you sign up and your agent runs in our sandbox container — no local install, no daemon to manage. If you'd rather bring your own AI CLI, Claude Code and Codex are the verified bridge paths today.",
   },
   {
     q: "Where does our code go?",

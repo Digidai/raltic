@@ -74,6 +74,7 @@ export function MarketingNav() {
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-[color-mix(in_srgb,var(--snow)_64%,transparent)] md:flex">
+          <Link href="/workflows" className="hover:text-[var(--snow)]">Workflows</Link>
           <Link href="/runtimes" className="hover:text-[var(--snow)]">Runtimes</Link>
           <Link href="/connectors" className="hover:text-[var(--snow)]">Connectors</Link>
           <Link href="/desktop" className="hover:text-[var(--snow)]">Desktop beta</Link>
@@ -116,6 +117,7 @@ function MobileNavDropdown() {
         sideOffset={8}
         className="w-64 !border-[color-mix(in_srgb,var(--snow)_10%,transparent)] !bg-[var(--overlay)] !text-[var(--overlay-foreground)] !shadow-overlay"
       >
+        <MobileNavItem href="/workflows" label="Workflows" />
         <MobileNavItem href="/runtimes" label="Runtimes" />
         <MobileNavItem href="/connectors" label="Connectors" />
         <MobileNavItem href="/desktop" label="Desktop beta" />

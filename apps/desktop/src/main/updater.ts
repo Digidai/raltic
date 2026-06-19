@@ -30,7 +30,13 @@ let pollHandle: NodeJS.Timeout | null = null;
 // State guard — without this, a manual "Check for updates" mid-download
 // or a 6h tick firing while the user's still seeing the prompt would
 // open a second dialog / start a parallel download.
-let updateState: "idle" | "prompting" | "downloading" = "idle";
+let updateState: "idle" | "checking" | "prompting" | "downloading" = "idle";
+
+export interface DesktopUpdateCheckResult {
+  ok: boolean;
+  status: "disabled" | "busy" | "sent" | "failed";
+  message: string;
+}
 
 export function initAutoUpdater(getMainWindow: () => BrowserWindow | null): void {
   // Auto-updater is a no-op when running unpackaged (electron-vite dev).
@@ -53,7 +59,10 @@ export function initAutoUpdater(getMainWindow: () => BrowserWindow | null): void
   });
 
   autoUpdater.on("update-available", async (info) => {
-    if (updateState !== "idle") return;          // dialog or download already in flight
+    // A manual/timed check sets state=checking while the request is in
+    // flight; that is the one non-idle state allowed to advance into
+    // the update prompt.
+    if (updateState !== "idle" && updateState !== "checking") return;
     updateState = "prompting";
     const win = getMainWindow();
     const opts = {
@@ -67,16 +76,21 @@ export function initAutoUpdater(getMainWindow: () => BrowserWindow | null): void
     };
     // Branch explicitly on window presence — dialog.showMessageBox has
     // distinct overloads for parent-attached vs parentless.
-    const choice = win
-      ? await dialog.showMessageBox(win, opts)
-      : await dialog.showMessageBox(opts);
-    if (choice.response === 0) {
-      updateState = "downloading";
-      autoUpdater.downloadUpdate().catch((e) => {
-        console.warn("[updater] download failed:", e);
+    try {
+      const choice = win
+        ? await dialog.showMessageBox(win, opts)
+        : await dialog.showMessageBox(opts);
+      if (choice.response === 0) {
+        updateState = "downloading";
+        autoUpdater.downloadUpdate().catch((e) => {
+          console.warn("[updater] download failed:", e);
+          updateState = "idle";
+        });
+      } else {
         updateState = "idle";
-      });
-    } else {
+      }
+    } catch (e) {
+      console.warn("[updater] update prompt failed:", e);
       updateState = "idle";
     }
   });
@@ -95,16 +109,40 @@ export function initAutoUpdater(getMainWindow: () => BrowserWindow | null): void
   pollHandle = setInterval(() => { void checkForUpdates(); }, SIX_HOURS_MS);
 }
 
-export async function checkForUpdates(): Promise<void> {
-  if (!app.isPackaged) return;
+export async function checkForUpdates(): Promise<DesktopUpdateCheckResult> {
+  if (!app.isPackaged) {
+    return {
+      ok: false,
+      status: "disabled",
+      message: "Update checks are disabled in this development build.",
+    };
+  }
   // Skip if a prior check is still mid-flow — overlapping checks would
   // queue multiple update-available events and confuse the state machine.
-  if (updateState !== "idle") return;
+  if (updateState !== "idle") {
+    return {
+      ok: false,
+      status: "busy",
+      message: "An update check is already in progress.",
+    };
+  }
+  updateState = "checking";
   try {
     await autoUpdater.checkForUpdates();
+    if (updateState === "checking") updateState = "idle";
+    return {
+      ok: true,
+      status: "sent",
+      message: "Update check started. You'll see a dialog if an update is available.",
+    };
   } catch (e) {
     console.warn("[updater] check failed:", e);
     updateState = "idle";
+    return {
+      ok: false,
+      status: "failed",
+      message: e instanceof Error ? e.message : String(e),
+    };
   }
 }
 

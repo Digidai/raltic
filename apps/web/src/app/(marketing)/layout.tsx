@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
+import { JsonLdScript } from "@/components/marketing/json-ld";
 import { MarketingShell } from "@/components/marketing/shell";
+import {
+  jsonLdGraph,
+  organizationJsonLd,
+  softwareApplicationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 /**
  * Route-group layout for every public marketing page.
@@ -14,5 +21,16 @@ import { MarketingShell } from "@/components/marketing/shell";
  * for signed-in users (e.g. sharing a runtime page in a channel).
  */
 export default function MarketingLayout({ children }: { children: ReactNode }) {
-  return <MarketingShell>{children}</MarketingShell>;
+  return (
+    <MarketingShell>
+      <JsonLdScript
+        data={jsonLdGraph([
+          organizationJsonLd(),
+          websiteJsonLd(),
+          softwareApplicationJsonLd(),
+        ])}
+      />
+      {children}
+    </MarketingShell>
+  );
 }

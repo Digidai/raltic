@@ -14,7 +14,7 @@
  *   - lifecycle broadcast (idle/error)
  */
 
-import { mkdirSync, existsSync, writeFileSync, readFileSync, readdirSync, rmSync, statSync } from "fs";
+import { mkdirSync, existsSync, writeFileSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync } from "fs";
 import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "node:module";
@@ -25,6 +25,7 @@ import {
   writeAgentsRootSentinel,
   type ActivityEvent,
   type AgentRuntime,
+  type DetectedRuntimeSnapshot,
   type PermissionMode,
   type RuntimeId,
   type RuntimeSession,
@@ -92,10 +93,18 @@ interface AgentEntry {
   unsubs: Array<() => void>;
 }
 
+interface RunContext {
+  runId: string;
+  outputMessageId?: string | null;
+}
+
 interface AgentManagerOpts {
   apiUrl: string;
   agentsDir: string;
 }
+
+const RUN_OUTPUT_PATCH_RETRIES = 5;
+const RUN_OUTPUT_PATCH_RETRY_MS = 300;
 
 type ActivityKind = "idle" | "thinking" | "working" | "error";
 
@@ -114,6 +123,7 @@ function buildAgentEnv(opts: {
   apiUrl: string;
   agentToken: string;
   ralticBin: string;
+  runContextFile: string;
 }): Record<string, string> {
   const e: Record<string, string> = {};
   // Filesystem essentials.
@@ -132,7 +142,12 @@ function buildAgentEnv(opts: {
   e.RALTIC_AGENT_ID = opts.agentId;
   e.RALTIC_API_URL = opts.apiUrl;
   e.RALTIC_AGENT_TOKEN = opts.agentToken;
+  e.RALTIC_AGENT_RUN_FILE = opts.runContextFile;
   return e;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class AgentManager {
@@ -172,9 +187,14 @@ export class AgentManager {
     for (const session of this.sessions.values()) this.writeCliTokenFile(session);
   }
 
-  addAgentToChannel(channelId: string, agentId: string): boolean {
+  addAgentToChannel(
+    channelId: string,
+    agentId: string,
+    channelType?: BridgeConnectResponse["channels"][number]["type"],
+  ): boolean {
     if (!this.sessions.has(agentId)) return false;
     const existing = this.channelToAgents.get(channelId) ?? [];
+    if (channelType) this.channelTypes.set(channelId, channelType);
     if (existing.includes(agentId)) return true;
     this.channelToAgents.set(channelId, [...existing, agentId]);
     return true;
@@ -310,6 +330,7 @@ export class AgentManager {
     console.log(`  [${session.displayName}] forwarding (${userMessage.length} chars)`);
     entry.currentRunId = runId;
     entry.currentRunError = undefined;
+    this.writeRunContext(session, runId);
     await this.updateRun(runId, "running");
     this.broadcastActivity(agentId, "working", "Working", "Message received");
     try {
@@ -323,6 +344,7 @@ export class AgentManager {
       if (entry.currentRunId === runId) {
         entry.currentRunId = undefined;
         entry.currentRunError = undefined;
+        this.clearRunContext(session);
       }
       entry.busy = false;
       this.drainQueue(agentId);
@@ -388,6 +410,7 @@ export class AgentManager {
         apiUrl: this.apiUrl,
         agentToken: this.boot.token,
         ralticBin: ralticDir,
+        runContextFile: this.runContextPath(session),
       }),
     });
 
@@ -409,6 +432,7 @@ export class AgentManager {
         void this.updateRun(entry.currentRunId, "failed", { error });
         entry.currentRunId = undefined;
         entry.currentRunError = undefined;
+        this.clearRunContext(session);
       }
       for (const queued of entry.messageQueue) {
         void this.updateRun(queued.runId, "failed", { error });
@@ -447,10 +471,23 @@ export class AgentManager {
         if (entry) {
           const runId = entry.currentRunId;
           const runError = entry.currentRunError;
+          const outputMessageId = this.readRunContext(session, runId)?.outputMessageId ?? null;
           entry.currentRunId = undefined;
           entry.currentRunError = undefined;
+          this.clearRunContext(session);
           if (runId) {
-            void this.updateRun(runId, runError ? "failed" : "completed", runError ? { error: runError } : undefined);
+            const missingOutputError = outputMessageId
+              ? null
+              : "Agent turn completed without sending a visible Raltic message.";
+            void this.updateRun(
+              runId,
+              runError || missingOutputError ? "failed" : "completed",
+              runError
+                ? { error: runError }
+                : missingOutputError
+                  ? { error: missingOutputError }
+                  : { outputMessageId },
+            );
           }
           entry.busy = false;
           console.log(`  [${session.displayName}] turn complete`);
@@ -633,11 +670,50 @@ export class AgentManager {
     return this.channelTypes.get(channelId) === "dm" ? "dm" : "channel_message";
   }
 
+  private runContextPath(session: AgentSession): string {
+    return join(session.workDir, ".raltic", "current-run.json");
+  }
+
+  private writeRunContext(session: AgentSession, runId: string | undefined): void {
+    const path = this.runContextPath(session);
+    if (!runId) {
+      this.clearRunContext(session);
+      return;
+    }
+    try {
+      const dir = dirname(path);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(path, JSON.stringify({ runId, outputMessageId: null }), { mode: 0o600 });
+    } catch (e) {
+      if (process.env.RALTIC_BRIDGE_VERBOSE) {
+        console.warn(`[agent ${session.id}] failed to write run context:`, e instanceof Error ? e.message : e);
+      }
+    }
+  }
+
+  private readRunContext(session: AgentSession, runId: string | undefined): RunContext | null {
+    if (!runId) return null;
+    try {
+      const raw = JSON.parse(readFileSync(this.runContextPath(session), "utf8")) as Partial<RunContext>;
+      if (raw.runId !== runId) return null;
+      return { runId, outputMessageId: raw.outputMessageId ?? null };
+    } catch {
+      return null;
+    }
+  }
+
+  private clearRunContext(session: AgentSession): void {
+    try { unlinkSync(this.runContextPath(session)); } catch { /* no active run context */ }
+  }
+
   private runtimeUnavailableReason(session: AgentSession): string | null {
     if (!this.detectedRuntimes) return null;
     const rt = this.detectedRuntimes.find((r) => r.id === session.runtime);
     if (!rt || !rt.detected) {
       return `${session.runtime} CLI not installed on this laptop. Install ${session.runtime}, then restart the bridge.`;
+    }
+    if (rt.error) {
+      return rt.error;
     }
     if (rt.authed === false) {
       return `${session.runtime} CLI not signed in. Run ${session.runtime} login, then restart the bridge.`;
@@ -685,24 +761,44 @@ export class AgentManager {
     opts: { error?: string; outputMessageId?: string | null } = {},
   ): Promise<void> {
     if (!this.boot || !runId) return;
-    try {
-      const res = await fetch(`${this.apiUrl}/api/v1/agent-runs/${runId}`, {
-        method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer sy_bridge_${this.boot.token}`,
-        },
-        body: JSON.stringify({
-          status,
-          error: opts.error === undefined ? undefined : sanitizeUserVisibleError(opts.error),
-          outputMessageId: opts.outputMessageId,
-        }),
-      });
-      if (!res.ok && process.env.RALTIC_BRIDGE_VERBOSE) {
-        console.warn("agent run update failed:", res.status, await res.text().catch(() => ""));
+    const maxAttempts = status === "completed" && opts.outputMessageId
+      ? RUN_OUTPUT_PATCH_RETRIES
+      : 1;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await fetch(`${this.apiUrl}/api/v1/agent-runs/${runId}`, {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer sy_bridge_${this.boot.token}`,
+          },
+          body: JSON.stringify({
+            status,
+            error: opts.error === undefined ? undefined : sanitizeUserVisibleError(opts.error),
+            outputMessageId: opts.outputMessageId,
+          }),
+        });
+        if (res.ok) return;
+        const text = await res.text().catch(() => "");
+        const retryableOutputLag = res.status === 400
+          && text.includes("INVALID_OUTPUT_MESSAGE")
+          && attempt < maxAttempts;
+        if (retryableOutputLag) {
+          await delay(RUN_OUTPUT_PATCH_RETRY_MS);
+          continue;
+        }
+        if (process.env.RALTIC_BRIDGE_VERBOSE) {
+          console.warn("agent run update failed:", res.status, text);
+        }
+        return;
+      } catch (e) {
+        if (attempt < maxAttempts) {
+          await delay(RUN_OUTPUT_PATCH_RETRY_MS);
+          continue;
+        }
+        if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("agent run update failed:", e);
+        return;
       }
-    } catch (e) {
-      if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("agent run update failed:", e);
     }
   }
 
@@ -732,6 +828,15 @@ export class AgentManager {
           if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("activity POST failed:", e);
         });
       }
+      if (rt.error) {
+        return this.broadcastActivity(
+          a.id, "error",
+          `${a.runtime} unavailable`,
+          rt.error,
+        ).catch((e) => {
+          if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("activity POST failed:", e);
+        });
+      }
       if (rt.authed === false) {
         return this.broadcastActivity(
           a.id, "error",
@@ -751,16 +856,8 @@ export class AgentManager {
   /** Cached runtime detection snapshot from boot — read by
    *  broadcastLifecycle. Bridge.start passes this in via
    *  setDetectedRuntimes after calling detectRuntimes(). */
-  private detectedRuntimes: Array<{
-    id: import("@raltic/agent-runtime").RuntimeId; detected: boolean; version: string | null;
-    authed: boolean | null; authMethod: "oauth" | "env" | "none" | null;
-    error: string | null;
-  }> | null = null;
-  public setDetectedRuntimes(snap: Array<{
-    id: import("@raltic/agent-runtime").RuntimeId; detected: boolean; version: string | null;
-    authed: boolean | null; authMethod: "oauth" | "env" | "none" | null;
-    error: string | null;
-  }>): void {
+  private detectedRuntimes: DetectedRuntimeSnapshot[] | null = null;
+  public setDetectedRuntimes(snap: DetectedRuntimeSnapshot[]): void {
     this.detectedRuntimes = snap;
   }
 
@@ -872,12 +969,13 @@ export class AgentManager {
         try {
           const detect = await this._withTimeout(r.detect(), 3500);
           if ("error" in detect && detect.error) {
+            const installed = Boolean(detect.binary || detect.version);
             return {
               id,
-              detected: false,
-              version: null as string | null,
-              authed: null as boolean | null,
-              authMethod: null,
+              detected: installed,
+              version: detect.version ?? null,
+              authed: detect.authed ?? (installed ? false : null),
+              authMethod: detect.authMethod ?? null,
               error: detect.error,
             };
           }

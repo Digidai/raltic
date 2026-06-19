@@ -238,25 +238,39 @@ async function resolveTaskRef(
   const trimmed = ref.trim().replace(/^#/, "");
   const exact = await db.select().from(tasks).where(eq(tasks.id, trimmed)).limit(1);
   if (exact.length > 0) {
-    return await policy.tasks.canManage(ctx, exact[0].channelId)
-      ? { status: "ok", task: exact[0] }
-      : { status: "forbidden" };
+    if (await policy.tasks.canManage(ctx, exact[0].channelId)) {
+      return { status: "ok", task: exact[0] };
+    }
+    return await policy.tasks.canRead(ctx, exact[0].channelId)
+      ? { status: "forbidden" }
+      : { status: "not_found" };
   }
 
   const candidates: Array<typeof tasks.$inferSelect> = [];
+  const manageableChannelIds = await listManageableChannelIds(db, ctx);
   if (/^\d+$/.test(trimmed)) {
-    candidates.push(...await db.select().from(tasks)
-      .where(eq(tasks.taskNumber, Number(trimmed)))
-      .limit(20));
+    if (manageableChannelIds.length > 0) {
+      candidates.push(...await db.select().from(tasks)
+        .where(and(
+          eq(tasks.taskNumber, Number(trimmed)),
+          inArray(tasks.channelId, manageableChannelIds),
+        ))
+        .limit(21));
+    }
   }
   if (trimmed.length >= 4) {
-    candidates.push(...await db.select().from(tasks)
-      .where(or(
-        like(tasks.id, `${trimmed}%`),
-        eq(tasks.messageId, trimmed),
-        like(tasks.messageId, `${trimmed}%`),
-      ))
-      .limit(20));
+    if (manageableChannelIds.length > 0) {
+      candidates.push(...await db.select().from(tasks)
+        .where(and(
+          inArray(tasks.channelId, manageableChannelIds),
+          or(
+            like(tasks.id, `${trimmed}%`),
+            eq(tasks.messageId, trimmed),
+            like(tasks.messageId, `${trimmed}%`),
+          ),
+        ))
+        .limit(21));
+    }
   }
 
   const visible: Array<typeof tasks.$inferSelect> = [];
@@ -269,6 +283,18 @@ async function resolveTaskRef(
   if (visible.length === 0) return { status: "not_found" };
   if (visible.length > 1) return { status: "ambiguous" };
   return { status: "ok", task: visible[0] };
+}
+
+async function listManageableChannelIds(
+  db: ReturnType<typeof drizzle>,
+  ctx: ReturnType<typeof ctxFor>,
+): Promise<string[]> {
+  const visibleChannelIds = await listVisibleChannelIds(db, ctx.subject);
+  const manageable: string[] = [];
+  for (const channelId of visibleChannelIds) {
+    if (await policy.tasks.canManage(ctx, channelId)) manageable.push(channelId);
+  }
+  return manageable;
 }
 
 type DB = ReturnType<typeof drizzle>;

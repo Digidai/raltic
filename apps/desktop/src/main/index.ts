@@ -229,6 +229,7 @@ function isPlainConfig(x: unknown): x is DesktopConfig {
     // Reject control chars / NUL bytes — bridge passes URL to fetch()
     // which can have quirky behavior with embedded control characters.
     if (hasControlChars(o.serverUrl)) return false;
+    if (o.serverUrl.trim() && !normalizeAllowedBridgeServerUrl(o.serverUrl)) return false;
   }
   if (o.serverId !== undefined) {
     if (typeof o.serverId !== "string") return false;
@@ -308,7 +309,12 @@ function bridgeStatusPayload(ok?: true): BridgeStatusPayload {
 
 async function replacePrimaryConfigAndRestart(next: DesktopConfig): Promise<BridgeStatusPayload> {
   return enqueueConfigMutation(async () => {
-    saveConfig(replacePrimaryBridgeKey(loadConfig(), next));
+    saveConfig(replacePrimaryBridgeKey(loadConfig(), {
+      ...next,
+      apiKey: next.apiKey?.trim(),
+      serverId: next.serverId?.trim() || undefined,
+      serverUrl: next.serverUrl,
+    }));
     await restartBridge();
     rebuildMenu(trayOpts());
     return bridgeStatusPayload(true);
@@ -353,8 +359,7 @@ function registerIpc(): void {
   // to spam the update server.
   ipcMain.handle("updater:check", async (e) => {
     if (!fromSettingsWindow(e)) throw new Error("forbidden");
-    await checkForUpdates();
-    return { ok: true };
+    return checkForUpdates();
   });
 }
 

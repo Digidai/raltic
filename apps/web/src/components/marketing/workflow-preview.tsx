@@ -73,7 +73,7 @@ const SCENARIOS: WorkflowScenario[] = [
     key: "engineering",
     label: "Code review",
     shortLabel: "Code",
-    room: "#engineering",
+    room: "#code-review",
     owner: "Eng",
     icon: <GitPullRequest className="h-4 w-4" aria-hidden="true" />,
     brief: "Review a PR without uploading repo context into a hosted AI tool.",

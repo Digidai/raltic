@@ -17,9 +17,17 @@
  *   raltic server info
  */
 
+import { readFileSync, writeFileSync } from "node:fs";
+
 const AGENT_ID = process.env.RALTIC_AGENT_ID;
 const API_URL = process.env.RALTIC_API_URL;
 const TOKEN = process.env.RALTIC_AGENT_TOKEN;
+const RUN_FILE = process.env.RALTIC_AGENT_RUN_FILE;
+
+interface RunContext {
+  runId: string;
+  outputMessageId?: string | null;
+}
 
 function fail(code: string, message: string): never {
   process.stderr.write(JSON.stringify({ ok: false, code, message }) + "\n");
@@ -73,6 +81,36 @@ async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
     fail(code, message);
   }
   return body as T;
+}
+
+function readRunContext(): RunContext | null {
+  if (!RUN_FILE) return null;
+  try {
+    const raw = JSON.parse(readFileSync(RUN_FILE, "utf8")) as Partial<RunContext>;
+    return typeof raw.runId === "string" && raw.runId ? { runId: raw.runId, outputMessageId: raw.outputMessageId ?? null } : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeRunContext(ctx: RunContext): void {
+  if (!RUN_FILE) return;
+  try {
+    writeFileSync(RUN_FILE, JSON.stringify(ctx), { mode: 0o600 });
+  } catch {
+    // The message was already sent; proof PATCH below is best-effort too.
+  }
+}
+
+async function bestEffortPatchRunOutput(runId: string, outputMessageId: string): Promise<void> {
+  await fetch(`${API_URL}/api/v1/agent-runs/${runId}`, {
+    method: "PATCH",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer sy_bridge_${TOKEN}`,
+    },
+    body: JSON.stringify({ status: "running", outputMessageId }),
+  }).catch(() => undefined);
 }
 
 // ---------------------------------------------------------------------------
@@ -136,10 +174,15 @@ async function cmdMessageSend(flags: Record<string, string>): Promise<void> {
   // 60-second window dedupes. CLI retries don't double-post.
   const slot = Math.floor(Date.now() / 60_000);
   const idempotencyKey = await sha256Hex(`${AGENT_ID}:${channelId}:${threadParentId ?? ""}:${slot}:${content}`);
-  await api(`/api/v1/messages`, {
+  const sent = await api<{ messageId?: string }>(`/api/v1/messages`, {
     method: "POST",
     body: JSON.stringify({ channelId, content, threadParentId, as: AGENT_ID, idempotencyKey }),
   });
+  const runCtx = readRunContext();
+  if (sent.messageId && runCtx?.runId) {
+    writeRunContext({ ...runCtx, outputMessageId: sent.messageId });
+    await bestEffortPatchRunOutput(runCtx.runId, sent.messageId);
+  }
   console.log(`Message sent to ${target}.`);
 }
 
@@ -286,7 +329,7 @@ async function main() {
     case "task update":    return cmdTaskUpdate(flags);
     default:
       fail("UNKNOWN_CMD", `unknown command: ${cmd || "(none)"}\n` +
-        `Try: message send | message check | message read | server info`);
+        `Try: message send | message check | message read | message search | server info | task list | task create | task claim | task unclaim | task update`);
   }
 }
 

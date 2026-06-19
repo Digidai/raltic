@@ -58,7 +58,7 @@ export default function SecurityPage() {
               />
               <div className="mt-14 grid gap-4 lg:grid-cols-2">
                 <Lane title="Bridge runtime (your computer)" icon={<Laptop className="h-5 w-5" />}>
-                  <p>The default for Claude, Codex, OpenClaw, Hermes runtimes.</p>
+                  <p>The verified path for Claude and Codex. OpenClaw and Hermes remain experimental until smoke verification passes.</p>
                   <ul className="mt-3 space-y-2 text-sm">
                     <li>· Your repo is read by the CLI on YOUR machine, not by Raltic.</li>
                     <li>· Your provider key lives in the CLI's auth path (Anthropic / OpenAI / your daemon). Raltic never reads or stores it.</li>

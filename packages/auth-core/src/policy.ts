@@ -438,6 +438,7 @@ export const policy = {
             && (await machineScopedByAgent(ctx, args.senderId))
             && (await agentIsChannelMember(ctx, args.senderId, args.channelId));
         }
+        if (ctx.subject.kind !== "user") return false;
         return (await machineScopedByAgent(ctx, args.senderId))
           && (await userOwnsAgent(ctx, args.senderId))
           && (await agentIsChannelMember(ctx, args.senderId, args.channelId));
@@ -461,6 +462,7 @@ export const policy = {
           return ctx.subject.agentIds.includes(args.senderId)
             && (await agentIsChannelMember(ctx, args.senderId, args.channelId));
         }
+        if (ctx.subject.kind !== "user") return false;
         return (await userOwnsAgent(ctx, args.senderId))
           && (await agentIsChannelMember(ctx, args.senderId, args.channelId));
       }
@@ -475,6 +477,7 @@ export const policy = {
     canManage: async (ctx: AuthCtx, channelId: string) => {
       if (!(await machineScopedByChannel(ctx, channelId))) return false;
       if (ctx.subject.kind === "bridge") return bridgeHasAgentInChannel(ctx, channelId);
+      if (ctx.subject.kind !== "user") return false;
       return (await userIsChannelMember(ctx, channelId))
         || (await userHasAgentInChannel(ctx, channelId));
     },

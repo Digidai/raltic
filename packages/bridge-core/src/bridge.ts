@@ -146,7 +146,9 @@ export class Bridge {
     // runtime availability for the Settings + Wizard surfaces).
     const runtimes = await this.agentManager.detectRuntimes();
     for (const r of runtimes) {
-      if (r.detected) {
+      if (r.detected && r.error) {
+        console.log(`[bridge] runtime ${r.id} ${r.version ?? "?"} unavailable: ${r.error}`);
+      } else if (r.detected) {
         console.log(`[bridge] runtime ${r.id} ${r.version ?? "?"} ${r.authed ? `(${r.authMethod})` : "(not authed)"}`);
       } else {
         console.log(`[bridge] runtime ${r.id} not available: ${r.error ?? "unknown"}`);
@@ -365,7 +367,7 @@ export class Bridge {
       catch { return; }
       if (msg.t === "member_add") {
         if (msg.memberType === "agent") {
-          if (this.agentManager.addAgentToChannel(msg.channelId, msg.memberId)) {
+          if (this.agentManager.addAgentToChannel(msg.channelId, msg.memberId, msg.channelType)) {
             if (!this.channelSockets.has(msg.channelId)) this.openChannelWs(msg.channelId);
           } else {
             this.refreshToken().catch(console.error);

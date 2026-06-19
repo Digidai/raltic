@@ -29,6 +29,17 @@ export const agentsRoutes = new Hono<{ Bindings: Env; Variables: Variables }>();
 const AGENT_STATUS_STALE_MS = 2 * 60_000;
 type AgentStatus = "online" | "sleeping" | "offline";
 type AgentRuntimeMode = "bridge" | "raltic" | "claude" | "codex" | "openclaw" | "hermes";
+const LOCKED_EXPERIMENTAL_BRIDGE_RUNTIMES = new Set(["openclaw", "hermes"]);
+
+function experimentalBridgeRuntimeError(runtime: string | undefined) {
+  if (!runtime || !LOCKED_EXPERIMENTAL_BRIDGE_RUNTIMES.has(runtime)) return null;
+  return {
+    error: {
+      code: "EXPERIMENTAL_RUNTIME_LOCKED",
+      message: `${runtime} is locked until the OpenClaw/Hermes smoke-test runbook passes`,
+    },
+  };
+}
 
 function computedAgentStatus<T extends {
   status: AgentStatus;
@@ -166,6 +177,10 @@ agentsRoutes.post("/api/v1/agents", requireAuth, async (c) => {
   const body = createAgentRequest.parse(await c.req.json());
   const ctx = ctxFor(c);
   await requirePolicy(policy.agents.canCreate(ctx, body.serverId));
+  if (body.runtimeMode === "bridge") {
+    const locked = experimentalBridgeRuntimeError(body.runtime);
+    if (locked) return c.json(locked, 400);
+  }
   // Workspace-aggregate cap — keeps a 50-member workspace from
   // legitimately spawning 1000 agents/hour collectively. Checked AFTER
   // policy so unauthorized callers can't probe limits.
@@ -228,10 +243,10 @@ agentsRoutes.post("/api/v1/agents", requireAuth, async (c) => {
 
   c.executionCtx.waitUntil(Promise.allSettled([
     notifyGateway(c.env, subject.userId, {
-      v: 1, t: "member_add", channelId: dmChannelId, memberId: subject.userId, memberType: "human" as const,
+      v: 1, t: "member_add", channelId: dmChannelId, channelType: "dm" as const, memberId: subject.userId, memberType: "human" as const,
     }),
     notifyGateway(c.env, subject.userId, {
-      v: 1, t: "member_add", channelId: dmChannelId, memberId: id, memberType: "agent" as const,
+      v: 1, t: "member_add", channelId: dmChannelId, channelType: "dm" as const, memberId: id, memberType: "agent" as const,
     }),
   ]).catch(() => { /* best-effort live refresh */ }));
 
@@ -305,6 +320,10 @@ agentsRoutes.patch("/api/v1/agents/:id", requireAuth, async (c) => {
     const finalRuntime = body.runtime ?? (current[0].runtime as unknown as typeof body.runtime);
     const finalModel = body.model ?? current[0].model;
     const finalRuntimeMode = (body.runtimeMode ?? current[0].runtimeMode) as AgentRuntimeMode;
+    if (finalRuntimeMode === "bridge") {
+      const locked = experimentalBridgeRuntimeError(finalRuntime);
+      if (locked) return c.json(locked, 400);
+    }
     const allowed = finalRuntimeMode && finalRuntimeMode !== "bridge"
       ? CLOUD_RUNTIME_MODELS
       : RUNTIME_MODELS[finalRuntime as keyof typeof RUNTIME_MODELS];

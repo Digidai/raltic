@@ -31,15 +31,21 @@ export interface DesktopBridgeStatus {
   configuredServerIds: string[];
 }
 
+export interface DesktopUpdateCheckResult {
+  ok: boolean;
+  status: "disabled" | "busy" | "sent" | "failed";
+  message: string;
+}
+
 const api = {
   getConfig: (): Promise<DesktopConfig> => ipcRenderer.invoke("config:get"),
-  saveConfig: (cfg: DesktopConfig): Promise<{ ok: true; running: boolean; serverId: string | null; serverIds: string[] }> =>
+  saveConfig: (cfg: DesktopConfig): Promise<DesktopBridgeStatus & { ok: true }> =>
     ipcRenderer.invoke("config:save", cfg),
-  connectBridge: (cfg: DesktopBridgeConnectConfig): Promise<{ ok: true; running: boolean; serverId: string | null; serverIds: string[] }> =>
+  connectBridge: (cfg: DesktopBridgeConnectConfig): Promise<DesktopBridgeStatus & { ok: true }> =>
     ipcRenderer.invoke("bridge:connect", cfg),
   bridgeStatus: (): Promise<DesktopBridgeStatus> =>
     ipcRenderer.invoke("bridge:status"),
-  checkForUpdates: (): Promise<{ ok: true }> =>
+  checkForUpdates: (): Promise<DesktopUpdateCheckResult> =>
     ipcRenderer.invoke("updater:check"),
 };
 

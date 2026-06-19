@@ -158,6 +158,7 @@ export const serverPresence = z.object({
 export const serverMemberAdd = z.object({
   v: z.literal(1), t: z.literal("member_add"),
   channelId: z.string(),
+  channelType: z.enum(["public", "private", "dm"]).optional(),
   memberId: z.string(),
   memberType: z.enum(["human", "agent"]),
 });

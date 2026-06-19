@@ -318,6 +318,12 @@ export const RUNTIME_LABEL: Record<RuntimeId, string> = {
   openclaw: "OpenClaw",
   hermes:   "Hermes Agent",
 };
+export const EXPERIMENTAL_RUNTIME_IDS = ["openclaw", "hermes"] as const satisfies readonly RuntimeId[];
+
+export function isExperimentalRuntime(runtime: RuntimeId): boolean {
+  return (EXPERIMENTAL_RUNTIME_IDS as readonly RuntimeId[]).includes(runtime);
+}
+
 export const RUNTIME_MODELS: Record<RuntimeId, readonly string[]> = {
   claude:   ["sonnet", "opus", "haiku"],
   codex:    ["gpt-5.5", "gpt-5.4", "gpt-5.3-codex-spark"],

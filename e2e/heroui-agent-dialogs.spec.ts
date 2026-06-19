@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import {
+  agents,
   assertOverlayMetrics,
   assertSelectedRadioOwnsSingleSurface,
   contrast,
@@ -167,6 +168,9 @@ test("create agent dialog covers mobile viewport, runtime controls, and iOS-safe
   await dialog.locator("[data-slot='radio']").filter({ hasText: "My machine (Bridge)" }).click();
   await assertSelectedRadioOwnsSingleSurface(dialog.getByRole("radio", { name: /My machine \(Bridge\)/ }), "agent runtime mode");
   await expect(dialog.getByRole("radiogroup", { name: "Runtime" })).toBeVisible();
+  await expect(dialog.locator("input[type='radio'][value='openclaw']")).toBeDisabled();
+  await expect(dialog.locator("input[type='radio'][value='hermes']")).toBeDisabled();
+  await expect(dialog.getByText("Experimental runtime. Agent creation is locked until the OpenClaw/Hermes smoke runbook passes.").first()).toBeVisible();
   await dialog.locator("[data-slot='radio']").filter({ hasText: "OpenAI Codex" }).click();
   await assertSelectedRadioOwnsSingleSurface(dialog.getByRole("radio", { name: /OpenAI Codex/ }), "agent runtime");
   await dialog.getByLabel("Agent model").selectOption("gpt-5.4");
@@ -209,6 +213,40 @@ test("edit agent dialog from settings loads readable content without horizontal 
 
   await assertDialogFooterVisibleInVisualViewport(page, dialogName, 520);
   await expect(dialog.getByRole("button", { name: "Save" })).toBeVisible();
+});
+
+test("edit bridge agent dialog keeps experimental runtimes locked", async ({ page, context }) => {
+  const agentPatches: Array<{ agentId: string; patch: Record<string, unknown> }> = [];
+  await setupMockWorkspace(page, context, {
+    agents: agents.map((agent) => agent.id === "agent-cloud"
+      ? { ...agent, runtimeMode: "bridge" as const, runtime: "codex" as const, model: "gpt-5.5" }
+      : agent),
+    agentPatches,
+  });
+  await openSettingsAgents(page);
+
+  await page.getByRole("button", { name: "Edit Cloud Test Agent" }).click();
+  const dialogName = /Edit cloud-test/;
+  const dialog = page.getByRole("dialog", { name: dialogName });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("radiogroup", { name: "Runtime" })).toBeVisible();
+  await assertSelectedRadioOwnsSingleSurface(dialog.getByRole("radio", { name: /OpenAI Codex/ }), "edit agent bridge runtime");
+  await expect(dialog.locator("input[type='radio'][value='openclaw']")).toBeDisabled();
+  await expect(dialog.locator("input[type='radio'][value='hermes']")).toBeDisabled();
+  await expect(dialog.getByText("Experimental runtime. Locked until the OpenClaw/Hermes smoke runbook passes.").first()).toBeVisible();
+
+  await dialog.locator("[data-slot='radio']").filter({ hasText: "Anthropic Claude Code" }).click();
+  await dialog.getByLabel("Agent model").selectOption("sonnet");
+  await dialog.getByRole("button", { name: "Save" }).click();
+
+  await expect.poll(() => agentPatches.length).toBe(1);
+  expect(agentPatches[0]).toMatchObject({
+    agentId: "agent-cloud",
+    patch: {
+      runtime: "claude",
+      model: "sonnet",
+    },
+  });
 });
 
 test("dark mode create and edit agent dialogs keep close, text, and primary button contrast", async ({ page, context }) => {

@@ -71,7 +71,7 @@ export default function TeamsPage() {
               Per-computer runtime keys, instant revocation, audit log of every agent + connector grant. When someone leaves, one click disconnects every local runtime they owned.
             </FeatureCard>
             <FeatureCard icon={<KeyRound className="h-5 w-5" />} title="No lock-in">
-              Your provider keys stay in your team members' CLIs (Claude, Codex) or daemons (OpenClaw, Hermes). Raltic doesn't proxy them or mark up the AI you already pay for.
+              Your provider keys stay in your team members' CLIs. Claude and Codex are verified today; OpenClaw and Hermes remain visible for evaluation until smoke verification passes.
             </FeatureCard>
             <FeatureCard icon={<Users className="h-5 w-5" />} title="Workflow rooms">
               Rooms, tasks, approvals, DMs, and threads — familiar coordination, organized around owned work instead of another private agent chat.
@@ -92,7 +92,7 @@ export default function TeamsPage() {
             <BoxCard title="Today">
               <ul className="space-y-2 text-sm text-zinc-700">
                 <li>· Workflow rooms, DMs, threads, tasks, mentions</li>
-                <li>· Four runtimes (Claude, Codex, OpenClaw, Hermes)</li>
+                <li>· Claude + Codex bridge runtimes; OpenClaw/Hermes experimental and locked</li>
                 <li>· Runtime keys + instant revoke</li>
                 <li>· Connectors (GitHub, Linear, Notion)</li>
                 <li>· Agentic memory + workspace files</li>

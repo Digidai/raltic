@@ -48,6 +48,7 @@ export const starterWorkflowChannel = {
   description: "Workflow room for launch proof, docs, support risk, approval, and owner handoff.",
   maxSeq: 0,
   lastReadSeq: 0,
+  agentIds: ["agent-onboard"],
 };
 
 export const discoverWorkflowChannel = {
@@ -268,6 +269,10 @@ const CLOUD_RUNTIME_MODELS = [
   "gemini-2.5-pro",
 ] as const;
 
+function experimentalRuntimeLocked(runtime: MockRuntimeId): boolean {
+  return runtime === "openclaw" || runtime === "hermes";
+}
+
 type MockAgent = Omit<(typeof agents)[number], "runtime" | "runtimeMode" | "model"> & {
   runtime: MockRuntimeId;
   runtimeMode: "bridge" | "raltic";
@@ -306,6 +311,11 @@ export const channelMembers = [
   { channelId: "ch-onboarding", memberId: "u1", memberType: "human", joinedAt: Date.now() },
   { channelId: "ch-onboarding", memberId: "agent-onboard", memberType: "agent", joinedAt: Date.now() },
   { channelId: "ch-onboarding", memberId: "agent-cloud", memberType: "agent", joinedAt: Date.now() },
+];
+
+export const starterWorkflowMembers = [
+  { channelId: "ch-new", memberId: "u1", memberType: "human", joinedAt: Date.now() },
+  { channelId: "ch-new", memberId: "agent-onboard", memberType: "agent", joinedAt: Date.now() },
 ];
 
 function corsHeaders() {
@@ -575,6 +585,7 @@ export async function setupMockWorkspace(
   } = {},
 ) {
   const hasConnectedBridge = options.hasConnectedBridge ?? true;
+  let createdStarterWorkflow = false;
   let joinedDiscoverWorkflow = false;
   const joinedWorkflowIds = new Set<string>();
   const mockAgents = (options.agents ?? agents).map((agent) => ({ ...agent })) as MockAgent[];
@@ -594,13 +605,15 @@ export async function setupMockWorkspace(
     const method = route.request().method();
     if (method === "OPTIONS") return route.fulfill(noContent());
     if (path === "/api/v1/servers/by-slug/demo") {
+      const defaultChannels = [
+        onboardingChannel,
+        researchChannel,
+        ...(createdStarterWorkflow ? [starterWorkflowChannel] : []),
+        { ...discoverWorkflowChannel, isMember: joinedDiscoverWorkflow },
+        dmChannel,
+      ];
       const visibleChannels = (options.channels
-        ?? [
-          onboardingChannel,
-          researchChannel,
-          { ...discoverWorkflowChannel, isMember: joinedDiscoverWorkflow },
-          dmChannel,
-        ]).map((channel) => joinedWorkflowIds.has(channel.id) ? { ...channel, isMember: true } : channel);
+        ?? defaultChannels).map((channel) => joinedWorkflowIds.has(channel.id) ? { ...channel, isMember: true } : channel);
       return route.fulfill(json({ server, channels: visibleChannels, agents: mockAgents }));
     }
     if (path === "/api/v1/me") return route.fulfill(json({
@@ -794,7 +807,7 @@ export async function setupMockWorkspace(
     }));
     if (path === "/api/v1/channels/ch-new") return route.fulfill(json({
       channel: starterWorkflowChannel,
-      members: channelMembers,
+      members: starterWorkflowMembers,
       peer: null,
       viewerCanManage: true,
       viewerCanAddMembers: true,
@@ -821,7 +834,11 @@ export async function setupMockWorkspace(
     if (path === "/api/v1/ws/token") return route.fulfill(json({ token: "ws-mock", wsUrl: "ws://127.0.0.1:9/ws/channel/ch-onboarding" }));
     if (path.endsWith("/read") && method === "POST") return route.fulfill(json({ ok: true }));
     if (path === "/api/v1/dm" && method === "POST") return route.fulfill(json({ channelId: "dm-agent", created: false }));
-    if (path === "/api/v1/channels" && method === "POST") return route.fulfill(json({ id: "ch-new" }));
+    if (path === "/api/v1/channels" && method === "POST") {
+      createdStarterWorkflow = true;
+      joinedWorkflowIds.add("ch-new");
+      return route.fulfill(json({ id: "ch-new" }));
+    }
     if (path.startsWith("/api/v1/channels/") && path.endsWith("/join") && method === "POST") {
       const channelId = path.split("/").at(-2);
       if (channelId) joinedWorkflowIds.add(channelId);
@@ -859,6 +876,14 @@ export async function setupMockWorkspace(
       const nextRuntime = patch.runtime ?? target.runtime;
       const nextRuntimeMode = patch.runtimeMode ?? target.runtimeMode;
       const nextModel = patch.model ?? target.model;
+      if (nextRuntimeMode === "bridge" && experimentalRuntimeLocked(nextRuntime)) {
+        return route.fulfill(json({
+          error: {
+            code: "EXPERIMENTAL_RUNTIME_LOCKED",
+            message: `${nextRuntime} is visible for evaluation, but agent creation is locked until smoke verification passes.`,
+          },
+        }, 400));
+      }
       const allowed = nextRuntimeMode === "bridge"
         ? BRIDGE_RUNTIME_MODELS[nextRuntime]
         : CLOUD_RUNTIME_MODELS;
@@ -875,7 +900,21 @@ export async function setupMockWorkspace(
       Object.assign(target, patch, { updatedAt: Date.now() });
       return route.fulfill(json({ ok: true }));
     }
-    if (path === "/api/v1/agents" && method === "POST") return route.fulfill(json({ id: "agent-new" }));
+    if (path === "/api/v1/agents" && method === "POST") {
+      const body = JSON.parse(route.request().postData() || "{}") as Partial<{
+        runtime: MockRuntimeId;
+        runtimeMode: "bridge" | "raltic";
+      }>;
+      if (body.runtimeMode === "bridge" && body.runtime && experimentalRuntimeLocked(body.runtime)) {
+        return route.fulfill(json({
+          error: {
+            code: "EXPERIMENTAL_RUNTIME_LOCKED",
+            message: `${body.runtime} is visible for evaluation, but agent creation is locked until smoke verification passes.`,
+          },
+        }, 400));
+      }
+      return route.fulfill(json({ id: "agent-new" }));
+    }
     return route.fulfill(json({ error: { code: "MOCK_MISS", message: path } }, 404));
   });
 }

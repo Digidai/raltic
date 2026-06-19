@@ -4,11 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ToastProvider } from "@/components/heroui-pro/toast";
 import { QueryProvider } from "@/components/query-provider";
-
-const SITE_URL = "https://raltic.com";
-const SITE_TITLE = "Raltic — Launch agent workflows in minutes";
-const SITE_DESCRIPTION =
-  "Raltic helps AI-native operators start cloud agent workflow rooms, review the next action, and keep approvals and memory visible before adding local runtimes.";
+import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

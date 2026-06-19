@@ -5,6 +5,7 @@ import {
   assertReadableCodeBlocks,
   assertReadableInlineTokens,
   assertSelectedRadioOwnsSingleSurface,
+  agents,
   clickVisible,
   json,
   openMembersDialog,
@@ -14,6 +15,23 @@ import {
   simulateVisualViewportHeight,
 } from "./helpers/heroui-workspace";
 import { isPreDeployProductionTarget } from "./helpers/env";
+
+const SETUP_WIZARD_DIALOG_NAMES = {
+  any: /Connect (?:a |another )?local runtime|Configure local runtime/,
+  fresh: /^Connect a local runtime$/,
+  additional: /^Connect another local runtime$/,
+  configure: /^Configure local runtime$/,
+} as const;
+
+function bridgeStarterAgents() {
+  return agents.map((agent) => agent.name === "onboarding"
+    ? { ...agent, runtimeMode: "bridge" as const, runtime: "claude" as const, model: "sonnet" }
+    : agent);
+}
+
+function setupWizardDialog(page: Page, mode: keyof typeof SETUP_WIZARD_DIALOG_NAMES = "any") {
+  return page.getByRole("dialog", { name: SETUP_WIZARD_DIALOG_NAMES[mode] });
+}
 
 async function assertComposerFollowsVisualViewport(page: Page) {
   await page.getByRole("textbox", { name: /Message onboarding/ }).focus();
@@ -241,7 +259,7 @@ test("message attachments and quick reactions use HeroUI surfaces", async ({ pag
 
 test("setup wizard uses HeroUI surfaces through the bridge command step", async ({ page, context }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await setupMockWorkspace(page, context);
+  await setupMockWorkspace(page, context, { agents: bridgeStarterAgents() });
   await page.route("**/api/v1/machine-keys", async (route) => {
     if (route.request().method() !== "POST") return route.fallback();
     return route.fulfill({
@@ -256,7 +274,7 @@ test("setup wizard uses HeroUI surfaces through the bridge command step", async 
   });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Connect another local runtime|Connect a local runtime/ });
+  const dialog = setupWizardDialog(page, "additional");
   await expect(dialog).toBeVisible({ timeout: 15_000 });
   await expect(dialog.getByText("You already have a bridge connected.")).toBeVisible();
   await expect(dialog.getByText("You'll need on this computer:")).toBeVisible();
@@ -347,7 +365,7 @@ test("setup wizard runtime picker uses one HeroUI radio selected surface", async
   await setupMockWorkspace(page, context, { hasConnectedBridge: false });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+  const dialog = setupWizardDialog(page, "fresh");
   await expect(dialog).toBeVisible({ timeout: 15_000 });
   await expect(dialog.getByText("Which runtime should power local workflows?")).toBeVisible();
   await expect(dialog.getByRole("radio", { name: /OpenClaw/ })).toHaveCount(0);
@@ -369,17 +387,17 @@ test("setup wizard runtime picker uses one HeroUI radio selected surface", async
   await expect(advancedToggle).toHaveAttribute("aria-expanded", "false");
   await advancedToggle.click();
   await expect(advancedToggle).toHaveAttribute("aria-expanded", "true");
-  await expect(dialog.getByRole("radio", { name: /OpenClaw/ })).toBeVisible();
-  await expect(dialog.getByRole("radio", { name: /Hermes Agent/ })).toBeVisible();
-  await dialog.locator("[data-slot='radio']").filter({ hasText: "OpenClaw" }).click();
+  await expect(dialog.locator("input[type='radio'][value='openclaw']")).toBeDisabled();
+  await expect(dialog.locator("input[type='radio'][value='hermes']")).toBeDisabled();
+  await expect(dialog.getByText("Experimental daemon runtime. Locked until the OpenClaw/Hermes smoke runbook passes.").first()).toBeVisible();
   await assertSelectedRadioOwnsSingleSurface(
-    dialog.getByRole("radio", { name: /OpenClaw/ }),
-    "setup wizard advanced runtime",
+    dialog.getByRole("radio", { name: /OpenAI Codex/ }),
+    "setup wizard runtime remains codex",
   );
-  await expect(dialog.getByText(/openclaw onboard/)).toBeVisible();
+  await expect(dialog.getByText(/codex login/)).toBeVisible();
   await advancedToggle.click();
-  await expect(dialog.getByRole("button", { name: /Advanced daemon runtimes \(OpenClaw selected\)/ })).toBeVisible();
-  await expect(dialog.getByRole("radio", { name: /OpenClaw/ })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Advanced daemon runtimes" })).toBeVisible();
+  await expect(dialog.locator("input[type='radio'][value='openclaw']")).toHaveCount(0);
 });
 
 for (const runtimeCase of [
@@ -391,29 +409,13 @@ for (const runtimeCase of [
     install: "npm install -g @openai/codex",
     login: "codex login",
   },
-  {
-    label: "OpenClaw",
-    advanced: true,
-    title: "OpenClaw CLI or daemon missing?",
-    version: "openclaw --version",
-    install: "npm install -g openclaw",
-    login: "openclaw onboard --install-daemon",
-  },
-  {
-    label: "Hermes Agent",
-    advanced: true,
-    title: "Hermes CLI or daemon missing?",
-    version: "hermes --version",
-    install: "install from the Hermes docs",
-    login: "hermes start",
-  },
 ]) {
   test(`setup wizard troubleshooting follows the selected ${runtimeCase.label} runtime`, async ({ page, context }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await setupMockWorkspace(page, context, { hasConnectedBridge: false });
 
     await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-    const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+    const dialog = setupWizardDialog(page, "fresh");
     await expect(dialog).toBeVisible({ timeout: 15_000 });
     if (runtimeCase.advanced) {
       await dialog.getByRole("button", { name: "Advanced daemon runtimes" }).click();
@@ -460,19 +462,47 @@ test("setup wizard moves the onboarding assistant to the local bridge before fir
   });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+  const dialog = setupWizardDialog(page, "fresh");
   await expect(dialog).toBeVisible({ timeout: 15_000 });
 
   await dialog.getByRole("button", { name: "Continue" }).click();
   await dialog.getByRole("button", { name: "Issue key" }).click();
 
-  await expect(dialog.getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
+  await expect(setupWizardDialog(page).getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
   expect(agentPatches).toContainEqual({
     agentId: "agent-onboard",
     patch: {
       runtimeMode: "bridge",
       runtime: "claude",
       model: "sonnet",
+    },
+  });
+});
+
+test("setup wizard configures the starter agent when a bridge already exists", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const agentPatches: Array<{ agentId: string; patch: Record<string, unknown> }> = [];
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: true,
+    agentPatches,
+  });
+
+  await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
+  const dialog = setupWizardDialog(page, "configure");
+  await expect(dialog).toBeVisible({ timeout: 15_000 });
+  await expect(dialog.getByText("No new key is needed.")).toBeVisible();
+  await expect(dialog.getByText("Which runtime should power local workflows?")).toBeVisible();
+
+  await dialog.locator("[data-slot='radio']").filter({ hasText: "OpenAI Codex" }).click();
+  await dialog.getByRole("button", { name: "Use existing bridge" }).click();
+
+  await expect(setupWizardDialog(page).getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
+  expect(agentPatches).toContainEqual({
+    agentId: "agent-onboard",
+    patch: {
+      runtimeMode: "bridge",
+      runtime: "codex",
+      model: "gpt-5.5",
     },
   });
 });
@@ -506,10 +536,10 @@ test("setup wizard resume keeps the selected runtime and still runs runtime setu
   });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+  const dialog = setupWizardDialog(page, "fresh");
   await expect(dialog).toBeVisible({ timeout: 15_000 });
 
-  await expect(dialog.getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
+  await expect(setupWizardDialog(page).getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
   expect(agentPatches).toContainEqual({
     agentId: "agent-onboard",
     patch: {
@@ -518,6 +548,47 @@ test("setup wizard resume keeps the selected runtime and still runs runtime setu
       model: "gpt-5.5",
     },
   });
+});
+
+test("setup wizard ignores forged experimental runtime resume state", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const connectedAt = Date.now();
+  const agentPatches: Array<{ agentId: string; patch: Record<string, unknown> }> = [];
+  await setupMockWorkspace(page, context, {
+    hasConnectedBridge: false,
+    machineKeys: [{
+      id: "mk-openclaw",
+      prefix: "ck_openclaw",
+      name: "My Mac",
+      serverId: "srv-demo",
+      createdAt: connectedAt - 1_000,
+      lastUsedAt: connectedAt,
+      revokedAt: null,
+      lastDetectedAt: connectedAt,
+      machines: [],
+    }],
+    agentPatches,
+  });
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem("raltic:wizard:resume:srv-demo", JSON.stringify({
+      issuedKeyId: "mk-openclaw",
+      keyName: "My Mac",
+      runtime: "openclaw",
+      at: Date.now(),
+    }));
+  });
+
+  await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
+  const dialog = setupWizardDialog(page, "fresh");
+  await expect(dialog).toBeVisible({ timeout: 15_000 });
+  await expect(dialog.getByText("Which runtime should power local workflows?")).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: /Claude Code/ })).toBeChecked();
+  await expect
+    .poll(() => agentPatches.length, { timeout: 1_000 })
+    .toBe(0);
+  await expect
+    .poll(() => page.evaluate(() => window.sessionStorage.getItem("raltic:wizard:resume:srv-demo")))
+    .toBeNull();
 });
 
 test("setup wizard stops before the first workflow step when runtime setup fails", async ({ page, context }) => {
@@ -554,7 +625,7 @@ test("setup wizard stops before the first workflow step when runtime setup fails
   });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Connect a local runtime/ });
+  const dialog = setupWizardDialog(page, "fresh");
   await expect(dialog).toBeVisible({ timeout: 15_000 });
 
   await dialog.locator("[data-slot='radio']").filter({ hasText: "OpenAI Codex" }).click();
@@ -571,6 +642,7 @@ test("setup wizard stops before the first workflow step when runtime setup fails
 test("setup wizard keeps users on the old key when revocation fails", async ({ page, context }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setupMockWorkspace(page, context, {
+    agents: bridgeStarterAgents(),
     failMachineKeyRevoke: true,
     createMachineKeyResponse: {
       id: "mk-stale",
@@ -580,7 +652,7 @@ test("setup wizard keeps users on the old key when revocation fails", async ({ p
   });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = page.getByRole("dialog", { name: /Connect another local runtime|Connect a local runtime/ });
+  const dialog = setupWizardDialog(page, "additional");
   await expect(dialog).toBeVisible({ timeout: 15_000 });
 
   await dialog.getByRole("button", { name: "Issue a new runtime key" }).click();

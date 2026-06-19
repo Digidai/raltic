@@ -8,6 +8,7 @@ type Rgb = {
 };
 
 const MINIMUM_FOOTER_PATHS = [
+  "/workflows",
   "/runtimes",
   "/connectors",
   "/security",
@@ -208,6 +209,7 @@ test.describe("homepage CTAs", () => {
 
 test.describe("homepage top navigation", () => {
   for (const { name, path } of [
+    { name: "Workflows", path: "/workflows" },
     { name: "Runtimes", path: "/runtimes" },
     { name: "Connectors", path: "/connectors" },
     { name: "Security", path: "/security" },
@@ -238,6 +240,7 @@ test.describe("homepage top navigation", () => {
     await expect(menu).toBeVisible();
 
     for (const label of [
+      "Workflows",
       "Runtimes",
       "Connectors",
       "Desktop beta",

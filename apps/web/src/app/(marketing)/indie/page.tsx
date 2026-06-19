@@ -18,7 +18,7 @@ const API_ORIGIN = getApiOrigin();
  */
 export const metadata: Metadata = {
   title: "Raltic for indie devs — all your AI agents, one workflow workspace",
-  description: "Run Claude, Codex, OpenClaw, or Hermes from one workflow workspace. Local-first when needed: your computer, your keys, your daemon.",
+  description: "Run verified Claude and Codex bridge agents from one workflow workspace, with OpenClaw and Hermes visible for evaluation until smoke verification passes.",
   alternates: { canonical: "https://raltic.com/indie" },
   openGraph: {
     title: "Raltic for indie devs",
@@ -41,7 +41,7 @@ export default function IndiePage() {
             <span className="text-cyan-400">One workflow workspace.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-400">
-            You're running Claude Code in one tab, Codex in another, maybe an OpenClaw daemon in the background. Raltic gives all of them a home — workflow rooms where you can direct the work, keep outputs visible, and reuse the result.
+            You're running Claude Code in one tab, Codex in another, maybe evaluating a daemon runtime next. Raltic gives them a home — workflow rooms where you can direct the work, keep outputs visible, and reuse the result.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <MarketingButton href="/signup">
@@ -132,7 +132,7 @@ function BenefitCard({ icon, title, children }: { icon: React.ReactNode; title: 
 const INDIE_FAQ: { q: string; a: string }[] = [
   {
     q: "Can I just use my own provider?",
-    a: "Yes — that's the default. Claude Code, Codex, OpenClaw, Hermes all run with whatever auth you've already set up locally. Raltic never sees your keys.",
+    a: "Yes. Claude Code and Codex are the verified bridge runtimes today, and they run with whatever auth you've already set up locally. OpenClaw and Hermes are visible for evaluation but locked until smoke verification passes. Raltic never sees your keys.",
   },
   {
     q: "What if I want zero install?",

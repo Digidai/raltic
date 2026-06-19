@@ -6,11 +6,12 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/heroui-pro/button";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
-import { api, type Agent, type AgentRun, type Channel, type Server, type TaskRow } from "@/lib/api";
+import { api, isExperimentalRuntime, type Agent, type AgentRun, type Channel, type Server, type TaskRow } from "@/lib/api";
 import { SetupWizard } from "@/components/setup-wizard";
 import { BrandMonogram } from "@/components/brand";
 import { notifyError, notifyThrown } from "@/lib/notify";
 import { trackProductEvent } from "@/lib/product-tracking";
+import { clearStoredWorkflowStarterIntent, readStoredWorkflowStarterIntent } from "@/lib/workflow-intent";
 import { WORKFLOW_STARTERS, type WorkflowStarterKey, type WorkflowStarterTemplate } from "@/lib/workflow-starters";
 import {
   ArrowRight,
@@ -107,6 +108,7 @@ export default function ServerHomePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [personal, setPersonal] = useState<PersonalRef | null>(null);
   const [startingWorkflow, setStartingWorkflow] = useState<WorkflowStarterKey | null>(null);
+  const [pendingStarterAfterRuntime, setPendingStarterAfterRuntime] = useState<WorkflowStarterKey | null>(null);
   const [selectedStarterKey, setSelectedStarterKey] = useState<WorkflowStarterKey>("launch-readiness");
   const [tasks, setTasks] = useState<TaskRow[] | null>(null);
   const [agentRuns, setAgentRuns] = useState<AgentRun[] | null>(null);
@@ -114,6 +116,13 @@ export default function ServerHomePage() {
 
   // Is the user looking at their own personal workspace?
   const onPersonalWorkspace = stats != null && personal != null && stats.id === personal.id;
+
+  useEffect(() => {
+    const storedStarter = readStoredWorkflowStarterIntent();
+    if (!storedStarter) return;
+    setSelectedStarterKey(storedStarter);
+    clearStoredWorkflowStarterIntent();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,7 +201,7 @@ export default function ServerHomePage() {
         // show the runtime boundary panel below, and explicit `?wizard=1`
         // or a local-runtime starter opens the wizard when needed.
         const amOnPersonal = personalRef && personalRef.id === data.server.id;
-        const hasBridgeAgentHere = data.agents?.some(a => (a as { runtimeMode?: string }).runtimeMode === "bridge") ?? false;
+        const hasBridgeAgentHere = data.agents?.some(isVerifiedBridgeAgent) ?? false;
         setHasBridgeAgents(hasBridgeAgentHere);
         if (forceWizard) {
           setWizardOpen(true);
@@ -214,13 +223,91 @@ export default function ServerHomePage() {
 
   function handleWizardDismiss() {
     setWizardOpen(false);
+    setPendingStarterAfterRuntime(null);
     if (!forceWizard && userId && personal) snoozeWizard(userId, personal.slug);
   }
+
+  const openWorkflowRoom = useCallback(async (
+    starter: WorkflowStarterTemplate,
+    statsSnapshot: ServerStats,
+    starterAgentId: string,
+  ) => {
+    const existing = statsSnapshot.channels.find((c) => c.type !== "dm" && c.name === starter.channelName);
+
+    let channelId: string;
+    if (existing && existing.isMember !== false) {
+      if (!existing.agentIds.includes(starterAgentId)) {
+        await api.addChannelMembers(existing.id, { agentIds: [starterAgentId] });
+        setStats((prev) => prev ? {
+          ...prev,
+          channels: prev.channels.map((c) => c.id === existing.id
+            ? { ...c, agentIds: Array.from(new Set([...c.agentIds, starterAgentId])) }
+            : c),
+        } : prev);
+      }
+      channelId = existing.id;
+      trackProductEvent("workflow_room_opened", starter.key);
+    } else if (existing) {
+      await api.joinChannel(existing.id);
+      if (!existing.agentIds.includes(starterAgentId)) {
+        await api.addChannelMembers(existing.id, { agentIds: [starterAgentId] });
+      }
+      channelId = existing.id;
+      trackProductEvent("workflow_room_joined", starter.key);
+    } else {
+      const res = await api.createChannel({
+        serverId: statsSnapshot.id,
+        name: starter.channelName,
+        description: starter.description,
+        type: starter.type,
+        initialAgentIds: [starterAgentId],
+      });
+      channelId = res.id;
+      trackProductEvent("workflow_room_created", starter.key);
+    }
+    window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
+    router.push(`/s/${slug}/channel/${channelId}?starter=${starter.key}`);
+  }, [router, slug]);
 
   const handleBridgeConnected = useCallback(() => {
     setHasBridgeInPersonal(true);
     if (onPersonalWorkspace) setHasBridgeHere(true);
-  }, [onPersonalWorkspace]);
+    void (async () => {
+      let nextStats: ServerStats;
+      try {
+        const refreshed = await api.getServerBySlug(slug);
+        nextStats = buildServerStats(refreshed);
+        setStats(nextStats);
+        setHasBridgeAgents(refreshed.agents?.some(isVerifiedBridgeAgent) ?? false);
+      } catch (e) {
+        notifyThrown("Couldn't refresh runtime agents", e);
+        return;
+      }
+
+      const pendingStarter = pendingStarterAfterRuntime
+        ? WORKFLOW_STARTERS.find((starter) => starter.key === pendingStarterAfterRuntime)
+        : null;
+      if (!pendingStarter) return;
+      if (!nextStats.localStarterAgentId) {
+        notifyError(
+          "Local runtime is connected",
+          "Raltic couldn't find a verified local agent yet. Try the workflow again after the runtime status refreshes.",
+        );
+        return;
+      }
+
+      setWizardOpen(false);
+      setPendingStarterAfterRuntime(null);
+      setStartingWorkflow(pendingStarter.key);
+      try {
+        await openWorkflowRoom(pendingStarter, nextStats, nextStats.localStarterAgentId);
+      } catch (e) {
+        notifyThrown("Couldn't start workflow after runtime setup", e);
+      } finally {
+        setStartingWorkflow(null);
+      }
+    })();
+  }, [onPersonalWorkspace, openWorkflowRoom, pendingStarterAfterRuntime, slug]);
 
   async function ensureCloudStarterAgentId(): Promise<string | null> {
     if (!stats) return null;
@@ -268,50 +355,15 @@ export default function ServerHomePage() {
     return ensureCloudStarterAgentId();
   }
 
-  async function ensureStarterAgentMembership(channel: ServerStatsChannel, agentId: string | null): Promise<void> {
-    if (!agentId || channel.agentIds.includes(agentId)) return;
-    await api.addChannelMembers(channel.id, { agentIds: [agentId] });
-    setStats((prev) => prev ? {
-      ...prev,
-      channels: prev.channels.map((c) => c.id === channel.id
-        ? { ...c, agentIds: Array.from(new Set([...c.agentIds, agentId])) }
-        : c),
-    } : prev);
-  }
-
   async function startWorkflowRoom(starter: WorkflowStarterTemplate) {
     if (!stats || startingWorkflow) return;
     trackProductEvent("workflow_starter_click", starter.key);
-    const existing = stats.channels.find((c) => c.type !== "dm" && c.name === starter.channelName);
 
     setStartingWorkflow(starter.key);
     try {
       const starterAgentId = await resolveStarterAgentId(starter);
       if (!starterAgentId) return;
-
-      let channelId: string;
-      if (existing && existing.isMember !== false) {
-        await ensureStarterAgentMembership(existing, starterAgentId);
-        channelId = existing.id;
-        trackProductEvent("workflow_room_opened", starter.key);
-      } else if (existing) {
-        await api.joinChannel(existing.id);
-        await ensureStarterAgentMembership(existing, starterAgentId);
-        channelId = existing.id;
-        trackProductEvent("workflow_room_joined", starter.key);
-      } else {
-        const res = await api.createChannel({
-          serverId: stats.id,
-          name: starter.channelName,
-          description: starter.description,
-          type: starter.type,
-          initialAgentIds: starterAgentId ? [starterAgentId] : undefined,
-        });
-        channelId = res.id;
-        trackProductEvent("workflow_room_created", starter.key);
-      }
-      window.dispatchEvent(new CustomEvent("raltic:channels-changed"));
-      router.push(`/s/${slug}/channel/${channelId}?starter=${starter.key}`);
+      await openWorkflowRoom(starter, stats, starterAgentId);
     } catch (e) {
       notifyThrown("Couldn't start workflow", e);
     } finally {
@@ -337,10 +389,12 @@ export default function ServerHomePage() {
   const defaultStarter = WORKFLOW_STARTERS.find((starter) => starter.key === "launch-readiness") ?? WORKFLOW_STARTERS[0]!;
   const selectedStarter = WORKFLOW_STARTERS.find((starter) => starter.key === selectedStarterKey) ?? defaultStarter;
   const selectedState = starterState(stats.channels, selectedStarter);
+  const selectedStarterNeedsRuntime = selectedStarter.requiresLocalRuntime && !stats.localStarterAgentId;
 
   function handleStarterAction(starter: WorkflowStarterTemplate) {
-    if (starter.requiresLocalRuntime && !hasBridgeHere) {
+    if (starter.requiresLocalRuntime && !stats?.localStarterAgentId) {
       trackProductEvent("workflow_starter_runtime_gate_opened", starter.key);
+      setPendingStarterAfterRuntime(starter.key);
       setWizardOpen(true);
       return;
     }
@@ -385,7 +439,7 @@ export default function ServerHomePage() {
                       className="w-full justify-center sm:w-auto"
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      {selectedState === "member" ? "Open selected workflow" : selectedState === "joinable" ? "Join selected workflow" : selectedStarter.requiresLocalRuntime && !hasBridgeHere ? "Connect runtime" : "Start selected workflow"}
+                      {selectedState === "member" ? "Open selected workflow" : selectedState === "joinable" ? "Join selected workflow" : selectedStarterNeedsRuntime ? "Connect runtime" : "Start selected workflow"}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
                     {stats.onboardingDmId && (
@@ -454,7 +508,7 @@ export default function ServerHomePage() {
               <WorkflowStarterCard
                 key={starter.key}
                 starter={starter}
-                hasLocalRuntime={Boolean(hasBridgeHere)}
+                hasLocalRuntime={Boolean(stats.localStarterAgentId)}
                 selected={starter.key === selectedStarter.key}
                 state={starterState(stats.channels, starter)}
                 loading={startingWorkflow === starter.key}
@@ -543,6 +597,7 @@ export default function ServerHomePage() {
           serverId={personal.id}
           serverSlug={personal.slug}
           hasExistingBridge={hasBridgeInPersonal ?? false}
+          needsStarterAgentSetup={onPersonalWorkspace && !stats.localStarterAgentId}
           // "invite" flavor only when the user is currently looking at
           // an invited workspace (i.e. not the personal one). Drives
           // step-1 copy referencing the inviter's workspace name.
@@ -583,12 +638,16 @@ function pickCloudStarterAgentId(agents: Agent[]): string | null {
 }
 
 function pickLocalStarterAgentId(agents: Agent[]): string | null {
-  const bridgeAgents = agents.filter((agent) => agent.runtimeMode === "bridge");
+  const bridgeAgents = agents.filter(isVerifiedBridgeAgent);
   return (
     bridgeAgents.find((agent) => agent.name === "onboarding")
     ?? bridgeAgents.find((agent) => agent.isDefault)
     ?? bridgeAgents[0]
   )?.id ?? null;
+}
+
+function isVerifiedBridgeAgent(agent: Agent): boolean {
+  return agent.runtimeMode === "bridge" && !isExperimentalRuntime(agent.runtime);
 }
 
 function buildServerStats(data: { server: Server; channels: Channel[]; agents: Agent[] }): ServerStats {
@@ -645,13 +704,14 @@ function StarterChooser({
         {starters.map((starter) => {
           const selected = starter.key === selectedKey;
           return (
-            <button
+            <Button
               key={starter.key}
               type="button"
               aria-pressed={selected}
+              variant={selected ? "primary" : "outline"}
               onClick={() => onSelect(starter)}
               className={[
-                "min-h-[104px] rounded-lg border px-3 py-3 text-left transition-colors",
+                "h-auto min-h-[104px] w-full justify-start rounded-lg border px-3 py-3 text-left transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
                 selected
                   ? "border-accent bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]"
@@ -663,7 +723,7 @@ function StarterChooser({
               <span className="mt-2 block font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                 {starter.firstProof}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>

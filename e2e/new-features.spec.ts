@@ -67,14 +67,16 @@ test.describe("landing — workflow-room framing (post-rewrite)", () => {
 
   test("RuntimeBadges shows all 4 with experimental on openclaw + hermes", async ({ page }) => {
     await page.goto("/");
-    // Scope to the RuntimeBadges section — "Anthropic Claude" also
-    // appears in the FAQ answer ("Four runtimes: Anthropic Claude
-    // and OpenAI Codex…"), which trips Playwright's strict-mode.
-    const badges = page.locator("section", { hasText: /Four runtimes/i });
+    // Scope to the RuntimeBadges section — runtime names also appear
+    // in FAQ answers, which trips Playwright's strict-mode.
+    const badges = page.locator("section", { hasText: /Verified Claude \+ Codex/i });
     await expect(badges.getByText("Anthropic Claude", { exact: true })).toBeVisible();
     await expect(badges.getByText("OpenAI Codex", { exact: true })).toBeVisible();
     await expect(badges.getByText("OpenClaw", { exact: true })).toBeVisible();
     await expect(badges.getByText("Hermes", { exact: true })).toBeVisible();
+    const runtimeStrip = badges.locator("div.mt-5").first();
+    const experimentalCards = runtimeStrip.locator("div.text-center").filter({ hasText: "Experimental" });
+    await expect(experimentalCards).toHaveCount(2);
   });
 });
 

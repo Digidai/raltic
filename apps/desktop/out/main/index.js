@@ -2,7 +2,7 @@ import require$$1$4, { Tray, Menu, app, nativeImage, dialog, ipcMain, BrowserWin
 import { join as join$1, dirname as dirname$1 } from "node:path";
 import { fileURLToPath as fileURLToPath$1 } from "node:url";
 import { homedir } from "node:os";
-import { existsSync as existsSync$1, lstatSync, readFileSync as readFileSync$2, mkdirSync as mkdirSync$1, chmodSync, writeFileSync as writeFileSync$2, renameSync, unlinkSync } from "node:fs";
+import { existsSync as existsSync$1, lstatSync, readFileSync as readFileSync$2, mkdirSync as mkdirSync$1, chmodSync, writeFileSync as writeFileSync$2, renameSync, unlinkSync as unlinkSync$1 } from "node:fs";
 import require$$0$4 from "events";
 import require$$1 from "https";
 import require$$2$1 from "http";
@@ -13,7 +13,7 @@ import require$$0$2 from "stream";
 import require$$2, { fileURLToPath } from "url";
 import require$$0 from "zlib";
 import require$$0$1 from "buffer";
-import require$$1$1, { existsSync, writeFileSync as writeFileSync$1, mkdirSync, readFileSync as readFileSync$1, readdirSync, statSync, rmSync } from "fs";
+import require$$1$1, { existsSync, writeFileSync as writeFileSync$1, mkdirSync, readFileSync as readFileSync$1, unlinkSync, readdirSync, statSync, rmSync } from "fs";
 import require$$1$2, { join, dirname, resolve } from "path";
 import { createRequire } from "node:module";
 import require$$1$5, { execFile, spawn } from "child_process";
@@ -4666,6 +4666,7 @@ const serverMemberAdd = object({
   v: literal(1),
   t: literal("member_add"),
   channelId: string(),
+  channelType: _enum(["public", "private", "dm"]).optional(),
   memberId: string(),
   memberType: _enum(["human", "agent"])
 });
@@ -4955,7 +4956,102 @@ object({
   channelId: string().optional(),
   status: _enum(["todo", "in_progress", "in_review", "done"]).optional(),
   assigneeId: string().optional(),
+  taskId: string().optional(),
   limit: number().int().min(1).max(200).default(50)
+});
+const AGENT_RUN_STATUSES = [
+  "queued",
+  "dispatched",
+  "running",
+  "waiting_input",
+  "completed",
+  "failed",
+  "cancelled"
+];
+const agentRunStatus = _enum(AGENT_RUN_STATUSES);
+const AGENT_RUN_SOURCES = [
+  "channel_mention",
+  "channel_message",
+  "dm",
+  "scheduled",
+  "agent_to_agent",
+  "manual"
+];
+const agentRunSource = _enum(AGENT_RUN_SOURCES);
+object({
+  serverId: string().optional(),
+  channelId: string().optional(),
+  agentId: string().optional(),
+  taskId: string().optional(),
+  status: agentRunStatus.optional(),
+  source: agentRunSource.optional(),
+  limit: number().int().min(1).max(200).default(50)
+});
+object({
+  id: string(),
+  serverId: string(),
+  channelId: string(),
+  agentId: string(),
+  taskId: string().nullable(),
+  source: agentRunSource,
+  status: agentRunStatus,
+  runtimeMode: string(),
+  callerId: string().nullable(),
+  callerType: _enum(["human", "agent", "system"]).nullable(),
+  triggerMessageId: string().nullable(),
+  outputMessageId: string().nullable(),
+  inputPreview: string().nullable(),
+  error: string().nullable(),
+  metadata: unknown().nullable(),
+  startedAt: string().nullable(),
+  completedAt: string().nullable(),
+  createdAt: string(),
+  updatedAt: string()
+});
+object({
+  channelId: string(),
+  agentId: string(),
+  source: agentRunSource,
+  status: _enum(["queued", "dispatched"]).default("queued"),
+  callerId: string().optional(),
+  callerType: _enum(["human", "agent"]).optional(),
+  triggerMessageId: string().nullable().optional(),
+  inputPreview: string().max(500).nullable().optional(),
+  metadata: unknown().nullable().optional()
+});
+object({
+  status: _enum(["running", "waiting_input", "completed", "failed", "cancelled"]),
+  outputMessageId: string().uuid().nullable().optional(),
+  error: string().max(2e3).nullable().optional(),
+  metadata: unknown().nullable().optional()
+});
+object({
+  serverId: string(),
+  limit: number().int().min(1).max(50).default(50)
+});
+const inboxKind = _enum(["dm", "task", "agent_run"]);
+const inboxStatus = union([
+  _enum(["todo", "in_progress", "in_review", "done"]),
+  agentRunStatus
+]);
+const inboxItemRecord = object({
+  id: string(),
+  kind: inboxKind,
+  priority: number$1().int().min(0).max(100),
+  createdAt: number$1().int().nonnegative(),
+  channelId: string(),
+  channelName: string(),
+  channelType: _enum(["public", "private", "dm"]),
+  preview: string().max(500),
+  href: string(),
+  status: inboxStatus.optional(),
+  agentId: string().nullable().optional(),
+  runtimeMode: string().nullable().optional()
+});
+object({
+  items: array(inboxItemRecord),
+  count: number$1().int().nonnegative(),
+  totalCount: number$1().int().nonnegative().optional()
 });
 object({
   serverId: string(),
@@ -5010,6 +5106,29 @@ object({
   name: string(),
   createdAt: number$1().int()
 });
+const SECRET_PATTERNS = [
+  [/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, "Bearer [redacted]"],
+  [/\bck_[A-Za-z0-9]{32,}\b/g, "[redacted token]"],
+  [/\bsy_(?:api|bridge)_[A-Za-z0-9._-]{8,}\b/g, "[redacted token]"],
+  [/\b(?:sk|sk-ant|ghp|gho|ghu|ghs|ghr|github_pat|glpat|xox[baprs]?|hf|SG)-[A-Za-z0-9_./-]{8,}\b/g, "[redacted token]"],
+  [/\bAKIA[0-9A-Z]{16}\b/g, "[redacted token]"],
+  [/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, "[redacted token]"],
+  [/([?&](?:access_token|api_key|auth|key|password|secret|token)=)[^&\s]+/gi, "$1[redacted]"],
+  [/\b((?:api[_-]?key|authorization|password|secret|token)\s*[:=]\s*)[^\s,;]+/gi, "$1[redacted]"],
+  [/\b([A-Z][A-Z0-9_]*(?:API_KEY|SECRET|TOKEN|PASSWORD|AUTH)[A-Z0-9_]*=)[^\s]+/g, "$1[redacted]"],
+  [/https?:\/\/([^/\s:@]+):([^@\s/]+)@/gi, "https://[redacted]@"],
+  [/\/Users\/[^\s)]+/g, "[local path]"],
+  [/\/home\/[^\s)]+/g, "[local path]"],
+  [/[A-Za-z]:\\Users\\[^\s)]+/g, "[local path]"]
+];
+function sanitizeUserVisibleError(value, maxLength = 2e3) {
+  if (value == null) return null;
+  let out2 = value.replace(/\s+/g, " ").trim();
+  for (const [pattern, replacement] of SECRET_PATTERNS) {
+    out2 = out2.replace(pattern, replacement);
+  }
+  return out2.length > maxLength ? `${out2.slice(0, Math.max(0, maxLength - 3))}...` : out2;
+}
 const RESERVED_SLUGS = [
   // Auth + identity
   "login",
@@ -8460,7 +8579,7 @@ class ClaudeSession {
     this.proc.on("error", (err) => {
       const reason = err.code === "ENOENT" ? "not_installed" : err.code === "EACCES" || err.code === "EPERM" ? "permission_denied" : "spawn_failed";
       const message = err.code === "ENOENT" ? "claude-code CLI not found on PATH. Install with `npm i -g @anthropic-ai/claude-code` or set CLAUDE_PATH." : err.code === "EACCES" || err.code === "EPERM" ? `claude binary not executable (${err.code}): ${err.message}` : `claude spawn failed: ${err.message}`;
-      this._emit({ kind: "error", message, reason });
+      this._emit({ kind: "error", message, reason, terminal: true });
       for (const cb of this.listeners.exit) {
         try {
           cb(null);
@@ -8773,7 +8892,7 @@ class CodexSession {
     if (ev.type === "turn.failed") {
       const err = ev.error;
       const msg = err?.message ?? String(ev.message ?? "turn failed");
-      this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg) });
+      this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg), terminal: true });
       return this._emit({ kind: "turn_complete", sessionId: this.threadId ?? "" });
     }
     if (ev.type === "error" || ev.type === "stream.error") {
@@ -8786,7 +8905,7 @@ class CodexSession {
   }
   _classifyError(e) {
     const msg = String(e?.message ?? e);
-    this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg) });
+    this._emit({ kind: "error", message: msg, reason: this._classifyReason(msg), terminal: true });
     this._emit({ kind: "turn_complete", sessionId: this.threadId ?? "" });
   }
   _classifyReason(msg) {
@@ -9091,7 +9210,8 @@ class OpenClawSession {
               cb({
                 kind: "error",
                 message: stderrBuf.trim().slice(0, 500),
-                reason: classifyError$1(stderrBuf)
+                reason: classifyError$1(stderrBuf),
+                terminal: true
               });
             } catch (e) {
               console.error("[openclaw] activity listener threw:", e);
@@ -9395,7 +9515,8 @@ class HermesSession {
               cb({
                 kind: "error",
                 message: stderrBuf.trim().slice(0, 500),
-                reason: classifyError(stderrBuf)
+                reason: classifyError(stderrBuf),
+                terminal: true
               });
             } catch (e) {
               console.error("[hermes] activity listener threw:", e);
@@ -9482,6 +9603,7 @@ function buildAgentEnv(opts) {
   e.RALTIC_AGENT_ID = opts.agentId;
   e.RALTIC_API_URL = opts.apiUrl;
   e.RALTIC_AGENT_TOKEN = opts.agentToken;
+  e.RALTIC_AGENT_RUN_FILE = opts.runContextFile;
   return e;
 }
 class AgentManager {
@@ -9495,6 +9617,7 @@ class AgentManager {
   spawning = /* @__PURE__ */ new Map();
   /** channelId → list of agentIds that should respond to messages in this channel */
   channelToAgents = /* @__PURE__ */ new Map();
+  channelTypes = /* @__PURE__ */ new Map();
   apiUrl;
   agentsDir;
   boot = null;
@@ -9508,12 +9631,17 @@ class AgentManager {
   setBootContext(boot) {
     this.boot = boot;
     this.channelToAgents.clear();
-    for (const ch of boot.channels) this.channelToAgents.set(ch.id, ch.agentIds);
+    this.channelTypes.clear();
+    for (const ch of boot.channels) {
+      this.channelToAgents.set(ch.id, ch.agentIds);
+      this.channelTypes.set(ch.id, ch.type);
+    }
     for (const session of this.sessions.values()) this.writeCliTokenFile(session);
   }
-  addAgentToChannel(channelId, agentId) {
+  addAgentToChannel(channelId, agentId, channelType) {
     if (!this.sessions.has(agentId)) return false;
     const existing = this.channelToAgents.get(channelId) ?? [];
+    if (channelType) this.channelTypes.set(channelId, channelType);
     if (existing.includes(agentId)) return true;
     this.channelToAgents.set(channelId, [...existing, agentId]);
     return true;
@@ -9576,8 +9704,9 @@ ${a.displayName}
     if (!agentIds || agentIds.length === 0) return;
     const formatted = this.formatInboundForAgent(channelId, message);
     for (const agentId of agentIds) {
+      const runId = await this.createRun(agentId, channelId, message);
       try {
-        await this.sendToAgent(agentId, formatted);
+        await this.sendToAgent(agentId, formatted, runId);
       } catch (e) {
         console.error(`[agent ${agentId}] dispatch failed:`, e);
       }
@@ -9597,9 +9726,15 @@ ${a.displayName}
     const senderShort = `user_${m.senderId.slice(0, 8)}`;
     return `[target=${target} msg=${msgShort} time=${time2} type=${m.senderType}] @${senderShort}: ${m.content}`;
   }
-  async sendToAgent(agentId, userMessage) {
+  async sendToAgent(agentId, userMessage, runId) {
     const session = this.sessions.get(agentId);
     if (!session) throw new Error(`agent ${agentId} not initialized`);
+    const unavailable = this.runtimeUnavailableReason(session);
+    if (unavailable) {
+      this.broadcastActivity(agentId, "error", "Runtime unavailable", unavailable.slice(0, 120));
+      await this.updateRun(runId, "failed", { error: unavailable });
+      throw new Error(unavailable);
+    }
     let entry = this.entries.get(agentId);
     if (!entry) {
       let pending = this.spawning.get(agentId);
@@ -9619,23 +9754,42 @@ ${a.displayName}
         })();
         this.spawning.set(agentId, pending);
       }
-      entry = await pending;
+      try {
+        entry = await pending;
+      } catch (e) {
+        await this.updateRun(runId, "failed", {
+          error: e instanceof Error ? e.message : String(e)
+        });
+        throw e;
+      }
     }
     if (entry.busy) {
       console.log(`  [${session.displayName}] busy, queueing (${userMessage.length} chars; queue ${entry.messageQueue.length + 1})`);
-      return new Promise((res, rej) => entry.messageQueue.push({ userMessage, resolve: res, reject: rej }));
+      return new Promise((res, rej) => entry.messageQueue.push({ userMessage, runId, resolve: res, reject: rej }));
     }
     entry.busy = true;
-    void this._sendNow(agentId, session, entry, userMessage);
+    void this._sendNow(agentId, session, entry, userMessage, runId);
   }
-  async _sendNow(agentId, session, entry, userMessage) {
+  async _sendNow(agentId, session, entry, userMessage, runId) {
     console.log(`  [${session.displayName}] forwarding (${userMessage.length} chars)`);
+    entry.currentRunId = runId;
+    entry.currentRunError = void 0;
+    this.writeRunContext(session, runId);
+    await this.updateRun(runId, "running");
     this.broadcastActivity(agentId, "working", "Working", "Message received");
     try {
       await entry.session.send(userMessage);
     } catch (e) {
       console.error(`  [${session.displayName}] send failed:`, e);
       this.broadcastActivity(agentId, "error", "Send failed", e.message.slice(0, 80));
+      await this.updateRun(runId, "failed", {
+        error: e instanceof Error ? e.message : String(e)
+      });
+      if (entry.currentRunId === runId) {
+        entry.currentRunId = void 0;
+        entry.currentRunError = void 0;
+        this.clearRunContext(session);
+      }
       entry.busy = false;
       this.drainQueue(agentId);
     }
@@ -9648,7 +9802,7 @@ ${a.displayName}
     if (!next) return;
     console.log(`  [${session.displayName}] draining queue (${entry.messageQueue.length} remaining)`);
     entry.busy = true;
-    this._sendNow(agentId, session, entry, next.userMessage).then(next.resolve, next.reject);
+    this._sendNow(agentId, session, entry, next.userMessage, next.runId).then(next.resolve, next.reject);
   }
   /** Spawn a new session for an agent via its declared runtime. Handles
    *  detection of the runtime (failure surfaces as an error broadcast),
@@ -9696,21 +9850,32 @@ ${a.displayName}
         agentId,
         apiUrl: this.apiUrl,
         agentToken: this.boot.token,
-        ralticBin: ralticDir
+        ralticBin: ralticDir,
+        runContextFile: this.runContextPath(session)
       })
     });
     const entry = {
       runtime,
       session: rs,
       busy: false,
+      currentRunId: void 0,
+      currentRunError: void 0,
       messageQueue: [],
       unsubs: []
     };
     entry.unsubs.push(rs.on("activity", (ev) => this._onActivity(agentId, session, ev)));
     entry.unsubs.push(rs.on("exit", (code) => {
       console.log(`  [${session.displayName}] runtime exited code=${code}`);
+      const error2 = `runtime exited with code ${code ?? "unknown"}`;
+      if (entry.currentRunId) {
+        void this.updateRun(entry.currentRunId, "failed", { error: error2 });
+        entry.currentRunId = void 0;
+        entry.currentRunError = void 0;
+        this.clearRunContext(session);
+      }
       for (const queued of entry.messageQueue) {
-        queued.reject(new Error(`runtime exited with code ${code}`));
+        void this.updateRun(queued.runId, "failed", { error: error2 });
+        queued.reject(new Error(error2));
       }
       entry.messageQueue = [];
       if (this.entries.get(agentId) === entry) this.entries.delete(agentId);
@@ -9736,6 +9901,20 @@ ${a.displayName}
         this.broadcastActivity(agentId, "idle", "Idle", "");
         const entry = this.entries.get(agentId);
         if (entry) {
+          const runId = entry.currentRunId;
+          const runError = entry.currentRunError;
+          const outputMessageId = this.readRunContext(session, runId)?.outputMessageId ?? null;
+          entry.currentRunId = void 0;
+          entry.currentRunError = void 0;
+          this.clearRunContext(session);
+          if (runId) {
+            const missingOutputError = outputMessageId ? null : "Agent turn completed without sending a visible Raltic message.";
+            void this.updateRun(
+              runId,
+              runError || missingOutputError ? "failed" : "completed",
+              runError ? { error: runError } : missingOutputError ? { error: missingOutputError } : { outputMessageId }
+            );
+          }
           entry.busy = false;
           console.log(`  [${session.displayName}] turn complete`);
           this.drainQueue(agentId);
@@ -9748,6 +9927,10 @@ ${a.displayName}
         return;
       case "error":
         this.broadcastActivity(agentId, "error", "Error", ev.message.slice(0, 120));
+        if (ev.terminal) {
+          const entry = this.entries.get(agentId);
+          if (entry?.currentRunId) entry.currentRunError = ev.message;
+        }
         if (process.env.RALTIC_BRIDGE_VERBOSE) {
           console.error(`  [${session.displayName}] runtime error (${ev.reason ?? "other"}):`, ev.message);
         }
@@ -9817,7 +10000,15 @@ ${a.displayName}
     await this.disposeEntry(old, reason);
   }
   async disposeEntry(entry, reason) {
-    for (const queued of entry.messageQueue) queued.reject(new Error(reason));
+    if (entry.currentRunId) {
+      await this.updateRun(entry.currentRunId, "failed", { error: reason });
+      entry.currentRunId = void 0;
+      entry.currentRunError = void 0;
+    }
+    for (const queued of entry.messageQueue) {
+      void this.updateRun(queued.runId, "failed", { error: reason });
+      queued.reject(new Error(reason));
+    }
     entry.messageQueue = [];
     for (const unsub of entry.unsubs) try {
       unsub();
@@ -9891,6 +10082,113 @@ ${tokenPrelude}exec '${shq(process.execPath)}' '${shq(cliEntry.tsxPath)}' '${shq
       if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("activity POST failed:", e);
     }
   }
+  runSourceForChannel(channelId) {
+    return this.channelTypes.get(channelId) === "dm" ? "dm" : "channel_message";
+  }
+  runContextPath(session) {
+    return join(session.workDir, ".raltic", "current-run.json");
+  }
+  writeRunContext(session, runId) {
+    const path2 = this.runContextPath(session);
+    if (!runId) {
+      this.clearRunContext(session);
+      return;
+    }
+    try {
+      const dir = dirname(path2);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync$1(path2, JSON.stringify({ runId, outputMessageId: null }), { mode: 384 });
+    } catch (e) {
+      if (process.env.RALTIC_BRIDGE_VERBOSE) {
+        console.warn(`[agent ${session.id}] failed to write run context:`, e instanceof Error ? e.message : e);
+      }
+    }
+  }
+  readRunContext(session, runId) {
+    if (!runId) return null;
+    try {
+      const raw = JSON.parse(readFileSync$1(this.runContextPath(session), "utf8"));
+      if (raw.runId !== runId) return null;
+      return { runId, outputMessageId: raw.outputMessageId ?? null };
+    } catch {
+      return null;
+    }
+  }
+  clearRunContext(session) {
+    try {
+      unlinkSync(this.runContextPath(session));
+    } catch {
+    }
+  }
+  runtimeUnavailableReason(session) {
+    if (!this.detectedRuntimes) return null;
+    const rt = this.detectedRuntimes.find((r) => r.id === session.runtime);
+    if (!rt || !rt.detected) {
+      return `${session.runtime} CLI not installed on this laptop. Install ${session.runtime}, then restart the bridge.`;
+    }
+    if (rt.error) {
+      return rt.error;
+    }
+    if (rt.authed === false) {
+      return `${session.runtime} CLI not signed in. Run ${session.runtime} login, then restart the bridge.`;
+    }
+    return null;
+  }
+  async createRun(agentId, channelId, message) {
+    if (!this.boot) return void 0;
+    try {
+      const res = await fetch(`${this.apiUrl}/api/v1/agent-runs`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer sy_bridge_${this.boot.token}`
+        },
+        body: JSON.stringify({
+          agentId,
+          channelId,
+          source: this.runSourceForChannel(channelId),
+          status: "queued",
+          callerId: message.senderId,
+          callerType: message.senderType === "agent" ? "agent" : "human",
+          triggerMessageId: message.id,
+          inputPreview: String(message.content ?? "").trim().slice(0, 500)
+        })
+      });
+      if (!res.ok) {
+        if (process.env.RALTIC_BRIDGE_VERBOSE) {
+          console.warn("agent run create failed:", res.status, await res.text().catch(() => ""));
+        }
+        return void 0;
+      }
+      const body = await res.json();
+      return body.run?.id;
+    } catch (e) {
+      if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("agent run create failed:", e);
+      return void 0;
+    }
+  }
+  async updateRun(runId, status, opts = {}) {
+    if (!this.boot || !runId) return;
+    try {
+      const res = await fetch(`${this.apiUrl}/api/v1/agent-runs/${runId}`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer sy_bridge_${this.boot.token}`
+        },
+        body: JSON.stringify({
+          status,
+          error: opts.error === void 0 ? void 0 : sanitizeUserVisibleError(opts.error),
+          outputMessageId: opts.outputMessageId
+        })
+      });
+      if (!res.ok && process.env.RALTIC_BRIDGE_VERBOSE) {
+        console.warn("agent run update failed:", res.status, await res.text().catch(() => ""));
+      }
+    } catch (e) {
+      if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("agent run update failed:", e);
+    }
+  }
   /** Broadcast lifecycle for every tracked agent (called from bridge start/stop).
    *  When status="idle" (boot path), per-agent reconcile against the
    *  runtime snapshot: an agent declaring runtime=codex on a host with
@@ -9912,6 +10210,16 @@ ${tokenPrelude}exec '${shq(process.execPath)}' '${shq(cliEntry.tsxPath)}' '${shq
           "error",
           `${a.runtime} CLI not installed on this laptop`,
           `Install ${a.runtime} on this machine, then restart the bridge.`
+        ).catch((e) => {
+          if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("activity POST failed:", e);
+        });
+      }
+      if (rt.error) {
+        return this.broadcastActivity(
+          a.id,
+          "error",
+          `${a.runtime} unavailable`,
+          rt.error
         ).catch((e) => {
           if (process.env.RALTIC_BRIDGE_VERBOSE) console.warn("activity POST failed:", e);
         });
@@ -10047,12 +10355,13 @@ ${tokenPrelude}exec '${shq(process.execPath)}' '${shq(cliEntry.tsxPath)}' '${shq
         try {
           const detect = await this._withTimeout(r.detect(), 3500);
           if ("error" in detect && detect.error) {
+            const installed = Boolean(detect.binary || detect.version);
             return {
               id,
-              detected: false,
-              version: null,
-              authed: null,
-              authMethod: null,
+              detected: installed,
+              version: detect.version ?? null,
+              authed: detect.authed ?? (installed ? false : null),
+              authMethod: detect.authMethod ?? null,
               error: detect.error
             };
           }
@@ -10173,7 +10482,9 @@ class Bridge {
   async start() {
     const runtimes = await this.agentManager.detectRuntimes();
     for (const r of runtimes) {
-      if (r.detected) {
+      if (r.detected && r.error) {
+        console.log(`[bridge] runtime ${r.id} ${r.version ?? "?"} unavailable: ${r.error}`);
+      } else if (r.detected) {
         console.log(`[bridge] runtime ${r.id} ${r.version ?? "?"} ${r.authed ? `(${r.authMethod})` : "(not authed)"}`);
       } else {
         console.log(`[bridge] runtime ${r.id} not available: ${r.error ?? "unknown"}`);
@@ -10360,7 +10671,7 @@ class Bridge {
       }
       if (msg.t === "member_add") {
         if (msg.memberType === "agent") {
-          if (this.agentManager.addAgentToChannel(msg.channelId, msg.memberId)) {
+          if (this.agentManager.addAgentToChannel(msg.channelId, msg.memberId, msg.channelType)) {
             if (!this.channelSockets.has(msg.channelId)) this.openChannelWs(msg.channelId);
           } else {
             this.refreshToken().catch(console.error);
@@ -10498,7 +10809,8 @@ function normalizeBridgeKey(raw) {
   const normalized = { apiKey };
   if (raw.serverUrl?.trim()) {
     const u2 = normalizeServerUrl(raw.serverUrl);
-    if (u2) normalized.serverUrl = u2;
+    if (!u2) return null;
+    normalized.serverUrl = u2;
   }
   if (raw.serverId?.trim()) normalized.serverId = raw.serverId.trim();
   if (typeof raw.addedAt === "number" && Number.isFinite(raw.addedAt)) {
@@ -10548,14 +10860,21 @@ function upsertBridgeKey(cfg, key) {
   return configFromKeys(keys);
 }
 function replacePrimaryBridgeKey(cfg, key) {
+  const existingPrimary = bridgeKeysFromConfig(cfg)[0];
+  const existingPrimaryEntry = existingPrimary && Array.isArray(cfg.keys) ? cfg.keys.find((entry) => entry?.apiKey?.trim() === existingPrimary.apiKey) : void 0;
+  const hasApiKey = Object.prototype.hasOwnProperty.call(key, "apiKey");
+  const apiKey = hasApiKey ? key.apiKey?.trim() : existingPrimary?.apiKey;
+  const sameApiKey = !!apiKey && apiKey === existingPrimary?.apiKey;
+  const hasServerUrl = Object.prototype.hasOwnProperty.call(key, "serverUrl");
+  const hasServerId = Object.prototype.hasOwnProperty.call(key, "serverId");
   const normalized = normalizeBridgeKey({
-    apiKey: key.apiKey,
-    serverUrl: key.serverUrl,
-    serverId: key.serverId,
-    addedAt: Date.now()
+    apiKey,
+    serverUrl: hasServerUrl ? key.serverUrl : sameApiKey ? existingPrimary?.serverUrl ?? existingPrimaryEntry?.serverUrl : void 0,
+    serverId: hasServerId ? key.serverId : sameApiKey ? existingPrimary?.serverId ?? existingPrimaryEntry?.serverId : void 0,
+    addedAt: sameApiKey ? existingPrimaryEntry?.addedAt ?? existingPrimary?.addedAt ?? Date.now() : Date.now()
   });
-  if (!normalized) return {};
   const rest = bridgeKeysFromConfig(cfg).slice(1);
+  if (!normalized) return configFromKeys(rest);
   return configFromKeys([normalized, ...rest]);
 }
 function saveConfig(cfg) {
@@ -10573,7 +10892,7 @@ function saveConfig(cfg) {
     renameSync(tmp, CONFIG_PATH);
   } catch (e) {
     try {
-      unlinkSync(tmp);
+      unlinkSync$1(tmp);
     } catch {
     }
     throw e;
@@ -25165,7 +25484,7 @@ function initAutoUpdater(getMainWindow) {
     updateState = "idle";
   });
   autoUpdater.on("update-available", async (info) => {
-    if (updateState !== "idle") return;
+    if (updateState !== "idle" && updateState !== "checking") return;
     updateState = "prompting";
     const win = getMainWindow();
     const opts = {
@@ -25177,14 +25496,19 @@ function initAutoUpdater(getMainWindow) {
       message: `Raltic ${info.version} is available`,
       detail: "Download now and apply on next launch?"
     };
-    const choice = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
-    if (choice.response === 0) {
-      updateState = "downloading";
-      autoUpdater.downloadUpdate().catch((e) => {
-        console.warn("[updater] download failed:", e);
+    try {
+      const choice = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+      if (choice.response === 0) {
+        updateState = "downloading";
+        autoUpdater.downloadUpdate().catch((e) => {
+          console.warn("[updater] download failed:", e);
+          updateState = "idle";
+        });
+      } else {
         updateState = "idle";
-      });
-    } else {
+      }
+    } catch (e) {
+      console.warn("[updater] update prompt failed:", e);
       updateState = "idle";
     }
   });
@@ -25201,13 +25525,37 @@ function initAutoUpdater(getMainWindow) {
   }, SIX_HOURS_MS);
 }
 async function checkForUpdates() {
-  if (!app.isPackaged) return;
-  if (updateState !== "idle") return;
+  if (!app.isPackaged) {
+    return {
+      ok: false,
+      status: "disabled",
+      message: "Update checks are disabled in this development build."
+    };
+  }
+  if (updateState !== "idle") {
+    return {
+      ok: false,
+      status: "busy",
+      message: "An update check is already in progress."
+    };
+  }
+  updateState = "checking";
   try {
     await autoUpdater.checkForUpdates();
+    if (updateState === "checking") updateState = "idle";
+    return {
+      ok: true,
+      status: "sent",
+      message: "Update check started. You'll see a dialog if an update is available."
+    };
   } catch (e) {
     console.warn("[updater] check failed:", e);
     updateState = "idle";
+    return {
+      ok: false,
+      status: "failed",
+      message: e instanceof Error ? e.message : String(e)
+    };
   }
 }
 function teardownAutoUpdater() {
@@ -25372,6 +25720,7 @@ function isPlainConfig(x) {
     if (typeof o.serverUrl !== "string") return false;
     if (o.serverUrl.length > MAX_SERVER_URL_LEN) return false;
     if (hasControlChars(o.serverUrl)) return false;
+    if (o.serverUrl.trim() && !normalizeAllowedBridgeServerUrl(o.serverUrl)) return false;
   }
   if (o.serverId !== void 0) {
     if (typeof o.serverId !== "string") return false;
@@ -25430,7 +25779,12 @@ function bridgeStatusPayload(ok) {
 }
 async function replacePrimaryConfigAndRestart(next) {
   return enqueueConfigMutation(async () => {
-    saveConfig(replacePrimaryBridgeKey(loadConfig(), next));
+    saveConfig(replacePrimaryBridgeKey(loadConfig(), {
+      ...next,
+      apiKey: next.apiKey?.trim(),
+      serverId: next.serverId?.trim() || void 0,
+      serverUrl: next.serverUrl
+    }));
     await restartBridge();
     rebuildMenu(trayOpts());
     return bridgeStatusPayload(true);
@@ -25470,8 +25824,7 @@ function registerIpc() {
   });
   ipcMain.handle("updater:check", async (e) => {
     if (!fromSettingsWindow(e)) throw new Error("forbidden");
-    await checkForUpdates();
-    return { ok: true };
+    return checkForUpdates();
   });
 }
 function trayOpts() {
