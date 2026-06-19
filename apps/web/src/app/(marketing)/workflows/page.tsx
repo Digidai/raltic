@@ -10,7 +10,9 @@ import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { WORKFLOW_SEO_PAGES } from "@/lib/workflow-seo";
 import {
+  absoluteUrl,
   breadcrumbJsonLd,
+  itemListJsonLd,
   jsonLdGraph,
   marketingMetadata,
   webPageJsonLd,
@@ -39,6 +41,17 @@ export default function WorkflowsPage(): React.ReactElement {
             name: "AI Agent Workflow Templates",
             description:
               "Raltic workflow rooms for customer risk, launch readiness, research synthesis, and local code review.",
+            type: "CollectionPage",
+            primaryEntity: { "@id": `${absoluteUrl("/workflows")}#itemlist` },
+          }),
+          itemListJsonLd({
+            path: "/workflows",
+            name: "Raltic workflow templates",
+            items: WORKFLOW_SEO_PAGES.map((page) => ({
+              name: page.starter.title,
+              description: page.metaDescription,
+              path: page.path,
+            })),
           }),
           breadcrumbJsonLd([
             { name: "Home", path: "/" },

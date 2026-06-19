@@ -4,7 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ToastProvider } from "@/components/heroui-pro/toast";
 import { QueryProvider } from "@/components/query-provider";
-import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from "@/lib/seo";
+import { SITE_DESCRIPTION, SITE_OG_IMAGE_PATH, SITE_TITLE, SITE_URL, absoluteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -40,13 +40,20 @@ export const metadata: Metadata = {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     locale: "en_US",
-    // images: handled automatically by app/opengraph-image.tsx
+    images: [
+      {
+        url: absoluteUrl(SITE_OG_IMAGE_PATH),
+        width: 1200,
+        height: 630,
+        alt: "Raltic - launch your first agent workflow",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    // images: handled automatically by app/opengraph-image.tsx
+    images: [absoluteUrl(SITE_OG_IMAGE_PATH)],
   },
   robots: {
     index: true,

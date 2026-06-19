@@ -272,17 +272,52 @@ test.describe("marketing public access", () => {
     expect(robots.status()).toBe(200);
     const robotsText = await robots.text();
     expect(robotsText).toContain("OAI-SearchBot");
+    expect(robotsText).toContain("Claude-User");
     expect(robotsText).toContain("Claude-SearchBot");
+    expect(robotsText).toContain("PerplexityBot");
+    expect(robotsText).toContain("Perplexity-User");
     expect(robotsText).toContain("Disallow: /s/");
     expect(robotsText).toContain("Sitemap: https://raltic.com/sitemap.xml");
+    const appCrawlerBlockStart = robotsText.indexOf("User-Agent: Googlebot");
+    expect(appCrawlerBlockStart).toBeGreaterThanOrEqual(0);
+    const ralticCrawlerBlock = robotsText.slice(appCrawlerBlockStart);
+    expect(ralticCrawlerBlock).not.toContain("User-Agent: ClaudeBot");
+    expect(ralticCrawlerBlock).not.toContain("User-Agent: GPTBot");
 
     const llms = await request.get("/llms.txt");
     expect(llms.status()).toBe(200);
     expect(llms.headers()["content-type"]).toContain("text/plain");
+    expect(llms.headers()["last-modified"]).toBeTruthy();
+    expect(llms.headers()["x-robots-tag"]).toContain("index, follow");
     const llmsText = await llms.text();
     expect(llmsText).toContain("# Raltic");
     expect(llmsText).toContain("https://raltic.com/workflows/code-review");
     expect(llmsText).toContain("Claude Code and OpenAI Codex are verified bridge runtimes");
+    expect(llmsText).toContain("AI Retrieval And Crawler Policy");
+    expect(llmsText).toContain("Claude-User");
+    expect(llmsText).toContain("Perplexity-User");
+    expect(llmsText).toContain("Training crawlers such as GPTBot and ClaudeBot are not product acquisition traffic");
+  });
+
+  test("workflow index exposes collection structured data and social preview image", async ({ page }) => {
+    await page.goto("/workflows", { waitUntil: "domcontentloaded" });
+
+    const jsonLd = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
+      scripts.map((script) => script.textContent ?? "").join("\n"),
+    );
+    expect(jsonLd).toContain("CollectionPage");
+    expect(jsonLd).toContain("ItemList");
+    for (const path of [
+      "/workflows/customer-risk",
+      "/workflows/launch-readiness",
+      "/workflows/research-synthesis",
+      "/workflows/code-review",
+    ]) {
+      expect(jsonLd).toContain(`https://raltic.com${path}`);
+    }
+
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/opengraph-image$/);
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute("content", /\/opengraph-image$/);
   });
 
   test("workflow detail pages expose signup CTA, structured data, and mobile-safe layout", async ({ page }) => {
@@ -290,12 +325,19 @@ test.describe("marketing public access", () => {
     await page.goto("/workflows/code-review", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByRole("link", { name: /Start this workflow free/i }).first()).toHaveAttribute("href", "/signup");
+    await expect(page.locator("#step-1")).toBeVisible();
     const jsonLd = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
       scripts.map((script) => script.textContent ?? "").join("\n"),
     );
     expect(jsonLd).toContain("FAQPage");
     expect(jsonLd).toContain("HowTo");
+    expect(jsonLd).toContain("HowToStep");
     expect(jsonLd).toContain("Local AI code review workflow");
+    expect(jsonLd).toContain("https://raltic.com/opengraph-image");
+    expect(jsonLd).toContain("https://raltic.com/workflows/code-review#step-1");
+    expect(jsonLd).toContain("dateModified");
+
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/opengraph-image$/);
 
     const metrics = await page.evaluate(() => ({
       bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,

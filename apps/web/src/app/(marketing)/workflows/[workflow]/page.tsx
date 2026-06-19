@@ -12,6 +12,10 @@ import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { WORKFLOW_SEO_PAGES, getWorkflowSeoPage, type WorkflowSeoPage } from "@/lib/workflow-seo";
 import {
+  SITE_LAST_MODIFIED,
+  SITE_OG_IMAGE_PATH,
+  SITE_PUBLISHED_AT,
+  absoluteUrl,
   breadcrumbJsonLd,
   faqPageJsonLd,
   jsonLdGraph,
@@ -108,8 +112,8 @@ export default async function WorkflowDetailPage({ params }: WorkflowPageProps):
               </p>
             </div>
             <div className="grid gap-3">
-              {page.steps.map((step) => (
-                <div key={step.label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
+              {page.steps.map((step, index) => (
+                <div id={`step-${index + 1}`} key={step.label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
                   <Chip size="sm" variant="soft" color="default" className="font-mono text-[10px] uppercase tracking-wider">
                     {step.label}
                   </Chip>
@@ -212,10 +216,19 @@ function workflowJsonLd(page: WorkflowSeoPage): Record<string, unknown> {
       description: page.metaDescription,
       primaryEntity: {
         "@type": "HowTo",
+        "@id": `${absoluteUrl(page.path)}#howto`,
+        url: absoluteUrl(page.path),
         name: page.h1,
         description: page.intro,
+        image: [absoluteUrl(SITE_OG_IMAGE_PATH)],
+        datePublished: SITE_PUBLISHED_AT.toISOString(),
+        dateModified: SITE_LAST_MODIFIED.toISOString(),
+        inLanguage: "en-US",
+        mainEntityOfPage: { "@id": `${absoluteUrl(page.path)}#webpage` },
         step: page.steps.map((step, index) => ({
           "@type": "HowToStep",
+          "@id": `${absoluteUrl(page.path)}#step-${index + 1}`,
+          url: `${absoluteUrl(page.path)}#step-${index + 1}`,
           position: index + 1,
           name: step.title,
           text: step.body,

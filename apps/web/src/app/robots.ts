@@ -25,7 +25,8 @@ const SEARCH_AND_AI_USER_AGENTS = [
   "OAI-SearchBot",
   "ChatGPT-User",
   "PerplexityBot",
-  "ClaudeBot",
+  "Perplexity-User",
+  "Claude-User",
   "Claude-SearchBot",
 ];
 
