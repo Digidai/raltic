@@ -216,13 +216,21 @@ test.describe("marketing public access", () => {
     const installHint = page.getByText(/This integration is visible for evaluation/i);
     await expect(installHint).toBeVisible();
     const hintMetrics = await installHint.evaluate((el) => {
-      const section = el.closest("section");
       const hintStyle = getComputedStyle(el);
-      const sectionStyle = section instanceof HTMLElement ? getComputedStyle(section) : null;
+      let backgroundElement: HTMLElement | null = el.closest("section");
+      let backgroundColor = "";
+      while (backgroundElement) {
+        const style = getComputedStyle(backgroundElement);
+        if (style.backgroundColor && style.backgroundColor !== "rgba(0, 0, 0, 0)") {
+          backgroundColor = style.backgroundColor;
+          break;
+        }
+        backgroundElement = backgroundElement.parentElement;
+      }
       return {
         hintText: el.textContent ?? "",
         hintColor: hintStyle.color,
-        sectionBackground: sectionStyle?.backgroundColor ?? "",
+        sectionBackground: backgroundColor,
       };
     });
     const foreground = parseRgb(hintMetrics.hintColor);

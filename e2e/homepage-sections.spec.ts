@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { contrast, parseRgb } from "./helpers/heroui-workspace";
 
 async function gotoHome(page: Page) {
-  const response = await page.goto("/");
+  const response = await page.goto("/", { waitUntil: "domcontentloaded" });
   expect(response?.status()).toBe(200);
 }
 
