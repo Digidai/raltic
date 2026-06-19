@@ -51,6 +51,17 @@ test.describe("public routing and crawler files", () => {
     expect(res.headers()["content-type"]).toContain("text/plain");
   });
 
+  test("IndexNow key supports GET and HEAD without redirect", async ({ request }) => {
+    const get = await getWithRetry(request, INDEXNOW_KEY_PATH, { maxRedirects: 0 });
+    expect(get.status()).toBe(200);
+    expect(get.headers().location).toBeFalsy();
+    expect((await get.text()).trim()).toBe(INDEXNOW_KEY_PATH.slice(1, -4));
+
+    const head = await request.head(INDEXNOW_KEY_PATH, { maxRedirects: 0 });
+    expect(head.status()).toBe(200);
+    expect(head.headers().location).toBeFalsy();
+  });
+
   test("/desktop is the public desktop beta entry", async ({ request }) => {
     const res = await getWithRetry(request, "/desktop", { maxRedirects: 0 });
 

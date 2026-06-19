@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { INDEXNOW_KEY_PATH } from "./lib/indexnow";
 
 // Keep this as middleware.ts for Cloudflare/OpenNext. Next.js 16 recommends
 // proxy.ts, but Proxy always runs on the Node runtime and OpenNext Cloudflare
@@ -46,7 +45,10 @@ const PUBLIC_MARKETING = [
 // SEO / crawler files served as-is. Without this carve-out, the middleware
 // redirects /sitemap.xml + /robots.txt to /login, breaking Google Search
 // Console submission + every crawler's robots discovery.
-const PUBLIC_FILES = new Set(["/sitemap.xml", "/robots.txt", "/llms.txt", INDEXNOW_KEY_PATH, "/favicon.ico"]);
+// Keep the IndexNow key path in sync with `lib/indexnow.config.json`
+// and `public/{key}.txt`; public-routing tests exercise this exact path.
+const INDEXNOW_KEY_FILE = "/c1e8ec78e51750267774ae08ab902ec6.txt";
+const PUBLIC_FILES = new Set(["/sitemap.xml", "/robots.txt", "/llms.txt", INDEXNOW_KEY_FILE, "/favicon.ico"]);
 
 // Next.js App Router icon / OG conventions. Each of these is generated
 // by a co-located file (icon.tsx, apple-icon.tsx, opengraph-image.tsx)
