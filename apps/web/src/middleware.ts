@@ -46,7 +46,7 @@ const PUBLIC_MARKETING = [
 // redirects /sitemap.xml + /robots.txt to /login, breaking Google Search
 // Console submission + every crawler's robots discovery.
 // Keep the IndexNow key path in sync with `lib/indexnow.config.json`
-// and `public/{key}.txt`; public-routing tests exercise this exact path.
+// and `app/{key}.txt/route.ts`; public-routing tests exercise this exact path.
 const INDEXNOW_KEY_FILE = "/c1e8ec78e51750267774ae08ab902ec6.txt";
 const PUBLIC_FILES = new Set(["/sitemap.xml", "/robots.txt", "/llms.txt", INDEXNOW_KEY_FILE, "/favicon.ico"]);
 
