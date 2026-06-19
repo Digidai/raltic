@@ -14,7 +14,9 @@
     "e2e": "playwright test",
     "e2e:visual": "E2E_RUN_VISUAL=1 playwright test e2e/visual-snapshots.spec.ts",
     "e2e:update-visual": "E2E_RUN_VISUAL=1 playwright test e2e/visual-snapshots.spec.ts --update-snapshots",
-    "e2e:install": "playwright install chromium"
+    "e2e:install": "playwright install chromium",
+    "indexnow:submit": "node scripts/submit-indexnow.mjs",
+    "indexnow:dry-run": "node scripts/submit-indexnow.mjs --dry-run"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

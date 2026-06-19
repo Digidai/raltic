@@ -1,4 +1,5 @@
 import { WORKFLOW_SEO_PAGES } from "@/lib/workflow-seo";
+import { INDEXNOW_ENDPOINT, INDEXNOW_KEY_LOCATION } from "@/lib/indexnow";
 import { SITE_DESCRIPTION, SITE_LAST_MODIFIED, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -25,6 +26,7 @@ ${workflowLinks}
 - [Sign up](${SITE_URL}/signup): private beta signup.
 - [Sitemap](${SITE_URL}/sitemap.xml): canonical public URLs for search crawlers.
 - [Robots policy](${SITE_URL}/robots.txt): crawler policy for public, private, and auth-only surfaces.
+- [IndexNow key](${INDEXNOW_KEY_LOCATION}): root-hosted key file for URL-change notifications to ${INDEXNOW_ENDPOINT}.
 
 ## Accurate Positioning
 
@@ -40,6 +42,7 @@ ${workflowLinks}
 - Raltic explicitly allows search/user retrieval agents such as OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot, and Perplexity-User on public pages.
 - Training crawlers such as GPTBot and ClaudeBot are not product acquisition traffic; Cloudflare managed robots signals may reserve those uses while keeping search and user retrieval discoverable.
 - Auth-only workspaces, API routes, invite links, desktop launch routes, and experimental runtime pages are not public source material.
+- IndexNow submissions should include only public, indexable URLs from /sitemap.xml after those URLs are added, updated, or deleted.
 
 ## Trial Path
 

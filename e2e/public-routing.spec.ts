@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type APIResponse } from "@playwright/test";
+import { INDEXNOW_KEY_PATH } from "../apps/web/src/lib/indexnow";
 
 const SECURITY_HEADERS = [
   "content-security-policy",
@@ -32,7 +33,7 @@ async function getWithRetry(
 }
 
 test.describe("public routing and crawler files", () => {
-  for (const path of ["/sitemap.xml", "/icon", "/apple-icon", "/opengraph-image"]) {
+  for (const path of ["/sitemap.xml", INDEXNOW_KEY_PATH, "/icon", "/apple-icon", "/opengraph-image"]) {
     test(`${path} is public and carries security headers`, async ({ request }) => {
       const res = await getWithRetry(request, path, { maxRedirects: 0 });
 

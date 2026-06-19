@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { INDEXNOW_ENDPOINT, INDEXNOW_KEY, INDEXNOW_KEY_LOCATION } from "../apps/web/src/lib/indexnow";
 import { contrast, parseRgb } from "./helpers/heroui-workspace";
 
 type MarketingRoute = {
@@ -296,7 +297,16 @@ test.describe("marketing public access", () => {
     expect(llmsText).toContain("AI Retrieval And Crawler Policy");
     expect(llmsText).toContain("Claude-User");
     expect(llmsText).toContain("Perplexity-User");
+    expect(llmsText).toContain("IndexNow key");
+    expect(llmsText).toContain(INDEXNOW_KEY_LOCATION);
+    expect(llmsText).toContain(INDEXNOW_ENDPOINT);
     expect(llmsText).toContain("Training crawlers such as GPTBot and ClaudeBot are not product acquisition traffic");
+
+    const indexNowKey = await request.get(`/${INDEXNOW_KEY}.txt`);
+    expect(indexNowKey.status()).toBe(200);
+    expect(indexNowKey.headers().location).toBeFalsy();
+    expect(indexNowKey.headers()["content-type"]).toContain("text/plain");
+    expect((await indexNowKey.text()).trim()).toBe(INDEXNOW_KEY);
   });
 
   test("workflow index exposes collection structured data and social preview image", async ({ page }) => {
