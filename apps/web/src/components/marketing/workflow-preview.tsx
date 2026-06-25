@@ -14,8 +14,19 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/heroui-pro/button";
-import { Chip } from "@/components/heroui-pro/chip";
 import { cn } from "@/lib/utils";
+
+// ───────────────────────────────────────────────────────────────────────────
+// Light "ando-style" workflow mockup shown in the marketing hero.
+//
+// Visual language follows ando.so: warm-white surface, hairline black/8%
+// borders, soft shadow, generous radius, sky-blue (#2f7bff) as the single
+// accent, monochrome black-opacity text. The component keeps every e2e
+// hook intact (data-testid, tab button names + aria-pressed, the metric /
+// brief copy), so this is a re-skin, not a content change.
+// ───────────────────────────────────────────────────────────────────────────
+
+const ACCENT = "#2f7bff";
 
 type ScenarioKey = "revenue" | "launch" | "engineering";
 
@@ -98,19 +109,22 @@ export function WorkflowPreview(): React.ReactElement {
   return (
     <div
       data-testid="workflow-preview"
-      className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 text-left shadow-[0_30px_80px_-20px_rgba(34,211,238,0.20)]"
+      className="relative overflow-hidden rounded-[24px] border border-black/[0.08] bg-white text-left shadow-[0_2px_4px_rgba(16,24,40,0.04),0_24px_60px_-28px_rgba(16,24,40,0.28)]"
     >
-      <div className="flex flex-col gap-3 border-b border-zinc-900 bg-black/35 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-black/[0.07] bg-[#fafaf8] p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-500/25 bg-cyan-500/10 text-cyan-300">
+          <span
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border"
+            style={{ color: ACCENT, borderColor: "#d4e4ff", backgroundColor: "#eef4ff" }}
+          >
             <MessageSquare className="h-4 w-4" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-white">Workflow room</p>
-            <p className="truncate font-mono text-[11px] text-zinc-400">{active.room}</p>
+            <p className="truncate text-sm font-medium text-zinc-900">Workflow room</p>
+            <p className="truncate font-mono text-[11px] text-zinc-500">{active.room}</p>
           </div>
         </div>
-        <div role="group" aria-label="Workflow examples" className="grid w-full grid-cols-3 gap-1 rounded-lg border border-zinc-800 bg-zinc-900/70 p-1 sm:w-auto">
+        <div role="group" aria-label="Workflow examples" className="grid w-full grid-cols-3 gap-1 rounded-full border border-black/[0.06] bg-zinc-100 p-1 sm:w-auto">
           {SCENARIOS.map((scenario) => {
             const selected = scenario.key === active.key;
             return (
@@ -122,10 +136,10 @@ export function WorkflowPreview(): React.ReactElement {
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-8 min-w-0 justify-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] font-medium shadow-none transition",
+                  "h-8 min-w-0 justify-center gap-1.5 rounded-full border border-transparent px-3 text-[11px] font-medium shadow-none transition",
                   selected
-                    ? "border-cyan-400/30 bg-cyan-400 text-zinc-950"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
+                    ? "bg-white text-zinc-900 shadow-[0_1px_2px_rgba(16,24,40,0.10)]"
+                    : "text-zinc-500 hover:text-zinc-900",
                 )}
               >
                 {scenario.icon}
@@ -138,50 +152,57 @@ export function WorkflowPreview(): React.ReactElement {
       </div>
 
       <div className="grid gap-0 lg:grid-cols-[1.05fr_1.55fr_0.95fr]">
-        <div className="border-b border-zinc-900 p-5 lg:border-b-0 lg:border-r">
+        <div className="border-b border-black/[0.07] p-5 lg:border-b-0 lg:border-r">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">01 brief</p>
-          <h3 className="mt-3 text-xl font-medium leading-tight text-white">{active.brief}</h3>
+          <h3 className="mt-3 text-xl font-medium leading-snug text-zinc-900">{active.brief}</h3>
           <div className="mt-5 flex flex-wrap gap-2">
             {active.chips.map((chip) => (
-              <Chip key={chip} size="sm" variant="soft" color="default" className="font-mono text-[10px] uppercase tracking-wider">
+              <span key={chip} className="rounded-full border border-black/[0.08] bg-[#fafaf8] px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
                 {chip}
-              </Chip>
+              </span>
             ))}
           </div>
-          <div className="mt-6 rounded-lg border border-zinc-800 bg-black/40 p-3">
+          <div className="mt-6 rounded-xl border border-black/[0.07] bg-[#fafaf8] p-3">
             <div className="flex items-center justify-between gap-3 text-[11px]">
-              <span className="text-zinc-400">owner</span>
-              <span className="font-medium text-zinc-200">{active.owner}</span>
+              <span className="text-zinc-500">owner</span>
+              <span className="font-medium text-zinc-800">{active.owner}</span>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
-              <div className="h-full w-3/4 rounded-full bg-cyan-400" />
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-200">
+              <div className="h-full w-3/4 rounded-full" style={{ backgroundColor: ACCENT }} />
             </div>
           </div>
         </div>
 
-        <div className="border-b border-zinc-900 p-5 lg:border-b-0 lg:border-r">
+        <div className="border-b border-black/[0.07] p-5 lg:border-b-0 lg:border-r">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">02 agents run</p>
           <div className="mt-4 grid gap-3">
             {active.agents.map((agent) => (
-              <div key={agent.name} className="rounded-xl border border-zinc-800 bg-black/40 p-4">
+              <div key={agent.name} className="rounded-2xl border border-black/[0.07] bg-[#fafaf8] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className={cn(
-                      "h-2.5 w-2.5 shrink-0 rounded-full",
-                      agent.runtime === "Claude" ? "bg-cyan-400" : "bg-amber-400",
-                    )} />
-                    <span className="truncate font-mono text-sm text-white">@{agent.name}</span>
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: agent.runtime === "Claude" ? ACCENT : "#d9821f" }}
+                    />
+                    <span className="truncate font-mono text-sm text-zinc-900">@{agent.name}</span>
                   </div>
-                  <Chip size="sm" variant="soft" color={agent.runtime === "Claude" ? "accent" : "warning"} className="text-[10px]">
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style={
+                      agent.runtime === "Claude"
+                        ? { color: ACCENT, backgroundColor: "#eef4ff" }
+                        : { color: "#92560f", backgroundColor: "#fdf2e1" }
+                    }
+                  >
                     {agent.runtime}
-                  </Chip>
+                  </span>
                 </div>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-400">{agent.job}</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-600">{agent.job}</p>
               </div>
             ))}
           </div>
-          <div className="mt-5 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-100">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
             <span>{active.approval}</span>
           </div>
         </div>
@@ -189,45 +210,48 @@ export function WorkflowPreview(): React.ReactElement {
         <div className="p-5">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">03 memory</p>
           <div className="mt-4 space-y-3">
-            <div className="rounded-xl border border-zinc-800 bg-black/40 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-white">
-                <FileText className="h-4 w-4 text-cyan-300" aria-hidden="true" />
+            <div className="rounded-2xl border border-black/[0.07] bg-[#fafaf8] p-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                <FileText className="h-4 w-4" style={{ color: ACCENT }} aria-hidden="true" />
                 Decision packet
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">{active.output}</p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-600">{active.output}</p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-black/40 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-white">
-                <ListChecks className="h-4 w-4 text-amber-300" aria-hidden="true" />
+            <div className="rounded-2xl border border-black/[0.07] bg-[#fafaf8] p-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                <ListChecks className="h-4 w-4 text-[#d9821f]" aria-hidden="true" />
                 Next actions
               </div>
-              <div className="mt-3 space-y-2 text-xs text-zinc-400">
+              <div className="mt-3 space-y-2 text-xs text-zinc-500">
                 <span className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
+                  <CheckCircle2 className="h-3.5 w-3.5" style={{ color: ACCENT }} aria-hidden="true" />
                   assigned owner
                 </span>
                 <span className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
+                  <CheckCircle2 className="h-3.5 w-3.5" style={{ color: ACCENT }} aria-hidden="true" />
                   searchable run log
                 </span>
               </div>
             </div>
           </div>
-          <div className="mt-5 flex items-center justify-between rounded-xl border border-cyan-500/25 bg-cyan-500/10 px-4 py-3">
-            <span className="text-[11px] uppercase tracking-[0.16em] text-cyan-200">outcome</span>
-            <span className="text-sm font-medium text-white">{active.metric}</span>
+          <div
+            className="mt-5 flex items-center justify-between rounded-2xl border px-4 py-3"
+            style={{ borderColor: "#d4e4ff", backgroundColor: "#eef4ff" }}
+          >
+            <span className="text-[11px] uppercase tracking-[0.16em]" style={{ color: ACCENT }}>outcome</span>
+            <span className="text-sm font-medium text-zinc-900">{active.metric}</span>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 border-t border-zinc-900 px-5 py-3 text-[12px] text-zinc-400">
+      <div className="flex flex-wrap items-center justify-center gap-2 border-t border-black/[0.07] bg-[#fafaf8] px-5 py-3 text-[12px] text-zinc-500">
         <span>Brief</span>
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        <ArrowRight className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
         <span>agent run</span>
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        <ArrowRight className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
         <span>approval</span>
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        <span className="text-zinc-300">team memory</span>
+        <ArrowRight className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+        <span className="text-zinc-800">team memory</span>
       </div>
     </div>
   );
@@ -244,15 +268,18 @@ export function WorkflowMiniMap(): React.ReactElement {
   return (
     <div className="grid gap-2 md:grid-cols-4">
       {steps.map((step, index) => (
-        <div key={step.label} className="relative rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-white">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-black text-cyan-300">
+        <div key={step.label} className="relative rounded-2xl border border-black/[0.08] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <div className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+            <span
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border"
+              style={{ color: ACCENT, borderColor: "#d4e4ff", backgroundColor: "#eef4ff" }}
+            >
               {step.icon}
             </span>
             {step.label}
           </div>
           {index < steps.length - 1 && (
-            <ArrowRight className="absolute -right-3 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-zinc-700 md:block" aria-hidden="true" />
+            <ArrowRight className="absolute -right-3 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-zinc-300 md:block" aria-hidden="true" />
           )}
         </div>
       ))}

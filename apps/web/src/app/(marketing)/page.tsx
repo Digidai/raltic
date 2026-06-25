@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   ArrowRight, ShieldCheck,
   Laptop, Cloud, Globe, Lock, CheckCircle2,
@@ -7,10 +8,7 @@ import {
 import { HomeCta } from "@/components/home-cta";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { JsonLdScript } from "@/components/marketing/json-ld";
-import { SectionHeader } from "@/components/marketing/section-header";
 import { WorkflowMiniMap, WorkflowPreview } from "@/components/marketing/workflow-preview";
-import { Card, CardPanel } from "@/components/heroui-pro/card";
-import { Chip } from "@/components/heroui-pro/chip";
 import { SignedInRedirect } from "@/components/signed-in-redirect";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
@@ -26,12 +24,17 @@ import {
 // ───────────────────────────────────────────────────────────────────────────
 // Marketing landing page.
 //
-// Visual reference: https://photon.codes/spectrum — restrained palette,
-// black/white alternating bands, code-as-design-element, monospace metrics.
+// Visual reference: https://www.ando.so — light/airy "accessible
+// sophistication". Warm-white surfaces (#fafaf8 / #ffffff), monochrome
+// black-opacity text, a single sky-blue accent (#2f7bff), large light
+// (400-weight) headings with tight tracking, rounded cards with hairline
+// black/8% borders and soft shadows, a sky-grid hero glow. The action
+// color is a near-black rounded-full pill (ando's "Get access" button),
+// which also keeps strong CTA contrast.
 //
-// Content depth: every claim on this page must correspond to something
-// actually shipped in the product. If a section advertises a feature that
-// doesn't exist yet, kill the section, not the build.
+// This is a re-skin: the section structure, copy, test ids, and section
+// anchors are preserved (the homepage e2e suite asserts them). Content
+// depth rule still holds — every claim must map to something shipped.
 //
 // Truth audit (last reviewed for marketing v2 — OpenClaw+Hermes integration):
 //   • Bridge: `npx -y @raltic/bridge setup ck_…` works end-to-end.
@@ -41,18 +44,16 @@ import {
 //     passes.
 //   • Runtime modes: bridge (local CLI via user's bridge) AND raltic
 //     (cloud-native, zero install, runs in CF Container sandbox).
-//   • Runtime keys: machineKeys.serverId scope + revokedAt + KV
-//     denylist for sy_bridge_ JWTs — all real.
-//   • Local execution: agents spawn as child_process on the bridge
-//     host; messages go bridge → API → DO → fanout. Files stay local.
-//   • Real-time: Durable Objects with WS fan-out per channel; latency
-//     sub-second on the staging deploy.
-//   • Threads / reactions / tasks / DMs: all live.
 //   • Connectors: GitHub / Linear / Notion — PAT storage + per-agent
-//     grants only. NO webhook automation, NO PR-triggered runs, NO
-//     scheduling (kept off the page per codex review HIGH-3).
+//     grants only. NO webhook automation, NO PR-triggered runs.
 //   • Private beta, free — accurate (no payment flow exists).
 // ───────────────────────────────────────────────────────────────────────────
+
+const ACCENT = "#2f7bff";
+// Display headings approximate ando's GT Standard with the self-hosted
+// SN Pro at its lighter (400) weight + tight tracking — no new font dep.
+const DISPLAY = "font-[family-name:var(--font-sn-pro)] font-normal tracking-[-0.02em]";
+const CARD = "rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]";
 
 export default function Home(): React.ReactElement {
   return (
@@ -68,10 +69,9 @@ export default function Home(): React.ReactElement {
         ])}
       />
       {/* Signed-in users get redirected into their default workspace
-          before marketing fully paints (small `/me` round-trip flash).
-          `/` only — sub-pages stay browseable for signed-in users.
-          Layout (`(marketing)/layout.tsx`) provides nav + tracking +
-          dark theme via MarketingShell. */}
+          before marketing fully paints. `/` only — sub-pages stay
+          browseable for signed-in users. Light theme + nav come from
+          MarketingShell, which renders `/` on a light surface. */}
       <SignedInRedirect />
 
       <Hero />
@@ -83,8 +83,39 @@ export default function Home(): React.ReactElement {
       <Privacy />
       <Pricing />
       <FAQ />
-      <MarketingFooter lead={<FinalCta />} />
+      <MarketingFooter theme="light" lead={<FinalCta />} />
     </>
+  );
+}
+
+// ─────────────────────── Shared bits ───────────────────────
+
+function SectionHead({ eyebrow, title, description, tone = "light" }: {
+  eyebrow?: string;
+  title: ReactNode;
+  description?: string;
+  tone?: "light" | "dark";
+}): React.ReactElement {
+  const dark = tone === "dark";
+  return (
+    <div className="mx-auto max-w-3xl text-center">
+      {eyebrow && (
+        <p
+          className="text-[12px] font-medium uppercase tracking-[0.16em]"
+          style={{ color: dark ? "#7ab0ff" : ACCENT }}
+        >
+          {eyebrow}
+        </p>
+      )}
+      <h2 className={`${DISPLAY} mt-4 text-balance text-4xl leading-[1.1] sm:text-5xl ${dark ? "text-white" : "text-zinc-900"}`}>
+        {title}
+      </h2>
+      {description && (
+        <p className={`mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed sm:text-lg ${dark ? "text-zinc-300" : "text-zinc-600"}`}>
+          {description}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -92,53 +123,44 @@ export default function Home(): React.ReactElement {
 
 function Hero(): React.ReactElement {
   return (
-    <Card
-      render={
-        <section className="relative isolate overflow-hidden border-b border-zinc-900 bg-black" />
-      }
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="relative pt-32 pb-24 sm:pt-40 sm:pb-32">
-        {/* Single restrained cyan radial behind the headline */}
+    <section className="relative isolate overflow-hidden bg-[#fafaf8]">
+      {/* Sky glow + perspective grid — ando's sky-grid motif, in sky blue. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[720px]"
+          className="absolute inset-x-0 top-0 h-[720px]"
           style={{
             background:
-              "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(34,211,238,0.10), transparent 70%)",
+              "radial-gradient(ellipse 72% 60% at 50% -12%, rgba(80,150,255,0.20), transparent 70%)",
           }}
         />
-        {/* Faint structural grid — purely architectural like Spectrum's dot grid */}
         <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 opacity-[0.04]"
+          className="absolute inset-x-0 top-0 h-[560px]"
           style={{
             backgroundImage:
-              "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
-            backgroundSize: "72px 72px",
-            maskImage: "radial-gradient(ellipse 70% 60% at 50% 30%, black, transparent 80%)",
-            WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 30%, black, transparent 80%)",
+              "linear-gradient(to right, rgba(80,150,255,0.16) 1px, transparent 1px), linear-gradient(to bottom, rgba(80,150,255,0.16) 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+            maskImage: "radial-gradient(ellipse 58% 72% at 50% 0%, black, transparent 72%)",
+            WebkitMaskImage: "radial-gradient(ellipse 58% 72% at 50% 0%, black, transparent 72%)",
           }}
         />
+      </div>
 
-        <div className="relative mx-auto max-w-6xl px-6">
-          <div className="mx-auto max-w-3xl text-center">
-            {/* Eyebrow pill — leads with the buyer, not the mechanism.
-                This page is for AI-native teams turning agent experiments
-                into repeatable operations, not for generic "chat with AI". */}
-            <Chip size="sm" variant="soft" color="default" className="gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" aria-hidden="true" />
-              Built for <span className="text-white">AI-native operators</span>
-              <span className="mx-1 text-zinc-400">·</span>
-              Private beta · Free
-            </Chip>
+      <div className="relative mx-auto max-w-6xl px-6 pt-36 pb-24 sm:pt-44">
+        <div className="mx-auto max-w-3xl text-center">
+          {/* Eyebrow — leads with the buyer. Keeps "Private beta · Free". */}
+          <span className="inline-flex items-center gap-2 rounded-full border border-black/[0.08] bg-white px-3.5 py-1.5 text-[13px] text-zinc-600 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }} aria-hidden="true" />
+            Built for <span className="font-medium text-zinc-900">AI-native operators</span>
+            <span className="mx-0.5 text-zinc-300">·</span>
+            Private beta · Free
+          </span>
 
-          <h1 className="mt-8 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-7xl">
+          <h1 className={`${DISPLAY} mt-8 text-balance text-5xl leading-[1.04] text-zinc-900 sm:text-7xl`}>
             Launch your first<br />
-            {" "}<span className="text-cyan-400">agent workflow.</span>
+            {" "}<span style={{ color: ACCENT }}>agent workflow.</span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-balance text-base leading-relaxed text-zinc-400 sm:text-lg">
+          <p className="mx-auto mt-6 max-w-2xl text-balance text-base leading-relaxed text-zinc-600 sm:text-lg">
             Raltic turns one business process into a workflow room: send the brief,
             let a cloud Agent produce the next action, keep approval and memory visible.
             Bring local runtimes later when private code or keys need to stay on your machine.
@@ -148,14 +170,7 @@ function Hero(): React.ReactElement {
             <HomeCta />
           </div>
 
-          {/* Trust line. The install command used to live here too, but
-              a non-interactive code box in a hero is decoration pretending
-              to be UI — it competes with the real CTAs and confuses
-              visitors who try to click the command. Moved into the
-              Architecture section where the
-              technical context makes the command concrete, and kept in
-              the final CTA where the user has already committed to act. */}
-          <p className="mt-5 text-xs text-zinc-400">
+          <p className="mt-5 text-xs text-zinc-500">
             No credit card · no local install to start · first workflow in minutes
           </p>
         </div>
@@ -164,31 +179,23 @@ function Hero(): React.ReactElement {
           <WorkflowPreview />
         </div>
       </div>
-      </CardPanel>
-    </Card>
+    </section>
   );
 }
 
 // ─────────────────────── Workflow entry paths ───────────────────────
-// GTM framing: sell a workflow outcome first, then show the runtime
-// choice. The buyer should not have to decide whether Raltic is "chat"
-// or "agent infra"; they should see a room where a workflow can start
-// today, then pick cloud or local execution based on risk.
 
 function TwoWaysToRun(): React.ReactElement {
   return (
-    <Card
-      render={<section className="border-b border-zinc-900 bg-black px-6 py-20 sm:py-24" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl">
-        <p className="text-center text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-400">
+    <section className="bg-white px-6 py-20 sm:py-28">
+      <div className="mx-auto max-w-6xl">
+        <p className="text-center text-[12px] font-medium uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
           Start from the workflow
         </p>
-        <h2 className="mx-auto mt-5 max-w-3xl text-center text-3xl font-medium leading-tight tracking-[-0.01em] text-white sm:text-5xl">
+        <h2 className={`${DISPLAY} mx-auto mt-4 max-w-3xl text-center text-3xl leading-tight text-zinc-900 sm:text-5xl`}>
           One room turns agent output into accountable work.
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-zinc-400 sm:text-base">
+        <p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-zinc-600 sm:text-base">
           A buyer should understand Raltic without learning a new category:
           pick a workflow, let agents execute, approve the boundary, keep the result.
         </p>
@@ -204,7 +211,7 @@ function TwoWaysToRun(): React.ReactElement {
             body="Start with a cloud runtime when the workflow is low-risk and speed matters."
             href="/signup"
             cta="Start a workflow"
-            accent="accent"
+            accent
           />
           <RuntimePath
             title="Bring your agents"
@@ -212,15 +219,14 @@ function TwoWaysToRun(): React.ReactElement {
             body="Connect Claude Code or Codex when code, keys, or customer context should stay in your environment. OpenClaw and Hermes are evaluation-only until smoke verification passes."
             href={CONNECT_RUNTIME_SIGNUP_HREF}
             cta="Connect a local runtime"
-            accent="default"
           />
         </div>
 
-        <p className="mt-6 text-center text-[12px] text-zinc-400">
+        <p className="mt-6 text-center text-[12px] text-zinc-500">
           Start with the business process. Choose cloud or local execution per agent.
         </p>
-      </CardPanel>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -230,18 +236,29 @@ function RuntimePath({ title, label, body, href, cta, accent }: {
   body: string;
   href: string;
   cta: string;
-  accent: "accent" | "default";
+  accent?: boolean;
 }): React.ReactElement {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+    <div className={`${CARD} p-6`}>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-lg font-medium text-white">{title}</h3>
-        <Chip size="sm" variant="soft" color={accent} className="font-mono text-[10px] uppercase tracking-wider">
+        <h3 className="text-lg font-medium text-zinc-900">{title}</h3>
+        <span
+          className="rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+          style={
+            accent
+              ? { color: ACCENT, borderColor: "#d4e4ff", backgroundColor: "#eef4ff" }
+              : { color: "#6b7280", borderColor: "rgba(0,0,0,0.08)", backgroundColor: "#fafaf8" }
+          }
+        >
           {label}
-        </Chip>
+        </span>
       </div>
-      <p className="mt-2 text-sm leading-relaxed text-zinc-400">{body}</p>
-      <Link href={href} className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-300 hover:text-cyan-200">
+      <p className="mt-2 text-sm leading-relaxed text-zinc-600">{body}</p>
+      <Link
+        href={href}
+        className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium"
+        style={{ color: ACCENT }}
+      >
         {cta} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
       </Link>
     </div>
@@ -249,88 +266,61 @@ function RuntimePath({ title, label, body, href, cta, accent }: {
 }
 
 // ─────────────────────── Runtime badges ───────────────────────
-// Sits between the hero and the deeper sections. Single-line strip
-// that names the actual AI providers Raltic speaks to. Two reasons:
-//   1) These are the most-asked questions during sales/eval ("does
-//      it use Claude or GPT?"). Surfacing both upfront kills the
-//      "is this just an OpenAI wrapper?" objection.
-//   2) This is a real feature we just shipped (CodexRuntime in
-//      packages/agent-runtime). It was invisible on the prior homepage.
 
 function RuntimeBadges(): React.ReactElement {
   return (
-    <Card
-      render={<section className="border-b border-zinc-900 bg-black px-6 py-12" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-5xl text-center">
-        <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-400">
+    <section className="bg-white px-6 py-12">
+      <div className="mx-auto max-w-5xl text-center">
+        <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-zinc-500">
           Verified Claude + Codex · Experimental daemon integrations
         </p>
-        {/* Four-runtime strip. Claude + Codex are verified (the original
-            two). OpenClaw + Hermes ship the code but are flagged
-            "experimental" until docs/SMOKE_TESTS_openclaw_hermes.md
-            completes — per codex review HIGH-2. Don't remove the
-            experimental tag without updating that runbook. */}
+        {/* Keep `mt-5` strip + each badge as `div.text-center`; 2 flagged
+            Experimental. Asserted by homepage-sections.spec. */}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
-          <RuntimeBadge name="Anthropic Claude" sub="Bring your own subscription" dot="cyan" />
-          <span className="text-zinc-800" aria-hidden="true">·</span>
-          <RuntimeBadge name="OpenAI Codex" sub="Bring your own subscription" dot="amber" />
-          <span className="text-zinc-800" aria-hidden="true">·</span>
-          <RuntimeBadge name="OpenClaw" sub="Your local daemon" dot="violet" experimental />
-          <span className="text-zinc-800" aria-hidden="true">·</span>
-          <RuntimeBadge name="Hermes" sub="Your local daemon" dot="neutral" experimental />
+          <RuntimeBadge name="Anthropic Claude" sub="Bring your own subscription" dot={ACCENT} />
+          <span className="text-zinc-300" aria-hidden="true">·</span>
+          <RuntimeBadge name="OpenAI Codex" sub="Bring your own subscription" dot="#d9821f" />
+          <span className="text-zinc-300" aria-hidden="true">·</span>
+          <RuntimeBadge name="OpenClaw" sub="Your local daemon" dot="#7c5cff" experimental />
+          <span className="text-zinc-300" aria-hidden="true">·</span>
+          <RuntimeBadge name="Hermes" sub="Your local daemon" dot="#9aa29e" experimental />
         </div>
-      </CardPanel>
-    </Card>
+      </div>
+    </section>
   );
 }
 
 function RuntimeBadge({ name, sub, dot, experimental }: {
   name: string;
   sub: string;
-  dot: "cyan" | "amber" | "violet" | "neutral";
+  dot: string;
   experimental?: boolean;
 }): React.ReactElement {
-  const dotClass = {
-    cyan:    "bg-[var(--accent)]",
-    amber:   "bg-[var(--warning)]",
-    violet:  "bg-[var(--default-soft-foreground)]",
-    neutral: "bg-[color-mix(in_srgb,var(--snow)_62%,var(--eclipse)_38%)]",
-  }[dot];
   return (
     <div className="text-center">
       <div className="flex items-center justify-center gap-1.5">
-        <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
-        <span className="text-sm font-medium text-white">{name}</span>
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: dot }} />
+        <span className="text-sm font-medium text-zinc-900">{name}</span>
         {experimental && (
-          <Chip size="sm" variant="soft" color="warning" className="text-[9.5px] uppercase tracking-wider">
+          <span className="rounded-full bg-[#fdf2e1] px-1.5 py-0.5 text-[9.5px] uppercase tracking-wider text-[#92560f]">
             Experimental
-          </Chip>
+          </span>
         )}
       </div>
-      <div className="mt-0.5 font-mono text-[10.5px] text-zinc-400">{sub}</div>
+      <div className="mt-0.5 font-mono text-[10.5px] text-zinc-500">{sub}</div>
     </div>
   );
 }
 
 // ─────────────────────── Architecture ───────────────────────
-// The 3-step bridge model, drawn as a horizontal flow. This is the
-// hardest concept to communicate (people assume cloud-hosted agents).
-// Showing the actual data flow upfront makes the privacy story
-// concrete instead of a vague promise.
 
 function Architecture(): React.ReactElement {
   return (
-    <Card
-      render={<section className="bg-white text-zinc-900" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark={false}
+    <section className="bg-[#faf9f6] px-6 py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead
           eyebrow="Control plane for agent work"
-          title={<>Run workflows without <span className="text-zinc-500">losing control</span>.</>}
+          title={<>Run workflows without <span className="text-zinc-400">losing control</span>.</>}
           description="Agent workflows touch code, customer context, internal docs, and decisions. Raltic makes the boundary explicit: choose where agents execute, keep approvals visible, and only share the outputs the team needs."
         />
         <div className="mt-16 grid items-stretch gap-4 lg:grid-cols-3">
@@ -341,7 +331,7 @@ function Architecture(): React.ReactElement {
             body="Use the cloud Agent for low-risk workflows, or run bridge-hosted agents beside your repo, secrets, and local tools. Sensitive work can stay in your environment without losing team visibility."
             tag="local"
             footer={
-              <div className="mt-5 flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+              <div className="mt-5 flex items-center justify-between rounded-xl border border-black/[0.07] bg-[#fafaf8] px-3 py-2">
                 <span className="text-[12px] font-medium text-zinc-700">Installs in under a minute</span>
                 <span className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-500">
                   macOS · Windows · Linux
@@ -364,20 +354,20 @@ function Architecture(): React.ReactElement {
             tag="memory"
           />
         </div>
-        {/* Data flow legend underneath — explicit what crosses the wire */}
-        <Card render={<div className="mt-12 border border-zinc-200 bg-zinc-50" />} className="bg-zinc-50">
-          <CardPanel className="grid gap-6 p-6 text-sm sm:grid-cols-2">
+        {/* Data-flow legend — explicit about what crosses the wire. */}
+        <div className={`mt-12 ${CARD} bg-[#fafaf8]`}>
+          <div className="grid gap-6 p-6 text-sm sm:grid-cols-2">
             <div>
               <p className="font-medium text-zinc-900">What crosses the workspace</p>
               <ul className="mt-2 space-y-1.5 text-zinc-600">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-600" /> Messages and artifacts your agent chooses to post
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} /> Messages and artifacts your agent chooses to post
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-600" /> Run status, approvals, and task updates
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} /> Run status, approvals, and task updates
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-600" /> Which runtime an agent is configured to use
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} /> Which runtime an agent is configured to use
                 </li>
               </ul>
             </div>
@@ -385,20 +375,20 @@ function Architecture(): React.ReactElement {
               <p className="font-medium text-zinc-900">What stays out of the workspace</p>
               <ul className="mt-2 space-y-1.5 text-zinc-600">
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Source code, diffs, or local files for bridge-hosted agents
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" /> Source code, diffs, or local files for bridge-hosted agents
                 </li>
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Claude or OpenAI keys used by your local runtime
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" /> Claude or OpenAI keys used by your local runtime
                 </li>
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Anything the agent did not deliberately share into the room
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" /> Anything the agent did not deliberately share into the room
                 </li>
               </ul>
             </div>
-          </CardPanel>
-        </Card>
-      </CardPanel>
-    </Card>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -407,24 +397,25 @@ function ArchCard({ n, icon, title, body, tag, footer }: {
   footer?: React.ReactNode;
 }): React.ReactElement {
   return (
-    <Card render={<div className="relative border border-zinc-200 bg-white" />} className="bg-white">
-      <CardPanel className="p-7">
-        <div className="flex items-start justify-between">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700">
-            {icon}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[10.5px] text-zinc-600">step {n}</span>
-            <Chip size="sm" variant="soft" color="default" className="font-mono text-[9.5px] uppercase tracking-wider">
-              {tag}
-            </Chip>
-          </div>
+    <div className={`relative ${CARD} p-7`}>
+      <div className="flex items-start justify-between">
+        <div
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border"
+          style={{ color: ACCENT, borderColor: "#d4e4ff", backgroundColor: "#eef4ff" }}
+        >
+          {icon}
         </div>
-        <h3 className="mt-5 text-lg font-medium tracking-tight text-zinc-900">{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-600">{body}</p>
-        {footer}
-      </CardPanel>
-    </Card>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10.5px] text-zinc-500">step {n}</span>
+          <span className="rounded-full border border-black/[0.08] bg-[#fafaf8] px-2 py-0.5 font-mono text-[9.5px] uppercase tracking-wider text-zinc-500">
+            {tag}
+          </span>
+        </div>
+      </div>
+      <h3 className="mt-5 text-lg font-medium tracking-tight text-zinc-900">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-600">{body}</p>
+      {footer}
+    </div>
   );
 }
 
@@ -432,15 +423,11 @@ function ArchCard({ n, icon, title, body, tag, footer }: {
 
 function UseCases(): React.ReactElement {
   return (
-    <Card
-      render={<section id="use-cases" className="bg-white text-zinc-900" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-24 sm:py-28">
-        <SectionHeader
-          dark={false}
+    <section id="use-cases" className="bg-[#faf9f6] px-6 py-24 sm:py-28">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead
           eyebrow="GTM-ready workflows"
-          title={<>Start with one workflow your team <span className="text-zinc-500">already owns</span>.</>}
+          title={<>Start with one workflow your team <span className="text-zinc-400">already owns</span>.</>}
           description="The first customer should not buy an abstract workspace. They should recognize a process they run every week."
         />
         <div className="mt-14 grid gap-4 lg:grid-cols-4">
@@ -481,8 +468,8 @@ function UseCases(): React.ReactElement {
             output="comments + task links"
           />
         </div>
-      </CardPanel>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -503,26 +490,23 @@ function WorkflowUseCase({ tag, href, title, input, agent, gate, output }: {
   ] as const;
 
   return (
-    <Link href={href} className="group rounded-2xl border border-zinc-200 bg-white p-5 shadow-[0_20px_50px_-35px_rgba(24,24,27,0.35)] transition-colors hover:border-zinc-300 hover:bg-zinc-50">
+    <Link href={href} className={`group ${CARD} p-5 transition-colors hover:border-black/15 hover:bg-[#fdfdfc]`}>
       <div className="flex items-center justify-between gap-3">
-        <Chip size="sm" variant="soft" color="default" className="font-mono text-[10px] uppercase tracking-wider">
+        <span className="rounded-full border border-black/[0.08] bg-[#fafaf8] px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
           {tag}
-        </Chip>
+        </span>
         <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-900" aria-hidden="true" />
       </div>
       <h3 className="mt-4 text-xl font-medium tracking-tight text-zinc-900">{title}</h3>
       <div className="mt-5 space-y-2">
-        {rows.map(([label, value], index) => (
-          <div key={label} className="grid grid-cols-[72px_1fr] items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">{label}</span>
+        {rows.map(([label, value]) => (
+          <div key={label} className="grid grid-cols-[72px_1fr] items-center gap-3 rounded-xl border border-black/[0.06] bg-[#fafaf8] px-3 py-2">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">{label}</span>
             <span className="min-w-0 truncate text-sm font-medium text-zinc-800">{value}</span>
-            {index < rows.length - 1 && (
-              <span className="col-span-2 ml-[34px] h-3 w-px bg-zinc-300" aria-hidden="true" />
-            )}
           </div>
         ))}
       </div>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-700 group-hover:text-cyan-900">
+      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: ACCENT }}>
         Explore workflow <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
     </Link>
@@ -530,85 +514,51 @@ function WorkflowUseCase({ tag, href, title, input, agent, gate, output }: {
 }
 
 // ─────────────────────── Comparison table ───────────────────────
-// GTM staple: side-by-side scan vs the products buyers ALREADY have in
-// their stack. Six rows chosen for "you'll feel this every week" pain
-// points rather than feature parity — saves the buyer from running the
-// comparison themselves with whatever incomplete mental model they have.
+// Single inverted (dark) band — a tasteful contrast section. Keeps the
+// `.raltic-marketing-status-chip` cells (asserted by the icon-contrast
+// e2e test) reading correctly on a dark surface.
 
 function Comparison(): React.ReactElement {
   return (
-    <Card
-      render={<section className="border-y border-zinc-900 bg-black" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark
+    <section className="border-y border-black/10 bg-[#101211] px-6 py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead
+          tone="dark"
           eyebrow="The shortlist you're already considering"
           title={<>Compared to what you have today.</>}
           description="If your team has tried ChatGPT for work, Cursor for engineering, or AI bots in Slack, here's where each one stops at a tool and Raltic turns the work into an owned workflow."
         />
-        <Card render={<div className="mt-12 border border-zinc-900 bg-zinc-950" />} className="bg-zinc-950">
-          <CardPanel className="p-0">
+        <div className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-[#161918]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-zinc-900 text-[11px] uppercase tracking-wider text-zinc-400">
+                <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-zinc-400">
                   <th scope="col" className="px-6 py-4 font-medium">What you actually need</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">ChatGPT for Work</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Cursor / Copilot</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Slack + AI bots</th>
-                  <th scope="col" className="bg-zinc-900/50 px-4 py-4 text-center font-medium text-cyan-300">Raltic</th>
+                  <th scope="col" className="px-4 py-4 text-center font-medium" style={{ backgroundColor: "rgba(47,123,255,0.10)", color: "#7ab0ff" }}>Raltic</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-900 text-zinc-300">
-                <ComparisonRow
-                  label="Workflow outputs reach the whole team"
-                  vals={["no", "no", "partial", "yes"]}
-                />
-                <ComparisonRow
-                  label="Mix multiple AI providers in one place"
-                  vals={["no", "no", "partial", "yes"]}
-                />
-                <ComparisonRow
-                  label="Your source code never uploads"
-                  vals={["no", "partial", "no", "yes"]}
-                />
-                <ComparisonRow
-                  label="Multiple specialist agents in one workflow"
-                  vals={["no", "no", "no", "yes"]}
-                />
-                <ComparisonRow
-                  label="Off-board a teammate in one click"
-                  vals={["no", "no", "no", "yes"]}
-                />
-                <ComparisonRow
-                  label="No per-seat markup on the AI you already pay for"
-                  vals={["no", "no", "no", "yes"]}
-                />
-                {/* OpenClaw + Hermes are visible differentiators, but
-                    still locked until the smoke runbook passes. Keep
-                    this row as a truth marker, not a production-ready
-                    claim. */}
-                <ComparisonRow
-                  label="Evaluate local daemon integrations (OpenClaw / Hermes)"
-                  vals={["no", "no", "no", "partial"]}
-                />
-                <ComparisonRow
-                  label="Provider keys never leave your machine"
-                  vals={["no", "partial", "no", "yes"]}
-                />
+              <tbody className="divide-y divide-white/[0.08] text-zinc-300">
+                <ComparisonRow label="Workflow outputs reach the whole team" vals={["no", "no", "partial", "yes"]} />
+                <ComparisonRow label="Mix multiple AI providers in one place" vals={["no", "no", "partial", "yes"]} />
+                <ComparisonRow label="Your source code never uploads" vals={["no", "partial", "no", "yes"]} />
+                <ComparisonRow label="Multiple specialist agents in one workflow" vals={["no", "no", "no", "yes"]} />
+                <ComparisonRow label="Off-board a teammate in one click" vals={["no", "no", "no", "yes"]} />
+                <ComparisonRow label="No per-seat markup on the AI you already pay for" vals={["no", "no", "no", "yes"]} />
+                <ComparisonRow label="Evaluate local daemon integrations (OpenClaw / Hermes)" vals={["no", "no", "no", "partial"]} />
+                <ComparisonRow label="Provider keys never leave your machine" vals={["no", "partial", "no", "yes"]} />
               </tbody>
             </table>
           </div>
-        </CardPanel>
-        </Card>
+        </div>
         <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-zinc-400">
-          Comparisons reflect each product's mainstream offering. We'd love
-          to be wrong on any cell — tell us at <span className="text-zinc-300">hello@raltic.com</span> and we'll update.
+          Comparisons reflect each product&apos;s mainstream offering. We&apos;d love
+          to be wrong on any cell — tell us at <span className="text-zinc-200">hello@raltic.com</span> and we&apos;ll update.
         </p>
-      </CardPanel>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -622,7 +572,7 @@ function ComparisonRow({ label, vals }: {
       {vals.map((v, i) => {
         const isRaltic = i === vals.length - 1;
         return (
-          <td key={i} className={"px-4 py-4 text-center " + (isRaltic ? "bg-zinc-900/50" : "")}>
+          <td key={i} className="px-4 py-4 text-center" style={isRaltic ? { backgroundColor: "rgba(47,123,255,0.08)" } : undefined}>
             <ComparisonCell value={v} highlight={isRaltic} />
           </td>
         );
@@ -634,22 +584,26 @@ function ComparisonRow({ label, vals }: {
 function ComparisonCell({ value, highlight }: { value: "yes" | "no" | "partial"; highlight: boolean }): React.ReactElement {
   if (value === "yes") {
     return (
-      <Chip size="sm" variant="soft" color="accent" className="h-6 w-6 justify-center p-0" aria-label="Yes">
-        <CheckCircle2 className={"h-4 w-4 " + (highlight ? "text-cyan-300" : "text-cyan-400")} aria-label="Yes" />
-      </Chip>
+      <span
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full"
+        style={{ backgroundColor: highlight ? "rgba(47,123,255,0.20)" : "rgba(47,123,255,0.16)" }}
+        aria-label="Yes"
+      >
+        <CheckCircle2 className="h-4 w-4" style={{ color: highlight ? "#9ec4ff" : "#7ab0ff" }} aria-label="Yes" />
+      </span>
     );
   }
   if (value === "partial") {
     return (
-      <Chip size="sm" variant="soft" color="default" className="raltic-marketing-status-chip h-6 w-6 justify-center p-0" aria-label="Partial">
+      <span className="raltic-marketing-status-chip inline-flex h-6 w-6 items-center justify-center rounded-full" aria-label="Partial">
         <Minus className="h-4 w-4" aria-label="Partial" />
-      </Chip>
+      </span>
     );
   }
   return (
-    <Chip size="sm" variant="soft" color="default" className="raltic-marketing-status-chip h-6 w-6 justify-center p-0 opacity-80" aria-label="No">
+    <span className="raltic-marketing-status-chip inline-flex h-6 w-6 items-center justify-center rounded-full opacity-80" aria-label="No">
       <X className="h-4 w-4" aria-label="No" />
-    </Chip>
+    </span>
   );
 }
 
@@ -657,18 +611,14 @@ function ComparisonCell({ value, highlight }: { value: "yes" | "no" | "partial";
 
 function Privacy(): React.ReactElement {
   return (
-    <Card
-      render={<section className="border-y border-zinc-900 bg-black" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark
+    <section className="bg-white px-6 py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead
           eyebrow="Governance for real workflows"
-          title={<>Keep humans in control when <span className="text-zinc-500">agents touch real work</span>.</>}
+          title={<>Keep humans in control when <span className="text-zinc-400">agents touch real work</span>.</>}
           description="The more useful an agent workflow becomes, the more buyers ask where it runs, what it can access, what gets logged, and how to revoke it. Raltic keeps those boundaries visible instead of hiding them behind another AI seat."
         />
-        <div className="mt-16 grid gap-px overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-900 md:grid-cols-2">
+        <div className="mt-16 grid gap-4 md:grid-cols-2">
           <PrivacyPoint
             title="Sensitive execution can stay local"
             body="For bridge-hosted agents, code and local files are read on the machine running the workflow. Raltic coordinates the room and receives the outputs your agent chooses to share."
@@ -686,42 +636,32 @@ function Privacy(): React.ReactElement {
             body="Humans and agents operate inside workspace membership checks. Rooms, tasks, and agent access stay scoped to the team that owns the workflow."
           />
         </div>
-      </CardPanel>
-    </Card>
+      </div>
+    </section>
   );
 }
 
 function PrivacyPoint({ title, body }: { title: string; body: string }): React.ReactElement {
   return (
-    <Card render={<div className="bg-black" />} className="bg-black">
-      <CardPanel className="p-7">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-cyan-400" aria-hidden="true" />
-          <h3 className="text-base font-medium text-white">{title}</h3>
-        </div>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-400">{body}</p>
-      </CardPanel>
-    </Card>
+    <div className={`${CARD} p-7`}>
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4" style={{ color: ACCENT }} aria-hidden="true" />
+        <h3 className="text-base font-medium text-zinc-900">{title}</h3>
+      </div>
+      <p className="mt-3 text-sm leading-relaxed text-zinc-600">{body}</p>
+    </div>
   );
 }
 
 // ─────────────────────── Pricing ───────────────────────
-// Transparent — free during beta, no payment flow exists. When we add
-// paid tiers, this section gets rewritten with real numbers; for now
-// it answers the "is this going to be expensive later?" question
-// without committing to numbers we don't have.
 
 function Pricing(): React.ReactElement {
   return (
-    <Card
-      render={<section id="pricing" className="bg-white text-zinc-900" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark={false}
+    <section id="pricing" className="bg-[#faf9f6] px-6 py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead
           eyebrow="Pricing"
-          title={<>Free <span className="text-zinc-500">while we're in beta.</span></>}
+          title={<>Free <span className="text-zinc-400">while we&apos;re in beta.</span></>}
           description="Your team is already paying for ChatGPT, Claude, Cursor, and scattered coordination around them. Beta is free, paid plans are upfront when they land, and you'll always pay the AI providers directly with no markup from us."
         />
         <div className="mt-12 grid gap-4 md:grid-cols-3">
@@ -765,8 +705,8 @@ function Pricing(): React.ReactElement {
             ]}
           />
         </div>
-      </CardPanel>
-    </Card>
+      </div>
+    </section>
   );
 }
 
@@ -776,34 +716,38 @@ function PricingCard({ tag, name, price, note, features, highlight }: {
   features: string[]; highlight?: boolean;
 }): React.ReactElement {
   return (
-    <Card
-      render={<div className={"rounded-2xl border " + (highlight ? "border-zinc-900 bg-zinc-950 text-white" : "border-zinc-200 bg-white text-zinc-900")} />}
-      className={highlight ? "bg-zinc-950 text-white" : "bg-white text-zinc-900"}
+    <div
+      className={
+        highlight
+          ? "rounded-2xl border-2 bg-white p-7 shadow-[0_2px_4px_rgba(16,24,40,0.04),0_24px_60px_-28px_rgba(47,123,255,0.45)]"
+          : `${CARD} p-7`
+      }
+      style={highlight ? { borderColor: "#9ec4ff" } : undefined}
     >
-      <CardPanel className="p-7">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium tracking-tight">{name}</h3>
-          <Chip
-            size="sm"
-            variant="soft"
-            color={tag === "now" ? "accent" : "default"}
-            className="font-mono text-[10px] uppercase tracking-wider"
-          >
-            {tag}
-          </Chip>
-        </div>
-        <div className="mt-4 text-3xl font-medium tracking-tight">{price}</div>
-        <p className={"mt-1 text-xs " + (highlight ? "text-zinc-400" : "text-zinc-600")}>{note}</p>
-        <ul className="mt-6 space-y-2 text-sm">
-          {features.map((f) => (
-            <li key={f} className="flex items-start gap-2">
-              <CheckCircle2 className={"mt-0.5 h-3.5 w-3.5 shrink-0 " + (highlight ? "text-cyan-400" : "text-cyan-600")} />
-              <span className={highlight ? "text-zinc-300" : "text-zinc-700"}>{f}</span>
-            </li>
-          ))}
-        </ul>
-      </CardPanel>
-    </Card>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium tracking-tight text-zinc-900">{name}</h3>
+        <span
+          className="rounded-full px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+          style={
+            tag === "now"
+              ? { color: ACCENT, backgroundColor: "#eef4ff" }
+              : { color: "#6b7280", backgroundColor: "#fafaf8", border: "1px solid rgba(0,0,0,0.08)" }
+          }
+        >
+          {tag}
+        </span>
+      </div>
+      <div className="mt-4 text-3xl font-medium tracking-tight text-zinc-900">{price}</div>
+      <p className="mt-1 text-xs text-zinc-500">{note}</p>
+      <ul className="mt-6 space-y-2 text-sm">
+        {features.map((f) => (
+          <li key={f} className="flex items-start gap-2">
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />
+            <span className="text-zinc-700">{f}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -846,23 +790,21 @@ const FAQS: FaqEntry[] = [
 
 function FAQ(): React.ReactElement {
   return (
-    <Card
-      render={<section id="faq" className="border-y border-zinc-900 bg-black" />}
-      className="border-0 bg-transparent shadow-none"
-    >
-      <CardPanel className="mx-auto max-w-6xl px-6 py-28 sm:py-32">
-        <SectionHeader
-          dark
+    <section id="faq" className="bg-white px-6 py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead
           eyebrow="FAQ"
           title={<>The questions teams actually ask.</>}
         />
-        <MarketingFaqList
-          idPrefix="home"
-          items={FAQS}
-          theme="dark"
-        />
-      </CardPanel>
-    </Card>
+        <div className="mx-auto max-w-3xl">
+          <MarketingFaqList
+            idPrefix="home"
+            items={FAQS}
+            theme="light"
+          />
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -871,24 +813,19 @@ function FAQ(): React.ReactElement {
 function FinalCta(): React.ReactElement {
   return (
     <div className="mx-auto max-w-3xl">
-      <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-[color-mix(in_srgb,var(--accent)_72%,var(--snow)_28%)]">
+      <p className="text-[12px] font-medium uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
         From agent experiments to operations
       </p>
-      <h2 className="mt-3 text-balance text-4xl font-medium leading-[1.05] tracking-[-0.02em] text-[var(--snow)] sm:text-5xl">
+      <h2 className={`${DISPLAY} mt-3 text-balance text-4xl leading-[1.05] text-zinc-900 sm:text-5xl`}>
         Turn useful agents<br />
-        <span className="text-[color-mix(in_srgb,var(--accent)_78%,var(--snow)_22%)]">into team workflows.</span>
+        <span style={{ color: ACCENT }}>into team workflows.</span>
       </h2>
-      <p className="mx-auto mt-4 max-w-xl text-[color-mix(in_srgb,var(--snow)_66%,transparent)]">
+      <p className="mx-auto mt-4 max-w-xl text-zinc-600">
         Start with one room, one workflow, and one agent your team already needs. Keep the run visible, the approval human, and the result reusable.
       </p>
       <div className="mt-7 flex justify-center">
         <HomeCta />
       </div>
-      {/* No install command here. It used to repeat the one in the
-          Architecture section, which gave the misleading sense that
-          it's actionable from the page. The CTA already routes to
-          signup → onboarding wizard, which is where the real ck_ key
-          and the real command live. */}
     </div>
   );
 }

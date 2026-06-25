@@ -57,7 +57,7 @@ export function HomeCta(): React.ReactElement {
   // can otherwise hydrate `/signup` into `Open Raltic` and throw.
   if (!hydrated || isPending) {
     return (
-      <MarketingButton href="/signup" className={CTA_MIN} ctaTarget="home_first_value">
+      <MarketingButton href="/signup" variant="light-primary" className={CTA_MIN} ctaTarget="home_first_value">
         Start in 3 minutes <span aria-hidden="true">→</span>
       </MarketingButton>
     );
@@ -67,7 +67,7 @@ export function HomeCta(): React.ReactElement {
   // resolution, it stays on the homepage instead of showing a blank slot.
   if (session && openHref === null) {
     return (
-      <MarketingButton href="/" className={`${CTA_MIN} opacity-90`} ctaTarget="home_open_pending">
+      <MarketingButton href="/" variant="light-primary" className={`${CTA_MIN} opacity-90`} ctaTarget="home_open_pending">
         Open Raltic <span aria-hidden="true">→</span>
       </MarketingButton>
     );
@@ -75,7 +75,7 @@ export function HomeCta(): React.ReactElement {
 
   if (session && openHref) {
     return (
-      <MarketingButton href={openHref} className={CTA_MIN} ctaTarget="home_open_workspace">
+      <MarketingButton href={openHref} variant="light-primary" className={CTA_MIN} ctaTarget="home_open_workspace">
         Open Raltic <span aria-hidden="true">→</span>
       </MarketingButton>
     );
@@ -84,7 +84,7 @@ export function HomeCta(): React.ReactElement {
   // Primary CTA names the first-value path after signup. Runtime choice
   // is deliberately deferred until the user asks for private local work.
   return (
-    <MarketingButton href="/signup" className={CTA_MIN} ctaTarget="home_first_value">
+    <MarketingButton href="/signup" variant="light-primary" className={CTA_MIN} ctaTarget="home_first_value">
       Start in 3 minutes <span aria-hidden="true">→</span>
     </MarketingButton>
   );
