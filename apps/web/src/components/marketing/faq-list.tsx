@@ -48,7 +48,7 @@ const THEME = {
   indicator: string;
 }>;
 
-export function MarketingFaqList({ items, idPrefix, theme = "dark" }: MarketingFaqListProps) {
+export function MarketingFaqList({ items, idPrefix, theme = "light" }: MarketingFaqListProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const palette = THEME[theme];
 

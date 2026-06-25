@@ -26,11 +26,11 @@ const LAST_UPDATED = "May 23, 2026";
 export default function TermsPage() {
   return (
     <>
-      <Card render={<article className="max-w-3xl" />} className="w-full rounded-none border-0 shadow-none">
-        <CardPanel className="mx-auto px-6 pt-32 pb-24 text-zinc-200 sm:pt-40">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">Legal</p>
-          <h1 className="mt-3 text-4xl font-medium tracking-[-0.02em] text-white">Terms of Service</h1>
-          <p className="mt-3 text-sm text-zinc-400">Last updated: {LAST_UPDATED}</p>
+      <Card render={<article className="mx-auto w-full max-w-3xl" style={{ background: "transparent" }} />} className="w-full rounded-none border-0 shadow-none">
+        <CardPanel className="mx-auto px-6 pt-32 pb-24 text-zinc-700 sm:pt-40">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Legal</p>
+          <h1 className="mt-3 text-4xl font-medium tracking-[-0.02em] text-zinc-900">Terms of Service</h1>
+          <p className="mt-3 text-sm text-zinc-500">Last updated: {LAST_UPDATED}</p>
 
           <TermsNote>
             Working draft pending external legal review. These terms cover the private-beta phase of Raltic; we will publish revised terms before any paid tier ships.
@@ -38,8 +38,8 @@ export default function TermsPage() {
 
           <H2>1. Agreement</H2>
           <P>
-            By creating an account or using <strong className="text-white">raltic.com</strong> (the "Service"), you agree to these Terms and our
-            <Link href="/privacy" className="underline">Privacy Policy</Link>. If you don't agree, don't use the Service.
+            By creating an account or using <strong className="text-zinc-900">raltic.com</strong> (the "Service"), you agree to these Terms and our
+            <Link href="/privacy" className="text-[#2f7bff] underline hover:text-[#1f6bef]">Privacy Policy</Link>. If you don't agree, don't use the Service.
           </P>
 
           <H2>2. The Service</H2>
@@ -104,7 +104,7 @@ export default function TermsPage() {
 
           <H2>9. Beta disclaimer</H2>
           <P>
-            The Service is in private beta. We're shipping fast, breaking things occasionally, and learning what teams actually need. <strong className="text-white">The Service is provided AS-IS and AS-AVAILABLE without warranties</strong>, express or implied — including warranties of merchantability, fitness for a particular purpose, or non-infringement. We don't guarantee uptime, data durability, or feature stability during beta.
+            The Service is in private beta. We're shipping fast, breaking things occasionally, and learning what teams actually need. <strong className="text-zinc-900">The Service is provided AS-IS and AS-AVAILABLE without warranties</strong>, express or implied — including warranties of merchantability, fitness for a particular purpose, or non-infringement. We don't guarantee uptime, data durability, or feature stability during beta.
           </P>
           <P>
             Don't rely on Raltic as the only copy of business-critical data during beta. Use the export tool, take periodic backups, and keep critical rooms mirrored elsewhere until we exit beta.
@@ -137,8 +137,8 @@ export default function TermsPage() {
 
           <H2>15. Contact</H2>
           <P>
-            Questions about these Terms: <a className="underline" href="mailto:legal@raltic.com">legal@raltic.com</a><br />
-            General: <a className="underline" href="mailto:hello@raltic.com">hello@raltic.com</a>
+            Questions about these Terms: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:legal@raltic.com">legal@raltic.com</a><br />
+            General: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:hello@raltic.com">hello@raltic.com</a>
           </P>
         </CardPanel>
       </Card>
@@ -149,13 +149,13 @@ export default function TermsPage() {
 }
 
 function H2({ children }: { children: React.ReactNode }) {
-  return <h2 className="mt-10 text-xl font-medium text-white">{children}</h2>;
+  return <h2 className="mt-10 text-xl font-medium text-zinc-900">{children}</h2>;
 }
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="mt-4 text-[14.5px] leading-relaxed text-zinc-300">{children}</p>;
+  return <p className="mt-4 text-[14.5px] leading-relaxed text-zinc-600">{children}</p>;
 }
 function UL({ children }: { children: React.ReactNode }) {
-  return <ul className="mt-3 space-y-2 pl-5 text-[14.5px] text-zinc-300 [&_li]:list-disc">{children}</ul>;
+  return <ul className="mt-3 space-y-2 pl-5 text-[14.5px] text-zinc-600 [&_li]:list-disc">{children}</ul>;
 }
 function Code({ children }: { children: React.ReactNode }) {
   return <code className="raltic-inline-token text-[13px]">{children}</code>;

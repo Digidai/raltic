@@ -29,9 +29,9 @@ type MarketingButtonProps = {
 };
 
 const variants: Record<MarketingButtonVariant, string> = {
-  primary: "h-11 px-6 text-[15px] font-semibold",
-  secondary: "h-11 px-5 text-sm font-medium",
-  "nav-primary": "h-8 px-3 text-sm font-medium",
+  primary: "h-11 rounded-full px-6 text-[15px] font-medium",
+  secondary: "h-11 rounded-full px-5 text-sm font-medium",
+  "nav-primary": "h-9 rounded-full px-4 text-sm font-medium",
   "desktop-primary": "h-11 px-5 text-sm font-semibold",
   "desktop-secondary": "h-11 px-5 text-sm font-semibold",
   "light-primary": "h-11 rounded-full px-6 text-[15px] font-medium",
@@ -41,11 +41,11 @@ const variants: Record<MarketingButtonVariant, string> = {
 
 const visualVariants: Record<MarketingButtonVariant, string> = {
   primary:
-    "!border-[var(--white)] !bg-[var(--white)] !text-[var(--eclipse)] shadow-[0_0_28px_color-mix(in_srgb,var(--accent)_22%,transparent)] hover:!border-[color-mix(in_srgb,var(--white)_82%,var(--eclipse))] hover:!bg-[color-mix(in_srgb,var(--white)_88%,var(--eclipse))] focus-visible:!ring-accent",
+    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white shadow-[0_1px_2px_rgba(16,24,40,0.10),0_10px_28px_-14px_rgba(16,24,40,0.55)] hover:!border-black hover:!bg-black focus-visible:!ring-[#2f7bff]",
   secondary:
-    "!border-[color-mix(in_srgb,var(--white)_22%,transparent)] !bg-transparent !text-[var(--snow)] hover:!border-[color-mix(in_srgb,var(--white)_38%,transparent)] hover:!bg-[color-mix(in_srgb,var(--white)_6%,transparent)] focus-visible:!ring-accent",
+    "!rounded-full !border-black/[0.12] !bg-white !text-zinc-900 hover:!border-black/25 hover:!bg-[#f6f5f1] focus-visible:!ring-[#2f7bff]",
   "nav-primary":
-    "!border-[var(--white)] !bg-[var(--white)] !text-[var(--eclipse)] hover:!border-[color-mix(in_srgb,var(--white)_82%,var(--eclipse))] hover:!bg-[color-mix(in_srgb,var(--white)_88%,var(--eclipse))] focus-visible:!ring-accent",
+    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white hover:!border-black hover:!bg-black focus-visible:!ring-[#2f7bff]",
   "desktop-primary":
     "!border-[var(--eclipse)] !bg-[var(--eclipse)] !text-[var(--snow)] hover:!border-[color-mix(in_srgb,var(--eclipse)_88%,var(--snow))] hover:!bg-[color-mix(in_srgb,var(--eclipse)_88%,var(--snow))] focus-visible:!ring-accent",
   "desktop-secondary":

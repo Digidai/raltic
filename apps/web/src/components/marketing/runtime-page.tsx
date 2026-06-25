@@ -11,33 +11,33 @@ import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
 /** Per-accent class lookups — kept inline (vs. dynamic class names) so
  *  Tailwind's purger sees the strings at build time. */
 const ACCENT_TEXT: Record<RuntimeDoc["accent"], string> = {
-  cyan: "text-[var(--accent)]",
-  amber: "text-[var(--warning)]",
-  violet: "text-[var(--default-soft-foreground)]",
-  neutral: "text-[color-mix(in_srgb,var(--snow)_88%,var(--accent)_12%)]",
+  cyan: "text-[#2f7bff]",
+  amber: "text-[#d9821f]",
+  violet: "text-zinc-700",
+  neutral: "text-zinc-700",
 };
 const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
-  cyan: "border-accent/30 bg-[var(--accent-soft)] text-[var(--accent)]",
-  amber: "border-warning/30 bg-[var(--warning-soft)] text-[var(--warning)]",
-  violet: "border-border bg-[var(--default-soft)] text-[var(--default-soft-foreground)]",
-  neutral: "border-[color-mix(in_srgb,var(--snow)_14%,transparent)] bg-[color-mix(in_srgb,var(--surface)_7%,transparent)] text-[color-mix(in_srgb,var(--snow)_78%,transparent)]",
+  cyan: "border-[#d4e4ff] bg-[#eef4ff] text-[#2f7bff]",
+  amber: "border-[#f3d9ad] bg-[#fdf2e1] text-[#92560f]",
+  violet: "border-black/[0.07] bg-[#f7f6f2] text-zinc-700",
+  neutral: "border-black/[0.07] bg-[#f7f6f2] text-zinc-600",
 };
 const ACCENT_GLOW: Record<RuntimeDoc["accent"], string> = {
-  cyan: "color-mix(in srgb, var(--accent) 16%, transparent)",
-  amber: "color-mix(in srgb, var(--warning) 16%, transparent)",
-  violet: "color-mix(in srgb, var(--default) 12%, transparent)",
-  neutral: "color-mix(in srgb, var(--accent) 7%, transparent)",
+  cyan: "color-mix(in srgb, #2f7bff 10%, transparent)",
+  amber: "color-mix(in srgb, #d9821f 10%, transparent)",
+  violet: "color-mix(in srgb, #18181b 6%, transparent)",
+  neutral: "color-mix(in srgb, #2f7bff 5%, transparent)",
 };
 
-const DARK_SECTION = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] bg-[var(--eclipse)] text-[var(--snow)]";
-const DARK_MUTED = "text-[color-mix(in_srgb,var(--snow)_68%,transparent)]";
-const DARK_BODY = "text-[color-mix(in_srgb,var(--snow)_78%,transparent)]";
-const DARK_SURFACE = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] bg-[color-mix(in_srgb,var(--eclipse)_94%,var(--accent)_6%)]";
-const DARK_SURFACE_SOFT = "border-[color-mix(in_srgb,var(--white)_10%,transparent)] bg-[color-mix(in_srgb,var(--white)_5%,transparent)]";
-const LIGHT_SECTION = "bg-[var(--white)] text-[var(--eclipse)]";
-const LIGHT_SURFACE = "border-border bg-[var(--surface-secondary)]";
-const LIGHT_MUTED = "text-[color-mix(in_srgb,var(--eclipse)_64%,var(--white)_36%)]";
-const LIGHT_BODY = "text-[var(--eclipse)]";
+const DARK_SECTION = "border-black/[0.07] bg-white text-zinc-900";
+const DARK_MUTED = "text-zinc-600";
+const DARK_BODY = "text-zinc-600";
+const DARK_SURFACE = "border-black/[0.07] bg-[#fafaf8]";
+const DARK_SURFACE_SOFT = "border-black/[0.07] bg-[#f7f6f2]";
+const LIGHT_SECTION = "bg-[#fafaf8] text-zinc-900";
+const LIGHT_SURFACE = "border-black/[0.07] bg-[#fafaf8]";
+const LIGHT_MUTED = "text-zinc-500";
+const LIGHT_BODY = "text-zinc-900";
 
 function runtimeSignupHref(doc: RuntimeDoc): string {
   return doc.verification === "verified" ? CONNECT_RUNTIME_SIGNUP_HREF : "/signup";
@@ -63,19 +63,19 @@ export function RuntimePage({ doc }: { doc: RuntimeDoc }) {
       <Card render={<section className={DARK_SECTION} />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto grid max-w-6xl gap-12 px-6 py-24 lg:grid-cols-2">
           <div>
-            <h2 className="text-2xl font-medium text-[var(--snow)]">What it is</h2>
+            <h2 className="text-2xl font-medium text-zinc-900">What it is</h2>
             <p className={`mt-3 ${DARK_MUTED}`}>{doc.whatItIs}</p>
             <a
               href={doc.upstreamHref}
               target="_blank"
               rel="noreferrer"
-              className={`mt-4 inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:text-[var(--snow)] hover:underline ${DARK_BODY}`}
+              className={`mt-4 inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:text-zinc-900 hover:underline ${DARK_BODY}`}
             >
               {doc.upstreamLabel} <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
           <div>
-            <h2 className="text-2xl font-medium text-[var(--snow)]">How Raltic uses it</h2>
+            <h2 className="text-2xl font-medium text-zinc-900">How Raltic uses it</h2>
             <p className={`mt-3 ${DARK_MUTED}`}>{doc.howRalticUses}</p>
             <div className={`mt-4 inline-flex items-center gap-2 rounded-md border px-3 py-1 text-[11px] font-medium ${DARK_SURFACE} ${DARK_MUTED}`}>
               Lifecycle: <span className={DARK_BODY}>{doc.lifecycle === "external_daemon" ? "External daemon (yours)" : "Per-turn CLI spawn"}</span>
@@ -109,19 +109,19 @@ function Hero({ doc }: { doc: RuntimeDoc }) {
           {doc.verification === "experimental" && (
             <>
               <span className={DARK_MUTED} aria-hidden>·</span>
-              <span className="font-semibold uppercase tracking-wider text-[var(--warning)]">Experimental</span>
+              <span className="font-semibold uppercase tracking-wider text-[#d9821f]">Experimental</span>
             </>
           )}
         </span>
-        <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-[var(--snow)] sm:text-6xl">
+        <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
           <span className={ACCENT_TEXT[doc.accent]}>{doc.shortName}</span>{" "}
           in Raltic
         </h1>
         <p className={`mx-auto mt-5 max-w-2xl text-balance text-lg ${DARK_MUTED}`}>{doc.tagline}</p>
         <p className={`mx-auto mt-6 max-w-2xl text-balance text-sm leading-relaxed ${DARK_MUTED}`}>{doc.hero}</p>
         {doc.verification === "experimental" && (
-          <div className="mx-auto mt-6 max-w-2xl rounded-lg border border-warning/30 bg-[var(--warning-soft)] px-4 py-3 text-left text-[12px] text-[var(--warning)]">
-            <strong className="text-[var(--warning)]">Experimental runtime.</strong> Code shipped; CLI shape was implemented from public docs without a local smoke pass. See{" "}
+          <div className="mx-auto mt-6 max-w-2xl rounded-lg border border-[#f3d9ad] bg-[#fdf2e1] px-4 py-3 text-left text-[12px] text-[#92560f]">
+            <strong className="text-[#92560f]">Experimental runtime.</strong> Code shipped; CLI shape was implemented from public docs without a local smoke pass. See{" "}
             <code className="raltic-inline-token">docs/SMOKE_TESTS_openclaw_hermes.md</code>{" "}
             for what verification needs to cover. Recommended for evaluation, not production-critical work.
           </div>
@@ -160,7 +160,7 @@ function InstallStrip({ doc }: { doc: RuntimeDoc }) {
               <code className="raltic-inline-token flex-1 truncate">{doc.installCmd}</code>
             </CardPanel>
           </Card>
-          <p className={`mt-4 text-center text-[12px] ${LIGHT_MUTED}`}>
+          <p className="mt-4 text-center text-[12px] text-[#52525b]">
             {doc.verification === "experimental" ? (
               <>
                 This integration is visible for evaluation, but agent creation is locked until the OpenClaw/Hermes smoke verification passes.
@@ -225,7 +225,7 @@ function Cta({ doc }: { doc: RuntimeDoc }) {
   return (
     <Card render={<section className={DARK_SECTION} />} className="w-full rounded-none border-0 shadow-none">
       <CardPanel className="mx-auto max-w-2xl px-6 py-24 text-center">
-        <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
+        <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-zinc-900 sm:text-4xl">
           {doc.verification === "experimental"
             ? `${doc.shortName} is visible for evaluation.`
             : `Bring ${doc.shortName} into a workflow room.`}

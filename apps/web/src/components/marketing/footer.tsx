@@ -27,7 +27,7 @@ const LIGHT_FOOTER_STYLE: CSSProperties = {
   borderTop: "1px solid rgba(0,0,0,0.07)",
 };
 
-export function MarketingFooter({ lead, leadId, theme = "dark" }: MarketingFooterProps = {}) {
+export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFooterProps = {}) {
   const isLight = theme === "light";
 
   return (

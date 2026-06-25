@@ -1,52 +1,29 @@
-"use client";
-
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
 import { MarketingNav } from "@/components/marketing-nav";
 import { MarketingTracking } from "@/components/marketing/tracking";
 
 /**
- * Wrapper rendered by `app/(marketing)/layout.tsx` for every page in
- * the marketing route group — including the homepage `/`.
+ * Wrapper rendered by `app/(marketing)/layout.tsx` for every public
+ * marketing page.
+ *
+ * The entire marketing site uses the ando.so-style LIGHT aesthetic:
+ * warm-white surfaces (`#fafaf8`), monochrome black-opacity text, a
+ * single sky-blue accent (`#2f7bff`), large light headings, rounded
+ * cards with hairline black/8% borders. We deliberately do NOT add the
+ * `.dark` class, so HeroUI tokens resolve to their light `:root` values.
  *
  * Includes:
- *   - theme container (light on `/`, dark on every other marketing page)
+ *   - light theme container
  *   - MarketingTracking beacon (UTM capture + landing_view)
- *   - sticky MarketingNav (adapts its own light/dark treatment by route)
+ *   - sticky MarketingNav
  *
- * The homepage was redesigned to an ando.so-style light/airy aesthetic
- * (warm white, sky-blue accent, large light headings). Scoping the light
- * theme to `/` keeps the other marketing pages (/runtimes, /security,
- * /privacy, /teams, …) on their established dark treatment so nothing
- * else has to change. When the light theme is active we deliberately do
- * NOT add the `.dark` class, so HeroUI tokens resolve to their light
- * `:root` values for any Pro components used on the page.
- *
- * Per-page footer lives in apps/web/src/components/marketing/footer.tsx
- * — kept separate so individual pages can drop sections without
- * losing the global footer.
+ * NOTE: deliberately does NOT include SignedInRedirect. Auto-redirect to
+ * /s/[slug] is mounted ONLY in the homepage so secondary marketing pages
+ * stay browsable for signed-in users.
  */
 export function MarketingShell({ children }: { children: ReactNode }) {
-  // NOTE: deliberately does NOT include SignedInRedirect.
-  // Auto-redirect to /s/[slug] is mounted ONLY in the homepage
-  // (`app/(marketing)/page.tsx`) so secondary marketing pages
-  // (/runtimes, /indie, /security, /privacy, etc.) stay browsable
-  // by signed-in users.
-  const pathname = usePathname();
-  const isHome = pathname === "/";
-
-  if (isHome) {
-    return (
-      <div className="bg-[#fafaf8] text-zinc-900">
-        <MarketingTracking />
-        <MarketingNav />
-        {children}
-      </div>
-    );
-  }
-
   return (
-    <div className="dark bg-[var(--eclipse)] text-[var(--snow)]">
+    <div className="bg-[#fafaf8] text-zinc-900">
       <MarketingTracking />
       <MarketingNav />
       {children}

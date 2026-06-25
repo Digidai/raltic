@@ -104,7 +104,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
-          <FieldLabel htmlFor="waitlist-name" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-400">
+          <FieldLabel htmlFor="waitlist-name" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-500">
             Your name <span className="ml-1 text-[var(--danger)]">*</span>
           </FieldLabel>
           <Input
@@ -120,7 +120,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="waitlist-email" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-400">
+          <FieldLabel htmlFor="waitlist-email" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-500">
             Work email <span className="ml-1 text-[var(--danger)]">*</span>
           </FieldLabel>
           <Input
@@ -139,7 +139,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
-          <FieldLabel htmlFor="waitlist-company" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-400">
+          <FieldLabel htmlFor="waitlist-company" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-500">
             Company
           </FieldLabel>
           <Input
@@ -154,7 +154,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="waitlist-team-size" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-400">
+          <FieldLabel htmlFor="waitlist-team-size" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-500">
             Team size
           </FieldLabel>
           <Select
@@ -171,7 +171,7 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
       </div>
 
       <Field>
-        <FieldLabel htmlFor="waitlist-use-case" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-400">
+        <FieldLabel htmlFor="waitlist-use-case" className="text-[11.5px] font-medium uppercase tracking-wider text-zinc-500">
           What would you use Raltic for?
         </FieldLabel>
         <Textarea
@@ -194,8 +194,8 @@ export function WaitlistForm({ apiOrigin, refererPath = "/teams" }: {
       )}
 
       <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
-        <p className="text-[11px] text-zinc-400">
-          We'll only email you about your waitlist status. No marketing blasts. Privacy: <a href="/privacy" className="underline underline-offset-4 hover:text-white">privacy policy</a>.
+        <p className="text-[11px] text-zinc-500">
+          We'll only email you about your waitlist status. No marketing blasts. Privacy: <a href="/privacy" className="underline underline-offset-4 hover:text-zinc-900">privacy policy</a>.
         </p>
         <Button
           type="submit"

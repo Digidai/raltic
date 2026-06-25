@@ -32,18 +32,18 @@ export const metadata: Metadata = {
 export default function SecurityPage() {
   return (
     <>
-      <main className="min-h-screen text-white">
-          <Card render={<section className="border-b border-zinc-900 bg-black px-6 pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
+      <main className="min-h-screen text-zinc-900">
+          <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] px-6 pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-3xl text-center">
               <Chip size="sm" variant="soft" color="default" className="gap-2">
-                <ShieldCheck className="h-3 w-3 text-cyan-400" />
+                <ShieldCheck className="h-3 w-3 text-[#2f7bff]" />
                 Security &amp; Privacy
               </Chip>
-              <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl">
+              <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
                 What we see.<br />
-                <span className="text-cyan-400">What we don't.</span>
+                <span className="text-[#2f7bff]">What we don't.</span>
               </h1>
-              <p className="mx-auto mt-6 text-balance text-lg text-zinc-400">
+              <p className="mx-auto mt-6 text-balance text-lg text-zinc-500">
                 Most AI tools need to see your source to do their job. Raltic doesn't. Bridge agents run on your machine; cloud agents run in our sandbox container. Your provider keys never touch our servers. Read on for the honest, line-by-line version.
               </p>
             </CardPanel>
@@ -79,7 +79,7 @@ export default function SecurityPage() {
             </CardPanel>
           </Card>
 
-          <Card render={<section className="border-t border-zinc-900 bg-black" />} className="w-full rounded-none border-0 shadow-none">
+          <Card render={<section className="border-t border-black/[0.07] bg-[#faf9f6]" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-5xl px-6 py-24">
               <SectionHeader
                 eyebrow="What we store"
@@ -87,7 +87,7 @@ export default function SecurityPage() {
               />
               <div className="mt-12 grid gap-4 md:grid-cols-2">
                 <StorageBlock tone="we-see" title="What we see / store">
-                  <ul className="space-y-2.5 text-sm text-zinc-300">
+                  <ul className="space-y-2.5 text-sm text-zinc-600">
                     <li>· Workflow messages your team and agents post (in D1, replicated across CF regions).</li>
                     <li>· Workflow + workspace metadata (names, members, agent configs).</li>
                     <li>· Connector PATs (GitHub, Linear, Notion) — envelope-encrypted with AES-GCM before storage.</li>
@@ -97,7 +97,7 @@ export default function SecurityPage() {
                   </ul>
                 </StorageBlock>
                 <StorageBlock tone="we-dont" title="What we never see">
-                  <ul className="space-y-2.5 text-sm text-zinc-300">
+                  <ul className="space-y-2.5 text-sm text-zinc-600">
                     <li>· Your source code (bridge mode) — agents read it locally.</li>
                     <li>· Your provider API keys (Claude, OpenAI, Gemini, etc.).</li>
                     <li>· Your daemon's provider auth (OpenClaw, Hermes).</li>
@@ -130,29 +130,29 @@ export default function SecurityPage() {
             </CardPanel>
           </Card>
 
-          <Card render={<section className="border-t border-zinc-900 bg-black px-6 py-20" />} className="w-full rounded-none border-0 shadow-none">
+          <Card render={<section className="border-t border-black/[0.07] bg-[#faf9f6] px-6 py-20" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-3xl">
-              <h2 className="text-2xl font-medium text-white">Honest about what we DON'T have</h2>
-              <ul className="mt-5 space-y-3 text-sm text-zinc-400">
-                <li><span className="font-semibold text-zinc-200">SSO / SAML</span> — not built. On the roadmap with the Team tier.</li>
-                <li><span className="font-semibold text-zinc-200">SOC 2 / HIPAA</span> — not pursued. We'll start the audit work when an enterprise contract makes it economic to commit to.</li>
-                <li><span className="font-semibold text-zinc-200">BYO-bucket / data residency</span> — D1 / Workers run on Cloudflare's global edge. Region pinning isn't currently configurable per workspace.</li>
-                <li><span className="font-semibold text-zinc-200">Customer-managed encryption keys</span> — not built. Connector tokens use envelope encryption with a Raltic-held KEK today.</li>
+              <h2 className="text-2xl font-medium text-zinc-900">Honest about what we DON'T have</h2>
+              <ul className="mt-5 space-y-3 text-sm text-zinc-500">
+                <li><span className="font-semibold text-zinc-900">SSO / SAML</span> — not built. On the roadmap with the Team tier.</li>
+                <li><span className="font-semibold text-zinc-900">SOC 2 / HIPAA</span> — not pursued. We'll start the audit work when an enterprise contract makes it economic to commit to.</li>
+                <li><span className="font-semibold text-zinc-900">BYO-bucket / data residency</span> — D1 / Workers run on Cloudflare's global edge. Region pinning isn't currently configurable per workspace.</li>
+                <li><span className="font-semibold text-zinc-900">Customer-managed encryption keys</span> — not built. Connector tokens use envelope encryption with a Raltic-held KEK today.</li>
               </ul>
-              <p className="mt-6 text-sm text-zinc-400">
+              <p className="mt-6 text-sm text-zinc-500">
                 If any of these would block your team from using Raltic, tell us — at
-                <a href="mailto:hello@raltic.com" className="text-zinc-300 underline underline-offset-4 hover:text-white"> hello@raltic.com</a>. We prioritize what real conversations surface, not a hypothetical compliance roadmap.
+                <a href="mailto:hello@raltic.com" className="text-[#2f7bff] underline underline-offset-4 hover:text-[#1f5fd6]"> hello@raltic.com</a>. We prioritize what real conversations surface, not a hypothetical compliance roadmap.
               </p>
             </CardPanel>
           </Card>
 
-          <Card render={<section className="bg-black px-6 py-16" />} className="w-full rounded-none border-0 shadow-none">
+          <Card render={<section className="bg-white px-6 py-16" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-3xl">
-              <div className="rounded-xl border border-zinc-900 bg-zinc-950 px-6 py-6 text-center">
-                <h3 className="text-lg font-medium text-white">Responsible disclosure</h3>
-                <p className="mt-2 text-sm text-zinc-400">
+              <div className="rounded-xl border border-black/[0.07] bg-[#fafaf8] px-6 py-6 text-center">
+                <h3 className="text-lg font-medium text-zinc-900">Responsible disclosure</h3>
+                <p className="mt-2 text-sm text-zinc-500">
                   Found a vulnerability? Email
-                  <a href="mailto:security@raltic.com" className="text-zinc-200 underline underline-offset-4 hover:text-white"> security@raltic.com</a>.
+                  <a href="mailto:security@raltic.com" className="text-[#2f7bff] underline underline-offset-4 hover:text-[#1f5fd6]"> security@raltic.com</a>.
                   We acknowledge within 1 business day and credit reporters in the resolution note unless they ask otherwise.
                 </p>
               </div>
@@ -163,10 +163,10 @@ export default function SecurityPage() {
       <MarketingFooter
         lead={
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
+            <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-zinc-900 sm:text-4xl">
               Try Raltic with your real code.
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-[color-mix(in_srgb,var(--snow)_66%,transparent)]">
+            <p className="mx-auto mt-4 max-w-xl text-zinc-600">
               Local-first by default. Your code never crosses our servers.
             </p>
             <div className="mt-7 flex justify-center">
@@ -183,11 +183,11 @@ export default function SecurityPage() {
 
 function Lane({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <Card className="border-zinc-200 bg-zinc-50 text-zinc-700">
+    <Card className="rounded-2xl border border-black/[0.07] bg-white text-zinc-600 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel className="px-6 py-8">
-        <div className="flex items-center gap-2 text-zinc-900">
+        <div className="flex items-start gap-2 text-zinc-900">
           {icon}
-          <h3 className="text-lg font-medium">{title}</h3>
+          <h3 className="min-w-0 break-words text-lg font-medium">{title}</h3>
         </div>
         <div className="mt-4 text-sm leading-relaxed">{children}</div>
       </CardPanel>
@@ -196,11 +196,11 @@ function Lane({ title, icon, children }: { title: string; icon: React.ReactNode;
 }
 
 function StorageBlock({ tone, title, children }: { tone: "we-see" | "we-dont"; title: string; children: React.ReactNode }) {
-  const accent = tone === "we-see" ? "border-cyan-500/30" : "border-zinc-800";
+  const accent = tone === "we-see" ? "border-[#d4e4ff]" : "border-black/[0.07]";
   return (
-    <Card className={`border ${accent} bg-zinc-950`}>
+    <Card className={`rounded-2xl border ${accent} bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]`}>
       <CardPanel>
-        <h3 className="text-sm font-medium uppercase tracking-wider text-zinc-400">{title}</h3>
+        <h3 className="text-sm font-medium uppercase tracking-wider text-zinc-500">{title}</h3>
         <div className="mt-4">{children}</div>
       </CardPanel>
     </Card>
@@ -209,9 +209,9 @@ function StorageBlock({ tone, title, children }: { tone: "we-see" | "we-dont"; t
 
 function Control({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <Card className="bg-white">
+    <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel>
-        <div className="text-cyan-700">{icon}</div>
+        <div className="text-[#2f7bff]">{icon}</div>
         <h4 className="mt-3 text-base font-medium text-zinc-900">{title}</h4>
         <p className="mt-2 text-sm leading-relaxed text-zinc-600">{children}</p>
       </CardPanel>

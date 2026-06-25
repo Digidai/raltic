@@ -36,17 +36,17 @@ export const metadata: Metadata = {
 export default function TeamsPage() {
   return (
     <>
-      <Card render={<section className="border-b border-zinc-900 bg-black pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
+      <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl text-center">
           <Chip size="sm" variant="soft" color="warning" className="gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-hidden="true" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#d9821f]" aria-hidden="true" />
             Private beta · Waitlist
           </Chip>
-          <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl">
+          <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
             Your team's AI workspace,<br />
-            <span className="text-cyan-400">on your terms.</span>
+            <span className="text-[#2f7bff]">on your terms.</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-400">
+          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-600">
             Raltic is in private beta. The Team tier — with seat management, audit log, and shared agents — is on the roadmap. Tell us about your team and we'll loop you in as it lands.
           </p>
           <div className="mt-9 flex justify-center">
@@ -54,13 +54,13 @@ export default function TeamsPage() {
               Request access <ArrowRight className="h-4 w-4" />
             </MarketingButton>
           </div>
-          <p className="mt-5 text-[12px] text-zinc-400">
-            Each teammate can already <Link href="/signup" className="underline underline-offset-4 hover:text-white">sign up for the free indie tier</Link>; team-level features land with P4 billing.
+          <p className="mt-5 text-[12px] text-zinc-500">
+            Each teammate can already <Link href="/signup" className="underline underline-offset-4 hover:text-zinc-900">sign up for the free indie tier</Link>; team-level features land with P4 billing.
           </p>
         </CardPanel>
       </Card>
 
-      <Card render={<section className="bg-black px-6 py-24" />} className="w-full rounded-none border-0 shadow-none">
+      <Card render={<section className="bg-white px-6 py-24" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto space-y-10 max-w-5xl">
           <SectionHeader
             eyebrow="Why teams choose Raltic"
@@ -80,7 +80,7 @@ export default function TeamsPage() {
         </CardPanel>
       </Card>
 
-      <Card render={<section className="border-y border-zinc-900 bg-white text-zinc-900" />} className="w-full rounded-none border-0 shadow-none">
+      <Card render={<section className="border-y border-black/[0.07] bg-[#faf9f6] text-zinc-900" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-3xl px-6 py-20">
           <SectionHeader
             dark={false}
@@ -116,14 +116,14 @@ export default function TeamsPage() {
         lead={
           <div className="mx-auto max-w-3xl">
             <div className="text-center">
-              <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
+              <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-zinc-900 sm:text-4xl">
                 Get in early.
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-[color-mix(in_srgb,var(--snow)_66%,transparent)]">
+              <p className="mx-auto mt-4 max-w-2xl text-zinc-600">
                 Tell us about your team. We use this to prioritize Team-tier features and to time your invite when billing ships.
               </p>
             </div>
-            <Card className="mt-10 border-[color-mix(in_srgb,var(--snow)_12%,transparent)] bg-[color-mix(in_srgb,var(--surface)_7%,transparent)] shadow-none">
+            <Card className="mt-10 border-black/[0.07] bg-[#fafaf8] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
               <CardPanel className="sm:p-8">
                 <WaitlistForm apiOrigin={API_ORIGIN} refererPath="/teams" />
               </CardPanel>
@@ -137,11 +137,11 @@ export default function TeamsPage() {
 
 function FeatureCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <Card>
+    <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel>
-        <div className="text-cyan-400">{icon}</div>
-        <h3 className="mt-4 text-base font-medium text-white">{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-400">{children}</p>
+        <div className="text-[#2f7bff]">{icon}</div>
+        <h3 className="mt-4 text-base font-medium text-zinc-900">{title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-600">{children}</p>
       </CardPanel>
     </Card>
   );
@@ -149,7 +149,7 @@ function FeatureCard({ icon, title, children }: { icon: React.ReactNode; title: 
 
 function BoxCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card className="border-zinc-200 bg-zinc-50">
+    <Card className="border-black/[0.07] bg-[#f7f6f2]">
       <CardPanel className="p-5">
         <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-zinc-600">{title}</p>
         <div className="mt-3">{children}</div>

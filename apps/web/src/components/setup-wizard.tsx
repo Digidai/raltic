@@ -1179,7 +1179,7 @@ function RuntimePick({
       value={id}
       isDisabled={disabled}
       controlClassName="mt-0.5"
-      className={cn("h-auto p-3 text-left hover:border-foreground/20", disabled && "opacity-75")}
+      className={cn("h-auto whitespace-normal p-3 text-left hover:border-foreground/20", disabled && "opacity-75")}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{title}</span>

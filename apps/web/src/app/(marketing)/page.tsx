@@ -90,28 +90,23 @@ export default function Home(): React.ReactElement {
 
 // ─────────────────────── Shared bits ───────────────────────
 
-function SectionHead({ eyebrow, title, description, tone = "light" }: {
+function SectionHead({ eyebrow, title, description }: {
   eyebrow?: string;
   title: ReactNode;
   description?: string;
-  tone?: "light" | "dark";
 }): React.ReactElement {
-  const dark = tone === "dark";
   return (
     <div className="mx-auto max-w-3xl text-center">
       {eyebrow && (
-        <p
-          className="text-[12px] font-medium uppercase tracking-[0.16em]"
-          style={{ color: dark ? "#7ab0ff" : ACCENT }}
-        >
+        <p className="text-[12px] font-medium uppercase tracking-[0.16em]" style={{ color: ACCENT }}>
           {eyebrow}
         </p>
       )}
-      <h2 className={`${DISPLAY} mt-4 text-balance text-4xl leading-[1.1] sm:text-5xl ${dark ? "text-white" : "text-zinc-900"}`}>
+      <h2 className={`${DISPLAY} mt-4 text-balance text-4xl leading-[1.1] text-zinc-900 sm:text-5xl`}>
         {title}
       </h2>
       {description && (
-        <p className={`mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed sm:text-lg ${dark ? "text-zinc-300" : "text-zinc-600"}`}>
+        <p className="mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed text-zinc-600 sm:text-lg">
           {description}
         </p>
       )}
@@ -514,33 +509,32 @@ function WorkflowUseCase({ tag, href, title, input, agent, gate, output }: {
 }
 
 // ─────────────────────── Comparison table ───────────────────────
-// Single inverted (dark) band — a tasteful contrast section. Keeps the
-// `.raltic-marketing-status-chip` cells (asserted by the icon-contrast
-// e2e test) reading correctly on a dark surface.
+// Light card table. Keeps the `.raltic-marketing-status-chip` cells
+// (asserted by the icon-contrast e2e test) — those now read as light
+// chips via globals.css.
 
 function Comparison(): React.ReactElement {
   return (
-    <section className="border-y border-black/10 bg-[#101211] px-6 py-24 sm:py-32">
+    <section className="bg-white px-6 py-24 sm:py-32">
       <div className="mx-auto max-w-6xl">
         <SectionHead
-          tone="dark"
           eyebrow="The shortlist you're already considering"
           title={<>Compared to what you have today.</>}
           description="If your team has tried ChatGPT for work, Cursor for engineering, or AI bots in Slack, here's where each one stops at a tool and Raltic turns the work into an owned workflow."
         />
-        <div className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-[#161918]">
+        <div className="mt-12 overflow-hidden rounded-2xl border border-black/[0.08] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-zinc-400">
+                <tr className="border-b border-black/[0.07] text-[11px] uppercase tracking-wider text-zinc-500">
                   <th scope="col" className="px-6 py-4 font-medium">What you actually need</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">ChatGPT for Work</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Cursor / Copilot</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Slack + AI bots</th>
-                  <th scope="col" className="px-4 py-4 text-center font-medium" style={{ backgroundColor: "rgba(47,123,255,0.10)", color: "#7ab0ff" }}>Raltic</th>
+                  <th scope="col" className="px-4 py-4 text-center font-medium" style={{ backgroundColor: "#eef4ff", color: "#2f7bff" }}>Raltic</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.08] text-zinc-300">
+              <tbody className="divide-y divide-black/[0.06] text-zinc-600">
                 <ComparisonRow label="Workflow outputs reach the whole team" vals={["no", "no", "partial", "yes"]} />
                 <ComparisonRow label="Mix multiple AI providers in one place" vals={["no", "no", "partial", "yes"]} />
                 <ComparisonRow label="Your source code never uploads" vals={["no", "partial", "no", "yes"]} />
@@ -553,9 +547,9 @@ function Comparison(): React.ReactElement {
             </table>
           </div>
         </div>
-        <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-zinc-400">
+        <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-zinc-500">
           Comparisons reflect each product&apos;s mainstream offering. We&apos;d love
-          to be wrong on any cell — tell us at <span className="text-zinc-200">hello@raltic.com</span> and we&apos;ll update.
+          to be wrong on any cell — tell us at <span className="text-zinc-800">hello@raltic.com</span> and we&apos;ll update.
         </p>
       </div>
     </section>
@@ -568,11 +562,11 @@ function ComparisonRow({ label, vals }: {
 }): React.ReactElement {
   return (
     <tr>
-      <th scope="row" className="px-6 py-4 text-left font-normal text-white">{label}</th>
+      <th scope="row" className="px-6 py-4 text-left font-normal text-zinc-900">{label}</th>
       {vals.map((v, i) => {
         const isRaltic = i === vals.length - 1;
         return (
-          <td key={i} className="px-4 py-4 text-center" style={isRaltic ? { backgroundColor: "rgba(47,123,255,0.08)" } : undefined}>
+          <td key={i} className="px-4 py-4 text-center" style={isRaltic ? { backgroundColor: "rgba(47,123,255,0.05)" } : undefined}>
             <ComparisonCell value={v} highlight={isRaltic} />
           </td>
         );
@@ -586,10 +580,10 @@ function ComparisonCell({ value, highlight }: { value: "yes" | "no" | "partial";
     return (
       <span
         className="inline-flex h-6 w-6 items-center justify-center rounded-full"
-        style={{ backgroundColor: highlight ? "rgba(47,123,255,0.20)" : "rgba(47,123,255,0.16)" }}
+        style={{ backgroundColor: highlight ? "#dbe9ff" : "#eef4ff" }}
         aria-label="Yes"
       >
-        <CheckCircle2 className="h-4 w-4" style={{ color: highlight ? "#9ec4ff" : "#7ab0ff" }} aria-label="Yes" />
+        <CheckCircle2 className="h-4 w-4" style={{ color: "#2f7bff" }} aria-label="Yes" />
       </span>
     );
   }

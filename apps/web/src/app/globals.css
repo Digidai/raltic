@@ -969,14 +969,17 @@ textarea:-webkit-autofill {
 }
 
 .raltic-marketing-icon-chip {
-  background: color-mix(in srgb, var(--accent) 14%, var(--white) 86%);
-  color: color-mix(in srgb, var(--accent) 48%, var(--eclipse) 52%);
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--white) 72%);
+  /* Sky-blue (ando.so) accent chip on a light surface. */
+  background: #eef4ff;
+  color: #2f7bff;
+  border: 1px solid #d4e4ff;
 }
 .raltic-marketing-status-chip {
-  background: color-mix(in srgb, var(--snow) 10%, var(--eclipse) 90%);
-  color: color-mix(in srgb, var(--snow) 84%, var(--eclipse) 16%);
-  border: 1px solid color-mix(in srgb, var(--snow) 16%, var(--eclipse) 84%);
+  /* Light (ando.so) treatment — dark-gray glyph on a faint gray chip.
+     Keeps icon/background contrast ≥3 without rendering pure black. */
+  background: color-mix(in srgb, var(--eclipse) 6%, var(--white) 94%);
+  color: color-mix(in srgb, var(--eclipse) 62%, var(--white) 38%);
+  border: 1px solid color-mix(in srgb, var(--eclipse) 12%, var(--white) 88%);
 }
 .raltic-marketing-icon-chip svg,
 .raltic-marketing-status-chip svg {

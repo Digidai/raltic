@@ -3,7 +3,6 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ArrowRight, ChevronDown, Menu as MenuIcon } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,22 +16,15 @@ import { cn } from "@/lib/utils";
 import { RalticLogo } from "./raltic-logo";
 
 /**
- * Marketing site sticky nav.
+ * Marketing site sticky nav — light (ando.so) treatment across the whole
+ * marketing site: dark text on a transparent bar that turns into a
+ * white-glass surface on scroll.
  *
- * Theme is route-aware so the bar matches the page underneath it:
- *
- *   - Homepage (`/`) is the ando.so-style LIGHT redesign → dark text on
- *     a transparent bar that turns into a white-glass surface on scroll.
- *   - Every other marketing page is still DARK → light text on a
- *     transparent bar that turns into dark glass on scroll.
- *
- * The dropdown surfaces read HeroUI `--overlay` tokens, which flip with
- * the shell theme automatically; hover/border mixes use `--foreground`
- * (not `--snow`) so they stay legible in both themes.
+ * Dropdown surfaces read HeroUI `--overlay` tokens (light) and use
+ * `--foreground` mixes for hover/border so they stay legible.
  */
 export function MarketingNav() {
   const [scrolled, setScrolled] = useState(false);
-  const onLight = usePathname() === "/";
 
   useEffect(() => {
     let ticking = false;
@@ -55,34 +47,27 @@ export function MarketingNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const linkClass = onLight
-    ? "text-zinc-600 hover:text-zinc-900"
-    : "text-[color-mix(in_srgb,var(--snow)_64%,transparent)] hover:text-[var(--snow)]";
+  const linkClass = "text-zinc-600 hover:text-zinc-900";
 
   return (
     <header
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         scrolled
-          ? onLight
-            ? "border-b border-black/[0.07] bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60"
-            : "border-b border-[color-mix(in_srgb,var(--snow)_10%,transparent)] bg-[color-mix(in_srgb,var(--eclipse)_72%,transparent)] backdrop-blur-xl supports-[backdrop-filter]:bg-[color-mix(in_srgb,var(--eclipse)_58%,transparent)]"
+          ? "border-b border-black/[0.07] bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60"
           : "bg-transparent",
       )}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link
           href="/"
-          className={cn(
-            "flex items-center gap-2 font-medium tracking-tight",
-            onLight ? "text-zinc-900" : "text-[var(--snow)]",
-          )}
+          className="flex items-center gap-2 font-medium tracking-tight text-zinc-900"
         >
-          <RalticLogo size={32} idSuffix="nav" onDark={!onLight} />
+          <RalticLogo size={32} idSuffix="nav" onDark={false} />
           <span>Raltic</span>
         </Link>
 
-        <nav className={cn("hidden items-center gap-6 text-sm md:flex", onLight ? "text-zinc-600" : "text-[color-mix(in_srgb,var(--snow)_64%,transparent)]")}>
+        <nav className="hidden items-center gap-6 text-sm text-zinc-600 md:flex">
           <Link href="/workflows" className={linkClass}>Workflows</Link>
           <Link href="/runtimes" className={linkClass}>Runtimes</Link>
           <Link href="/connectors" className={linkClass}>Connectors</Link>
@@ -90,16 +75,16 @@ export function MarketingNav() {
           <Link href="/security" className={linkClass}>Security</Link>
           {/* Audience dropdown — surfaces /indie + /teams without
               crowding the top nav. */}
-          <ForDropdown onLight={onLight} />
+          <ForDropdown />
           <Link href="/login" className={linkClass}>Sign in</Link>
-          <MarketingButton href="/signup" variant={onLight ? "light-nav-primary" : "nav-primary"}>
+          <MarketingButton href="/signup" variant="light-nav-primary">
             Get started <ArrowRight className="h-3.5 w-3.5" />
           </MarketingButton>
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
-          <MobileNavDropdown onLight={onLight} />
-          <MarketingButton href="/signup" variant={onLight ? "light-nav-primary" : "nav-primary"}>
+          <MobileNavDropdown />
+          <MarketingButton href="/signup" variant="light-nav-primary">
             Start
           </MarketingButton>
         </div>
@@ -108,7 +93,7 @@ export function MarketingNav() {
   );
 }
 
-function MobileNavDropdown({ onLight }: { onLight: boolean }) {
+function MobileNavDropdown() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -117,12 +102,7 @@ function MobileNavDropdown({ onLight }: { onLight: boolean }) {
         aria-label="Open marketing navigation"
         aria-haspopup="menu"
         aria-expanded={open}
-        className={cn(
-          "inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff]",
-          onLight
-            ? "border border-black/[0.1] bg-white text-zinc-900 hover:bg-black/[0.04]"
-            : "border border-[color-mix(in_srgb,var(--snow)_12%,transparent)] bg-[color-mix(in_srgb,var(--snow)_5%,transparent)] text-[var(--snow)] hover:bg-[color-mix(in_srgb,var(--snow)_9%,transparent)]",
-        )}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/[0.1] bg-white text-zinc-900 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff]"
       >
         <MenuIcon className="h-4 w-4" aria-hidden="true" />
       </DropdownMenuTrigger>
@@ -188,24 +168,16 @@ function MobileNavItem({
 }
 
 /**
- * "For" / Audiences dropdown. Click-only — earlier draft combined
- * pointerEnter (open) + click (toggle), which collided: the pointer
- * sweep landing on the trigger fired pointerEnter→open, and the
- * subsequent click toggled it shut again. Easy to misread as broken.
- * Now: click opens, click again or click-outside or Escape closes.
+ * "For" / Audiences dropdown. Click-only — click opens, click again or
+ * click-outside or Escape closes.
  */
-function ForDropdown({ onLight }: { onLight: boolean }) {
+function ForDropdown() {
   const [open, setOpen] = useState(false);
 
   return (
     <DropdownMenu onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        className={cn(
-          "inline-flex h-8 items-center gap-1 rounded-full px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff]",
-          onLight
-            ? "text-zinc-600 hover:bg-black/[0.04] hover:text-zinc-900"
-            : "text-[color-mix(in_srgb,var(--snow)_64%,transparent)] hover:bg-[color-mix(in_srgb,var(--snow)_6%,transparent)] hover:text-[var(--snow)]",
-        )}
+        className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-zinc-600 transition-colors hover:bg-black/[0.04] hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff]"
         aria-haspopup="menu"
         aria-expanded={open}
       >

@@ -711,17 +711,23 @@ function StarterChooser({
               variant={selected ? "primary" : "outline"}
               onClick={() => onSelect(starter)}
               className={[
-                "h-auto min-h-[104px] w-full justify-start rounded-lg border px-3 py-3 text-left transition-colors",
+                "h-auto min-h-[104px] w-full justify-start whitespace-normal rounded-lg border px-3 py-3 text-left transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
                 selected
                   ? "border-accent bg-[var(--accent-soft)] text-[var(--accent-soft-foreground)]"
                   : "border-border bg-background/70 text-foreground hover:border-accent/30 hover:bg-background",
               ].join(" ")}
             >
-              <span className="block text-sm font-semibold">{starter.selectorLabel}</span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{starter.selectorBody}</span>
-              <span className="mt-2 block font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                {starter.firstProof}
+              {/* Stack the label/body/proof in a full-width column and allow
+                  wrapping — the HeroUI Button base is whitespace-nowrap + a
+                  centered flex row, which otherwise lets the sentence-length
+                  body and proof text overflow the card to the right. */}
+              <span className="flex w-full min-w-0 flex-col items-start whitespace-normal">
+                <span className="block w-full text-sm font-semibold">{starter.selectorLabel}</span>
+                <span className="mt-1 block w-full text-xs leading-relaxed text-muted-foreground">{starter.selectorBody}</span>
+                <span className="mt-2 block w-full break-words font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {starter.firstProof}
+                </span>
               </span>
             </Button>
           );

@@ -31,19 +31,19 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
 
   return (
     <>
-      <main className="bg-black text-white">
+      <main className="bg-[#fafaf8] text-zinc-900">
         {fromDesktopWelcome ? <DesktopReturnBar /> : null}
-        <Card render={<section className="border-b border-zinc-900 px-6 pt-28 pb-16 sm:pt-36" />} className="w-full rounded-none border-0 shadow-none">
+        <Card render={<section className="border-b border-black/[0.07] px-6 pt-28 pb-16 sm:pt-36" />} className="w-full rounded-none border-0 shadow-none">
           <CardPanel className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_360px] lg:items-start">
             <div>
               <Chip size="sm" variant="soft" color="warning" className="gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-300" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#d9821f]" aria-hidden="true" />
                 Internal beta
               </Chip>
-              <h1 className="mt-7 max-w-3xl text-balance text-5xl font-medium leading-[1.05] text-white sm:text-6xl">
+              <h1 className="mt-7 max-w-3xl text-balance text-5xl font-medium leading-[1.05] text-zinc-900 sm:text-6xl">
                 Raltic Desktop beta
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-600">
                 A test build for connecting this computer to Raltic without
                 running a separate terminal bridge. It is unsigned today, so
                 installation has extra macOS / Windows warnings.
@@ -52,7 +52,7 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
                 <MarketingButton href={RELEASES_URL} target="_blank" rel="noreferrer" variant="nav-primary" className="!h-10 !gap-2 !px-4">
                   Open GitHub Releases <ExternalLink className="h-4 w-4" />
                 </MarketingButton>
-                <MarketingButton href="#install" variant="secondary" className="!h-10 !gap-2 !border-zinc-700 !bg-transparent !px-4 hover:!border-zinc-500 hover:!bg-zinc-950">
+                <MarketingButton href="#install" variant="secondary" className="!h-10 !gap-2 !border-black/[0.12] !bg-transparent !px-4 hover:!border-black/[0.2] hover:!bg-[#f7f6f2]">
                   Read install notes <ArrowRight className="h-4 w-4" />
                 </MarketingButton>
               </div>
@@ -61,12 +61,12 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md border border-zinc-800 bg-black">
-                    <Monitor className="h-5 w-5 text-cyan-300" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md border border-black/[0.07] bg-[#fafaf8]">
+                    <Monitor className="h-5 w-5 text-[#2f7bff]" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">Current status</p>
-                    <p className="text-sm text-zinc-400">Manual beta install</p>
+                    <p className="font-medium text-zinc-900">Current status</p>
+                    <p className="text-sm text-zinc-500">Manual beta install</p>
                   </div>
                 </div>
               </CardHeader>
@@ -80,10 +80,10 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
           </CardPanel>
         </Card>
 
-        <Card render={<section id="install" className="px-6 py-16" />} className="w-full rounded-none border-0 shadow-none">
+        <Card render={<section id="install" className="bg-white px-6 py-16" />} className="w-full rounded-none border-0 shadow-none">
           <CardPanel className="mx-auto max-w-6xl">
-            <div className="mb-8 flex items-center gap-2 text-sm font-medium text-zinc-300">
-              <Download className="h-4 w-4 text-cyan-300" />
+            <div className="mb-8 flex items-center gap-2 text-sm font-medium text-zinc-600">
+              <Download className="h-4 w-4 text-[#2f7bff]" />
               Install path
             </div>
             <div className="grid gap-4 lg:grid-cols-3">
@@ -106,17 +106,17 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
           </CardPanel>
         </Card>
 
-        <Card render={<section className="border-y border-zinc-900 bg-zinc-950/55 px-6 py-14" />} className="w-full rounded-none border-0 shadow-none">
+        <Card render={<section className="border-y border-black/[0.07] bg-[#faf9f6] px-6 py-14" />} className="w-full rounded-none border-0 shadow-none">
           <CardPanel className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_1fr]">
             <Card>
               <CardHeader>
-                <div className="mb-4 flex items-center gap-2 text-sm font-medium text-amber-200">
+                <div className="mb-4 flex items-center gap-2 text-sm font-medium text-[#92560f]">
                   <AlertTriangle className="h-4 w-4" />
                   Unsigned beta warnings
                 </div>
               </CardHeader>
               <CardPanel className="pt-0">
-                <ul className="space-y-3 text-sm leading-6 text-zinc-400">
+                <ul className="space-y-3 text-sm leading-6 text-zinc-500">
                   <li>macOS Gatekeeper may say the app cannot be opened or is from an unidentified developer.</li>
                   <li>Windows SmartScreen may show Unknown Publisher until Windows signing is added.</li>
                   <li>Do not treat this as the public release channel.</li>
@@ -125,13 +125,13 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
             </Card>
             <Card>
               <CardHeader>
-                <div className="mb-4 flex items-center gap-2 text-sm font-medium text-cyan-200">
+                <div className="mb-4 flex items-center gap-2 text-sm font-medium text-[#2f7bff]">
                   <RefreshCw className="h-4 w-4" />
                   Updates during beta
                 </div>
               </CardHeader>
               <CardPanel className="pt-0">
-                <p className="text-sm leading-6 text-zinc-400">
+                <p className="text-sm leading-6 text-zinc-500">
                   Install new beta versions manually from GitHub Releases. The
                   production auto-update channel will be enabled after signed and
                   notarized releases are available.
@@ -149,19 +149,19 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
 function DesktopReturnBar() {
   return (
     <Card
-      render={<div className="border-b border-cyan-400/20 bg-black/90 px-6 py-3 backdrop-blur-xl" />}
+      render={<div className="border-b border-[#d4e4ff] bg-white/90 px-6 py-3 backdrop-blur-xl" />}
       className="w-full rounded-none border-0 bg-transparent"
     >
       <CardPanel className="px-0">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/desktop/welcome"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-100 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#2f7bff] hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to desktop setup
           </Link>
-          <p className="text-xs text-zinc-400">Install notes opened inside Raltic Desktop</p>
+          <p className="text-xs text-zinc-500">Install notes opened inside Raltic Desktop</p>
         </div>
       </CardPanel>
     </Card>
@@ -170,9 +170,9 @@ function DesktopReturnBar() {
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-2 gap-3 rounded-lg border border-zinc-900 bg-zinc-950/70 px-4 py-3">
-      <span className="text-zinc-400">{label}</span>
-      <span className="text-right text-zinc-200">{value}</span>
+    <div className="grid grid-cols-2 gap-3 rounded-lg border border-black/[0.07] bg-[#fafaf8] px-4 py-3">
+      <span className="text-zinc-500">{label}</span>
+      <span className="text-right text-zinc-900">{value}</span>
     </div>
   );
 }
@@ -181,11 +181,11 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
   return (
     <Card>
       <CardPanel>
-        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-black text-sm font-medium text-cyan-300">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-black/[0.07] bg-[#fafaf8] text-sm font-medium text-[#2f7bff]">
           {n}
         </div>
-        <h2 className="mt-5 text-lg font-medium text-white">{title}</h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-400">{body}</p>
+        <h2 className="mt-5 text-lg font-medium text-zinc-900">{title}</h2>
+        <p className="mt-3 text-sm leading-6 text-zinc-500">{body}</p>
       </CardPanel>
     </Card>
   );

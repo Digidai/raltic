@@ -30,17 +30,17 @@ export const metadata: Metadata = {
 export default function IndiePage() {
   return (
     <>
-      <Card render={<section className="border-b border-zinc-900 bg-black pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
+      <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">
-            <Sparkles className="h-3 w-3 text-cyan-400" />
+            <Sparkles className="h-3 w-3 text-[#2f7bff]" />
             For solo devs &amp; AI tinkerers
           </Chip>
-          <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-6xl">
+          <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
             All your AI agents.<br />
-            <span className="text-cyan-400">One workflow workspace.</span>
+            <span className="text-[#2f7bff]">One workflow workspace.</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-400">
+          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-600">
             You're running Claude Code in one tab, Codex in another, maybe evaluating a daemon runtime next. Raltic gives them a home — workflow rooms where you can direct the work, keep outputs visible, and reuse the result.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -51,13 +51,13 @@ export default function IndiePage() {
               Browse runtimes
             </MarketingButton>
           </div>
-          <p className="mt-5 text-[12px] text-zinc-400">
+          <p className="mt-5 text-[12px] text-zinc-500">
             No credit card · Local-first by default · Free during private beta
           </p>
         </CardPanel>
       </Card>
 
-      <Card render={<section className="bg-black px-6 py-24" />} className="w-full rounded-none border-0 shadow-none">
+      <Card render={<section className="bg-white px-6 py-24" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto">
           <SectionHeader
             eyebrow="What you get"
@@ -77,7 +77,7 @@ export default function IndiePage() {
         </CardPanel>
       </Card>
 
-      <Card render={<section className="border-y border-zinc-900 bg-white text-zinc-900" />} className="w-full rounded-none border-0 shadow-none">
+      <Card render={<section className="border-y border-black/[0.07] bg-[#faf9f6] text-zinc-900" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-3xl px-6 py-24">
           <SectionHeader
             dark={false}
@@ -91,10 +91,10 @@ export default function IndiePage() {
       <MarketingFooter
         lead={
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-[var(--snow)] sm:text-4xl">
+            <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-zinc-900 sm:text-4xl">
               Your AI is too good to live in browser tabs.
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-[color-mix(in_srgb,var(--snow)_66%,transparent)]">
+            <p className="mx-auto mt-4 max-w-xl text-zinc-600">
               Bring it into a chat that remembers — and let the next agent you spin up join the thread.
             </p>
             <div className="mt-7 flex justify-center">
@@ -102,9 +102,9 @@ export default function IndiePage() {
                 Start free <ArrowRight className="h-4 w-4" />
               </MarketingButton>
             </div>
-            <Card className="mx-auto mt-10 max-w-md border-[color-mix(in_srgb,var(--snow)_12%,transparent)] bg-[color-mix(in_srgb,var(--surface)_7%,transparent)] shadow-none">
+            <Card className="mx-auto mt-10 max-w-md border-black/[0.07] bg-[#fafaf8] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
               <CardPanel>
-                <p className="mb-3 text-[11.5px] uppercase tracking-[0.18em] text-[color-mix(in_srgb,var(--snow)_58%,transparent)]">
+                <p className="mb-3 text-[11.5px] uppercase tracking-[0.18em] text-zinc-500">
                   Or just keep tabs on us
                 </p>
                 <NewsletterSignup apiOrigin={API_ORIGIN} page="/indie" />
@@ -119,11 +119,11 @@ export default function IndiePage() {
 
 function BenefitCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <Card>
+    <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel>
-        <div className="text-cyan-400">{icon}</div>
-        <h3 className="mt-4 text-base font-medium text-white">{title}</h3>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-400">{children}</p>
+        <div className="text-[#2f7bff]">{icon}</div>
+        <h3 className="mt-4 text-base font-medium text-zinc-900">{title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-600">{children}</p>
       </CardPanel>
     </Card>
   );

@@ -454,8 +454,10 @@ test.describe("marketing public access", () => {
       const legal = page.getByText("Legal", { exact: true });
       const updated = page.getByText(/Last updated:/);
 
-      await expect(legal).toHaveClass(/text-zinc-400/);
-      await expect(updated).toHaveClass(/text-zinc-400/);
+      // Light (ando.so) theme: muted legal metadata uses zinc-500, which
+      // is more readable on the warm-white surface than the old zinc-400.
+      await expect(legal).toHaveClass(/text-zinc-500/);
+      await expect(updated).toHaveClass(/text-zinc-500/);
     });
   }
 });

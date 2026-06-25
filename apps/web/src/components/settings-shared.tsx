@@ -178,11 +178,11 @@ export function InvitePresetButton({ title, detail, onClick }: { title: string; 
       type="button"
       onClick={onClick}
       variant="outline"
-      className="h-auto flex-1 justify-start p-3 text-left hover:border-accent/40 hover:bg-[var(--accent-soft)]"
+      className="h-auto flex-1 justify-start whitespace-normal p-3 text-left hover:border-accent/40 hover:bg-[var(--accent-soft)]"
     >
-      <span className="block">
+      <span className="block w-full min-w-0">
         <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-0.5 block text-[11px] text-muted-foreground">{detail}</span>
+        <span className="mt-0.5 block break-words text-[11px] text-muted-foreground">{detail}</span>
       </span>
     </Button>
   );
