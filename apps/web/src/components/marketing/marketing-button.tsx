@@ -41,21 +41,21 @@ const variants: Record<MarketingButtonVariant, string> = {
 
 const visualVariants: Record<MarketingButtonVariant, string> = {
   primary:
-    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white shadow-[0_1px_2px_rgba(16,24,40,0.10),0_10px_28px_-14px_rgba(16,24,40,0.55)] hover:!border-black hover:!bg-black focus-visible:!ring-[#2f7bff]",
+    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white shadow-[0_1px_2px_rgba(16,24,40,0.10),0_10px_28px_-14px_rgba(16,24,40,0.55)] hover:!border-black hover:!bg-black focus-visible:!ring-[#2563eb]",
   secondary:
-    "!rounded-full !border-black/[0.12] !bg-white !text-zinc-900 hover:!border-black/25 hover:!bg-[#f6f5f1] focus-visible:!ring-[#2f7bff]",
+    "!rounded-full !border-black/[0.12] !bg-white !text-zinc-900 hover:!border-black/25 hover:!bg-[#f6f5f1] focus-visible:!ring-[#2563eb]",
   "nav-primary":
-    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white hover:!border-black hover:!bg-black focus-visible:!ring-[#2f7bff]",
+    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white hover:!border-black hover:!bg-black focus-visible:!ring-[#2563eb]",
   "desktop-primary":
     "!border-[var(--eclipse)] !bg-[var(--eclipse)] !text-[var(--snow)] hover:!border-[color-mix(in_srgb,var(--eclipse)_88%,var(--snow))] hover:!bg-[color-mix(in_srgb,var(--eclipse)_88%,var(--snow))] focus-visible:!ring-accent",
   "desktop-secondary":
     "!border-[color-mix(in_srgb,var(--eclipse)_20%,transparent)] !bg-[var(--white)] !text-[var(--eclipse)] hover:!border-[color-mix(in_srgb,var(--eclipse)_32%,transparent)] hover:!bg-[color-mix(in_srgb,var(--white)_94%,var(--eclipse))] focus-visible:!ring-accent",
   "light-primary":
-    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white shadow-[0_1px_2px_rgba(16,24,40,0.10),0_10px_28px_-14px_rgba(16,24,40,0.55)] hover:!border-black hover:!bg-black focus-visible:!ring-[#2f7bff]",
+    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white shadow-[0_1px_2px_rgba(16,24,40,0.10),0_10px_28px_-14px_rgba(16,24,40,0.55)] hover:!border-black hover:!bg-black focus-visible:!ring-[#2563eb]",
   "light-secondary":
-    "!rounded-full !border-black/[0.12] !bg-white !text-zinc-900 hover:!border-black/25 hover:!bg-[#f6f5f1] focus-visible:!ring-[#2f7bff]",
+    "!rounded-full !border-black/[0.12] !bg-white !text-zinc-900 hover:!border-black/25 hover:!bg-[#f6f5f1] focus-visible:!ring-[#2563eb]",
   "light-nav-primary":
-    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white hover:!border-black hover:!bg-black focus-visible:!ring-[#2f7bff]",
+    "!rounded-full !border-[#18181b] !bg-[#18181b] !text-white hover:!border-black hover:!bg-black focus-visible:!ring-[#2563eb]",
 };
 
 const buttonVariants: Record<MarketingButtonVariant, ComponentProps<typeof Button>["variant"]> = {

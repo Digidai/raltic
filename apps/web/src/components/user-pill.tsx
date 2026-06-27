@@ -90,7 +90,7 @@ export function UserPill({
             loading="lazy"
           />
         ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),var(--warning))] text-xs font-semibold text-[var(--accent-foreground)] shadow-sm ring-1 ring-accent/20">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),var(--warning))] text-xs font-semibold text-[var(--eclipse)] shadow-sm ring-1 ring-accent/20">
             {initial}
           </div>
         )}

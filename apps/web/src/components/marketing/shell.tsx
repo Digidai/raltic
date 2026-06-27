@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { MarketingNav } from "@/components/marketing-nav";
 import { MarketingTracking } from "@/components/marketing/tracking";
 
@@ -8,7 +8,7 @@ import { MarketingTracking } from "@/components/marketing/tracking";
  *
  * The entire marketing site uses the ando.so-style LIGHT aesthetic:
  * warm-white surfaces (`#fafaf8`), monochrome black-opacity text, a
- * single sky-blue accent (`#2f7bff`), large light headings, rounded
+ * single sky-blue accent (`#2563eb`), large light headings, rounded
  * cards with hairline black/8% borders. We deliberately do NOT add the
  * `.dark` class, so HeroUI tokens resolve to their light `:root` values.
  *
@@ -22,8 +22,13 @@ import { MarketingTracking } from "@/components/marketing/tracking";
  * stay browsable for signed-in users.
  */
 export function MarketingShell({ children }: { children: ReactNode }) {
+  // The product theme ships `--radius: 0px` (brutalism), which remaps every
+  // Tailwind `rounded-lg/xl/2xl` token to 0 — leaving marketing cards sharp
+  // while arbitrary radii (e.g. the hero mockup's `rounded-[24px]`) stay
+  // round. Scope a non-zero radius to the marketing tree so all token-based
+  // corners round consistently (ando.so style) without touching the product.
   return (
-    <div className="bg-[#fafaf8] text-zinc-900">
+    <div className="bg-[#fafaf8] text-zinc-900" style={{ "--radius": "12px" } as CSSProperties}>
       <MarketingTracking />
       <MarketingNav />
       {children}

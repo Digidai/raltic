@@ -42,7 +42,10 @@ export function BrandMonogram({
   return (
     <div
       className={cn(
-        "relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold text-[var(--accent-foreground)] ring-1 ring-accent/20",
+        // Letter sits on the blue→amber brand gradient, so it must stay
+        // dark for legibility on BOTH halves — not tied to
+        // --accent-foreground (which is white, for solid accent buttons).
+        "relative inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold text-[var(--eclipse)] ring-1 ring-accent/20",
         sizes[size],
         className,
       )}

@@ -23,7 +23,7 @@
 
   /* ── HeroUI Pro theme: Brutalism (light) ─────────── */
   --backdrop: rgba(0, 0, 0, 0.5);
-  --background: #F2F6F4;
+  --background: #FAFAF8;
   --card: var(--surface);
   --code: var(--surface);
   --code-foreground: var(--foreground);
@@ -33,17 +33,17 @@
   --overlay: #FFFFFF;
   --overlay-foreground: #18181B;
   --surface: #FFFFFF;
-  --surface-secondary: #EAF1EE;
-  --surface-tertiary: #E5ECE9;
+  --surface-secondary: #F1F1EE;
+  --surface-tertiary: #EBEBE7;
   --surface-foreground: #18181B;
   --surface-hover: #EAEAEA;
   --surface-secondary-foreground: #18181B;
   --surface-tertiary-foreground: #18181B;
-  --accent: #54A783;
-  --accent-foreground: #18181B;
-  --accent-hover: #4B9675;
+  --accent: #2563eb;
+  --accent-foreground: #FFFFFF;
+  --accent-hover: #1d4ed8;
   --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
-  --accent-soft-foreground: #437861;
+  --accent-soft-foreground: #1E5FD6;
   --accent-soft-hover: color-mix(in srgb, var(--accent) 20%, transparent);
   --inline-token-bg: color-mix(in srgb, var(--surface-secondary) 78%, var(--accent) 22%);
   --inline-token-foreground: color-mix(in srgb, var(--accent-soft-foreground) 75%, var(--foreground) 25%);
@@ -73,26 +73,26 @@
   --warning-soft: rgba(207, 136, 40, 0.15);
   --warning-soft-foreground: #73512B;
   --warning-soft-hover: rgba(207, 136, 40, 0.16);
-  --border: #DBDFDD;
-  --default: #E8ECEA;
+  --border: #E4E3DF;
+  --default: #ECECEA;
   --default-hover: #DEE2E1;
   --default-foreground: #18181B;
   --default-soft: rgba(232, 236, 234, 0.5);
   --default-soft-foreground: #18181B;
   --default-soft-hover: rgba(232, 236, 234, 0.6);
-  --focus: #54A783;
+  --focus: #2563eb;
   --link: #18181B;
   --scrollbar: #D1D6D3;
   --segment: #FFFFFF;
   --segment-foreground: #18181B;
-  --separator: #E1E6E3;
+  --separator: #E7E6E2;
   --separator-secondary: #D8D8D8;
   --separator-tertiary: #CDCDCE;
   --field-background: #FFFFFF;
   --field-background-hover: #F9F9F9;
   --field-foreground: #18181B;
   --field-placeholder: #6C7470;
-  --field-border: #DBDFDD;
+  --field-border: #E4E3DF;
   --field-border-focus: #A9ACAC;
   --field-border-hover: #C4C8C7;
   --field-focus: #FFFFFF;
@@ -113,11 +113,11 @@
   --eclipse: #18181B;
   --snow: #FCFCFC;
   --white: #FFFFFF;
-  --chart-1: #005F3F;
-  --chart-2: #2C8260;
-  --chart-3: #54A783;
-  --chart-4: #7ACDA8;
-  --chart-5: #A1F5CE;
+  --chart-1: #1E40AF;
+  --chart-2: #2563EB;
+  --chart-3: #3B82F6;
+  --chart-4: #60A5FA;
+  --chart-5: #93C5FD;
 
   /* Core aliases and components */
   --primary: var(--accent);
@@ -132,7 +132,7 @@
   --destructive-foreground: var(--danger-foreground);
   --info: var(--chart-2);
   --info-foreground: #18181B;
-  --sidebar: #EEF4F1;
+  --sidebar: #F5F5F2;
   --sidebar-foreground: #53616A;
   --sidebar-accent: var(--surface-secondary);
   --sidebar-accent-foreground: #18181B;
@@ -140,7 +140,7 @@
   --sidebar-primary: var(--accent);
   --sidebar-primary-foreground: var(--accent-foreground);
   --sidebar-ring: var(--focus);
-  --code-highlight: #EAF1EE;
+  --code-highlight: #EEF1F7;
   --background-gradient: var(--background);
   --color-backdrop: var(--backdrop);
 
@@ -346,9 +346,9 @@
   --surface-hover: #232926;
   --surface-secondary-foreground: #FCFCFC;
   --surface-tertiary-foreground: #FCFCFC;
-  --accent: #54A783;
-  --accent-foreground: #18181B;
-  --accent-hover: #4B9675;
+  --accent: #2563eb;
+  --accent-foreground: #FFFFFF;
+  --accent-hover: #1d4ed8;
   --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
   --accent-soft-foreground: #85BEA3;
   --accent-soft-hover: color-mix(in srgb, var(--accent) 16%, transparent);
@@ -387,7 +387,7 @@
   --default-soft: rgba(37, 40, 39, 0.5);
   --default-soft-foreground: #FCFCFC;
   --default-soft-hover: rgba(37, 40, 39, 0.6);
-  --focus: #54A783;
+  --focus: #2563eb;
   --link: #FCFCFC;
   --scrollbar: #9DA19F;
   --segment: #444846;
@@ -426,11 +426,11 @@
   --snow: #FCFCFC;
   --white: #FFFFFF;
   --black: #000000;
-  --chart-1: #005F3F;
-  --chart-2: #2C8260;
-  --chart-3: #54A783;
-  --chart-4: #7ACDA8;
-  --chart-5: #A1F5CE;
+  --chart-1: #1E40AF;
+  --chart-2: #2563EB;
+  --chart-3: #3B82F6;
+  --chart-4: #60A5FA;
+  --chart-5: #93C5FD;
 
   --primary: var(--accent);
   --primary-foreground: var(--accent-foreground);
@@ -619,10 +619,16 @@
   --color-backdrop: var(--backdrop);
 }
 
+/* Use the accent at full strength (NOT darkened). The blue accent
+   (#2563eb, lum ≈0.155) sits in the band that clears the 3:1 "stands
+   out" gate against BOTH a white dialog (5.1:1) and a dark dialog
+   (3.5:1), while white text on it stays ≥4.5:1. The old 25%-black
+   darkening worked for the lighter green but pushed the blue below 3:1
+   on dark surfaces. */
 .raltic-overlay-scope .button--primary {
-  --button-bg: color-mix(in srgb, var(--primary) 75%, #000 25%);
-  --button-bg-hover: color-mix(in srgb, var(--button-bg) 88%, #000 12%);
-  --button-bg-pressed: color-mix(in srgb, var(--button-bg) 82%, #000 18%);
+  --button-bg: var(--primary);
+  --button-bg-hover: var(--accent-hover);
+  --button-bg-pressed: color-mix(in srgb, var(--primary) 86%, #000 14%);
   --button-fg: #FCFCFC;
 }
 

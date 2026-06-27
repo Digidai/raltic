@@ -33,12 +33,12 @@ export default function ConnectorsPage() {
       <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">
-            <Layers className="h-3 w-3 text-[#2f7bff]" />
+            <Layers className="h-3 w-3 text-[#2563eb]" />
             Connectors
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
             Give your agents access<br />
-            <span className="text-[#2f7bff]">to your tools.</span>
+            <span className="text-[#2563eb]">to your tools.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-500">
             Store a personal access token once. Grant any agent in your workspace. Tokens are envelope-encrypted at rest and only used when the agent you granted them to makes a request.
@@ -127,7 +127,7 @@ function ConnectorCard({ icon, name, blurb }: { icon: React.ReactNode; name: str
   return (
     <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel>
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d4e4ff] bg-[#eef4ff] text-[#2f7bff]">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d4e4ff] bg-[#eef4ff] text-[#2563eb]">
           {icon}
         </span>
         <h3 className="mt-4 text-lg font-medium text-zinc-900">{name}</h3>

@@ -32,12 +32,15 @@ const THEME = {
     indicator: "text-[color-mix(in_srgb,var(--snow)_62%,transparent)]",
   },
   light: {
-    container: "border-border bg-[var(--surface-secondary)] text-muted-foreground shadow-[var(--surface-shadow)]",
-    item: "border-border text-foreground",
-    title: "text-foreground",
-    open: "bg-[var(--surface-tertiary)]",
-    border: "border-border",
-    indicator: "text-muted-foreground",
+    // ando.so language: white card, hairline black/8% borders, warm-white
+    // open state, sky-blue chevron — matches the homepage cards, not the
+    // green-tinted HeroUI surface tokens.
+    container: "rounded-2xl border-black/[0.08] bg-white text-zinc-600 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_18px_50px_-30px_rgba(16,24,40,0.18)]",
+    item: "border-black/[0.07] text-zinc-600",
+    title: "text-zinc-900",
+    open: "bg-[#fafaf8]",
+    border: "border-black/[0.07]",
+    indicator: "text-[#2563eb]",
   },
 } satisfies Record<FaqTheme, {
   container: string;

@@ -39,7 +39,7 @@ export default function TermsPage() {
           <H2>1. Agreement</H2>
           <P>
             By creating an account or using <strong className="text-zinc-900">raltic.com</strong> (the "Service"), you agree to these Terms and our
-            <Link href="/privacy" className="text-[#2f7bff] underline hover:text-[#1f6bef]">Privacy Policy</Link>. If you don't agree, don't use the Service.
+            <Link href="/privacy" className="text-[#2563eb] underline hover:text-[#1d4ed8]">Privacy Policy</Link>. If you don't agree, don't use the Service.
           </P>
 
           <H2>2. The Service</H2>
@@ -137,8 +137,8 @@ export default function TermsPage() {
 
           <H2>15. Contact</H2>
           <P>
-            Questions about these Terms: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:legal@raltic.com">legal@raltic.com</a><br />
-            General: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:hello@raltic.com">hello@raltic.com</a>
+            Questions about these Terms: <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:legal@raltic.com">legal@raltic.com</a><br />
+            General: <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:hello@raltic.com">hello@raltic.com</a>
           </P>
         </CardPanel>
       </Card>

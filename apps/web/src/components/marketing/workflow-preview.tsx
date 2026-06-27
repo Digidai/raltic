@@ -20,13 +20,13 @@ import { cn } from "@/lib/utils";
 // Light "ando-style" workflow mockup shown in the marketing hero.
 //
 // Visual language follows ando.so: warm-white surface, hairline black/8%
-// borders, soft shadow, generous radius, sky-blue (#2f7bff) as the single
+// borders, soft shadow, generous radius, sky-blue (#2563eb) as the single
 // accent, monochrome black-opacity text. The component keeps every e2e
 // hook intact (data-testid, tab button names + aria-pressed, the metric /
 // brief copy), so this is a re-skin, not a content change.
 // ───────────────────────────────────────────────────────────────────────────
 
-const ACCENT = "#2f7bff";
+const ACCENT = "#2563eb";
 
 type ScenarioKey = "revenue" | "launch" | "engineering";
 
@@ -139,7 +139,7 @@ export function WorkflowPreview(): React.ReactElement {
                   "h-8 min-w-0 justify-center gap-1.5 rounded-full border border-transparent px-3 text-[11px] font-medium shadow-none transition",
                   selected
                     ? "bg-white text-zinc-900 shadow-[0_1px_2px_rgba(16,24,40,0.10)]"
-                    : "text-zinc-500 hover:text-zinc-900",
+                    : "text-zinc-600 hover:text-zinc-900",
                 )}
               >
                 {scenario.icon}
@@ -153,7 +153,7 @@ export function WorkflowPreview(): React.ReactElement {
 
       <div className="grid gap-0 lg:grid-cols-[1.05fr_1.55fr_0.95fr]">
         <div className="border-b border-black/[0.07] p-5 lg:border-b-0 lg:border-r">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">01 brief</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">01 brief</p>
           <h3 className="mt-3 text-xl font-medium leading-snug text-zinc-900">{active.brief}</h3>
           <div className="mt-5 flex flex-wrap gap-2">
             {active.chips.map((chip) => (
@@ -174,7 +174,7 @@ export function WorkflowPreview(): React.ReactElement {
         </div>
 
         <div className="border-b border-black/[0.07] p-5 lg:border-b-0 lg:border-r">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">02 agents run</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">02 agents run</p>
           <div className="mt-4 grid gap-3">
             {active.agents.map((agent) => (
               <div key={agent.name} className="rounded-2xl border border-black/[0.07] bg-[#fafaf8] p-4">
@@ -208,7 +208,7 @@ export function WorkflowPreview(): React.ReactElement {
         </div>
 
         <div className="p-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-400">03 memory</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">03 memory</p>
           <div className="mt-4 space-y-3">
             <div className="rounded-2xl border border-black/[0.07] bg-[#fafaf8] p-4">
               <div className="flex items-center gap-2 text-sm font-medium text-zinc-900">
@@ -246,11 +246,11 @@ export function WorkflowPreview(): React.ReactElement {
 
       <div className="flex flex-wrap items-center justify-center gap-2 border-t border-black/[0.07] bg-[#fafaf8] px-5 py-3 text-[12px] text-zinc-500">
         <span>Brief</span>
-        <ArrowRight className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+        <ArrowRight className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
         <span>agent run</span>
-        <ArrowRight className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+        <ArrowRight className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
         <span>approval</span>
-        <ArrowRight className="h-3.5 w-3.5 text-zinc-400" aria-hidden="true" />
+        <ArrowRight className="h-3.5 w-3.5 text-zinc-500" aria-hidden="true" />
         <span className="text-zinc-800">team memory</span>
       </div>
     </div>

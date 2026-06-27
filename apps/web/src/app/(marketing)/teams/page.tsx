@@ -44,7 +44,7 @@ export default function TeamsPage() {
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
             Your team's AI workspace,<br />
-            <span className="text-[#2f7bff]">on your terms.</span>
+            <span className="text-[#2563eb]">on your terms.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-600">
             Raltic is in private beta. The Team tier — with seat management, audit log, and shared agents — is on the roadmap. Tell us about your team and we'll loop you in as it lands.
@@ -139,7 +139,7 @@ function FeatureCard({ icon, title, children }: { icon: React.ReactNode; title: 
   return (
     <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel>
-        <div className="text-[#2f7bff]">{icon}</div>
+        <div className="text-[#2563eb]">{icon}</div>
         <h3 className="mt-4 text-base font-medium text-zinc-900">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-zinc-600">{children}</p>
       </CardPanel>

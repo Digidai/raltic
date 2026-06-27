@@ -64,7 +64,7 @@ export default async function WorkflowDetailPage({ params }: WorkflowPageProps):
               Workflows
             </Link>
             <Chip size="sm" variant="soft" color="default" className="mx-auto mt-5 gap-2">
-              <Sparkles className="h-3 w-3 text-[#2f7bff]" aria-hidden="true" />
+              <Sparkles className="h-3 w-3 text-[#2563eb]" aria-hidden="true" />
               {page.eyebrow}
             </Chip>
             <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
@@ -133,7 +133,7 @@ export default async function WorkflowDetailPage({ params }: WorkflowPageProps):
         <CardPanel className="mx-auto max-w-6xl px-6 py-20">
           <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-start">
             <div>
-              <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-[#2f7bff]">
+              <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-[#2563eb]">
                 Proof path
               </p>
               <h2 className="mt-4 text-3xl font-medium tracking-[-0.01em] text-zinc-900 sm:text-4xl">
@@ -146,12 +146,12 @@ export default async function WorkflowDetailPage({ params }: WorkflowPageProps):
             <div className="grid gap-3">
               {page.proofPoints.map((point) => (
                 <div key={point} className="flex gap-3 rounded-lg border border-black/[0.07] bg-white p-4">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#2f7bff]" aria-hidden="true" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#2563eb]" aria-hidden="true" />
                   <p className="text-sm leading-relaxed text-zinc-600">{point}</p>
                 </div>
               ))}
               <div className="flex gap-3 rounded-lg border border-[#d4e4ff] bg-[#eef4ff] p-4">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#2f7bff]" aria-hidden="true" />
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#2563eb]" aria-hidden="true" />
                 <p className="text-sm leading-relaxed text-zinc-600">
                   Approval boundary: {page.starter.gate}
                 </p>

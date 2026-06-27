@@ -433,7 +433,7 @@ export function WorkspaceIcon({
     <div
       className={cn(
         dim, text,
-        "flex shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),var(--warning))] font-semibold text-[var(--accent-foreground)] shadow-sm ring-1 ring-accent/20",
+        "flex shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--accent),var(--warning))] font-semibold text-[var(--eclipse)] shadow-sm ring-1 ring-accent/20",
       )}
       aria-hidden="true"
     >

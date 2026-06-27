@@ -66,7 +66,7 @@ export default function WorkflowsPage(): React.ReactElement {
       >
         <CardPanel className="mx-auto max-w-5xl px-6 text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">
-            <Route className="h-3 w-3 text-[#2f7bff]" aria-hidden="true" />
+            <Route className="h-3 w-3 text-[#2563eb]" aria-hidden="true" />
             Workflow templates
           </Chip>
           <h1 className="mx-auto mt-7 max-w-4xl text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
@@ -141,7 +141,7 @@ export default function WorkflowsPage(): React.ReactElement {
               "Cloud starts immediately; local code review keeps its explicit runtime gate.",
             ].map((item) => (
               <div key={item} className="rounded-2xl border border-black/[0.07] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
-                <CheckCircle2 className="h-4 w-4 text-[#2f7bff]" aria-hidden="true" />
+                <CheckCircle2 className="h-4 w-4 text-[#2563eb]" aria-hidden="true" />
                 <p className="mt-3 text-sm leading-relaxed text-zinc-600">{item}</p>
               </div>
             ))}

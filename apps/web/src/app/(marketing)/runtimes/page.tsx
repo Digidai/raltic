@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
-  cyan: "border-[#d4e4ff] bg-[#eef4ff] text-[#2f7bff]",
+  cyan: "border-[#d4e4ff] bg-[#eef4ff] text-[#2563eb]",
   amber: "border-[#f5dcb3] bg-[#fdf2e1] text-[#92560f]",
   violet: "border-black/[0.07] bg-[#f7f6f2] text-zinc-600",
   neutral: "border-black/[0.07] bg-[#f7f6f2] text-zinc-600",
@@ -39,12 +39,12 @@ export default function RuntimesHub() {
       <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl px-6 text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#2f7bff]" aria-hidden="true" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#2563eb]" aria-hidden="true" />
             Runtimes
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
             Verified bridge runtimes.<br />
-            <span className="text-[#2f7bff]">Experimental daemons.</span>
+            <span className="text-[#2563eb]">Experimental daemons.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-500">
             Claude and Codex are selectable today. OpenClaw and Hermes are visible for evaluation and locked until their smoke verification passes. Raltic never touches your provider keys.
@@ -71,7 +71,7 @@ export default function RuntimesHub() {
                           </Chip>
                         )}
                       </div>
-                      <p className="mt-0.5 text-[12px] text-zinc-500">{doc.longName}</p>
+                      <p className="mt-0.5 text-[12px] text-zinc-600">{doc.longName}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-900" />
                   </div>

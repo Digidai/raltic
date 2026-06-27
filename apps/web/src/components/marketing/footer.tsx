@@ -113,7 +113,7 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
 function FooterCol({ isLight, label, links }: { isLight: boolean; label: string; links: { label: string; href: string }[] }) {
   return (
     <div className="space-y-2.5">
-      <p className={cn("text-[10.5px] font-medium uppercase tracking-[0.18em]", isLight ? "text-zinc-400" : "text-[color-mix(in_srgb,var(--snow)_58%,transparent)]")}>{label}</p>
+      <p className={cn("text-[10.5px] font-medium uppercase tracking-[0.18em]", isLight ? "text-zinc-500" : "text-[color-mix(in_srgb,var(--snow)_58%,transparent)]")}>{label}</p>
       <ul className="space-y-2.5 text-sm">
         {links.map((l) => (
           <li key={l.href + l.label}>

@@ -33,12 +33,12 @@ export default function IndiePage() {
       <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">
-            <Sparkles className="h-3 w-3 text-[#2f7bff]" />
+            <Sparkles className="h-3 w-3 text-[#2563eb]" />
             For solo devs &amp; AI tinkerers
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
             All your AI agents.<br />
-            <span className="text-[#2f7bff]">One workflow workspace.</span>
+            <span className="text-[#2563eb]">One workflow workspace.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-zinc-600">
             You're running Claude Code in one tab, Codex in another, maybe evaluating a daemon runtime next. Raltic gives them a home — workflow rooms where you can direct the work, keep outputs visible, and reuse the result.
@@ -121,7 +121,7 @@ function BenefitCard({ icon, title, children }: { icon: React.ReactNode; title: 
   return (
     <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel>
-        <div className="text-[#2f7bff]">{icon}</div>
+        <div className="text-[#2563eb]">{icon}</div>
         <h3 className="mt-4 text-base font-medium text-zinc-900">{title}</h3>
         <p className="mt-2 text-sm leading-relaxed text-zinc-600">{children}</p>
       </CardPanel>

@@ -102,7 +102,7 @@ function MobileNavDropdown() {
         aria-label="Open marketing navigation"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/[0.1] bg-white text-zinc-900 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff]"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/[0.1] bg-white text-zinc-900 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
       >
         <MenuIcon className="h-4 w-4" aria-hidden="true" />
       </DropdownMenuTrigger>
@@ -177,7 +177,7 @@ function ForDropdown() {
   return (
     <DropdownMenu onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-zinc-600 transition-colors hover:bg-black/[0.04] hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff]"
+        className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-zinc-600 transition-colors hover:bg-black/[0.04] hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
         aria-haspopup="menu"
         aria-expanded={open}
       >

@@ -41,7 +41,7 @@ export default function PrivacyPage() {
 
           <H2>1. Who we are</H2>
           <P>
-            Raltic is operated by the team behind raltic.com (the "Service"). Contact: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>.
+            Raltic is operated by the team behind raltic.com (the "Service"). Contact: <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>.
           </P>
 
           <H2>2. What we collect</H2>
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
             <li><B>Agent configuration</B>: agent name, system prompt, runtime selection (Claude/Codex/OpenClaw/Hermes/cloud), model choice. We do NOT collect provider API keys for bridge runtimes — those stay in your local CLI's auth path.</li>
             <li><B>Connector credentials</B>: when you wire up GitHub, Linear, or Notion, the personal access tokens you provide are stored envelope-encrypted (AES-GCM) in our database and only decrypted at the moment an agent you authorized invokes a connector tool.</li>
             <li><B>Runtime keys + bridge metadata</B>: when you run our bridge daemon, we issue a per-computer runtime key (revocable instantly). We see the hostname, fingerprint, and detected runtimes you reported.</li>
-            <li><B>Marketing events</B>: when you visit our public pages, we record path + UTM parameters via <Link className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="/api/marketing/event">/api/marketing/event</Link> and a first-party <Code>ral_utm</Code> cookie (30-day, SameSite=Lax). No cross-site tracking. Cloudflare Web Analytics tracks aggregate page-view counts.</li>
+            <li><B>Marketing events</B>: when you visit our public pages, we record path + UTM parameters via <Link className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="/api/marketing/event">/api/marketing/event</Link> and a first-party <Code>ral_utm</Code> cookie (30-day, SameSite=Lax). No cross-site tracking. Cloudflare Web Analytics tracks aggregate page-view counts.</li>
             <li><B>Operational logs</B>: request paths, status codes, error stacks. No raw request bodies are logged.</li>
           </UL>
 
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
             <li>Application data is hosted on a global edge network. Data residency is not currently configurable per workspace.</li>
             <li>Connector tokens are envelope-encrypted at rest.</li>
             <li>Transport between your browser and Raltic uses HTTPS + WSS only.</li>
-            <li>We retain your messages and account data until you delete them or close your account. Account deletion within 30 days of request; ask via <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>.</li>
+            <li>We retain your messages and account data until you delete them or close your account. Account deletion within 30 days of request; ask via <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>.</li>
             <li>Operational logs are retained for ~14 days for incident review.</li>
           </UL>
 
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
             <li>Object / restrict processing — contact us; we'll handle case-by-case.</li>
           </UL>
           <P>
-            For GDPR / CCPA / similar requests, email <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>. We respond within 30 days.
+            For GDPR / CCPA / similar requests, email <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>. We respond within 30 days.
           </P>
 
           <H2>9. Cookies</H2>
@@ -132,9 +132,9 @@ export default function PrivacyPage() {
 
           <H2>12. Contact</H2>
           <P>
-            Privacy questions: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:privacy@raltic.com">privacy@raltic.com</a><br />
-            Security reports: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:security@raltic.com">security@raltic.com</a><br />
-            General: <a className="text-[#2f7bff] underline break-words hover:text-[#1f6bef]" href="mailto:hello@raltic.com">hello@raltic.com</a>
+            Privacy questions: <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:privacy@raltic.com">privacy@raltic.com</a><br />
+            Security reports: <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:security@raltic.com">security@raltic.com</a><br />
+            General: <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:hello@raltic.com">hello@raltic.com</a>
           </P>
         </CardPanel>
       </Card>

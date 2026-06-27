@@ -20,7 +20,7 @@ export function SectionHeader({
   return (
     <div className="mx-auto max-w-3xl text-center">
       {eyebrow && (
-        <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-[#2f7bff]">
+        <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-[#2563eb]">
           {eyebrow}
         </p>
       )}

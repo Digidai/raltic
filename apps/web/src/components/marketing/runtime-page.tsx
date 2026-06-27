@@ -11,22 +11,22 @@ import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
 /** Per-accent class lookups — kept inline (vs. dynamic class names) so
  *  Tailwind's purger sees the strings at build time. */
 const ACCENT_TEXT: Record<RuntimeDoc["accent"], string> = {
-  cyan: "text-[#2f7bff]",
+  cyan: "text-[#2563eb]",
   amber: "text-[#d9821f]",
   violet: "text-zinc-700",
   neutral: "text-zinc-700",
 };
 const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
-  cyan: "border-[#d4e4ff] bg-[#eef4ff] text-[#2f7bff]",
+  cyan: "border-[#d4e4ff] bg-[#eef4ff] text-[#2563eb]",
   amber: "border-[#f3d9ad] bg-[#fdf2e1] text-[#92560f]",
   violet: "border-black/[0.07] bg-[#f7f6f2] text-zinc-700",
   neutral: "border-black/[0.07] bg-[#f7f6f2] text-zinc-600",
 };
 const ACCENT_GLOW: Record<RuntimeDoc["accent"], string> = {
-  cyan: "color-mix(in srgb, #2f7bff 10%, transparent)",
+  cyan: "color-mix(in srgb, #2563eb 10%, transparent)",
   amber: "color-mix(in srgb, #d9821f 10%, transparent)",
   violet: "color-mix(in srgb, #18181b 6%, transparent)",
-  neutral: "color-mix(in srgb, #2f7bff 5%, transparent)",
+  neutral: "color-mix(in srgb, #2563eb 5%, transparent)",
 };
 
 const DARK_SECTION = "border-black/[0.07] bg-white text-zinc-900";

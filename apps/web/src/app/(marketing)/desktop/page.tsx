@@ -62,7 +62,7 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-md border border-black/[0.07] bg-[#fafaf8]">
-                    <Monitor className="h-5 w-5 text-[#2f7bff]" />
+                    <Monitor className="h-5 w-5 text-[#2563eb]" />
                   </div>
                   <div>
                     <p className="font-medium text-zinc-900">Current status</p>
@@ -83,7 +83,7 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
         <Card render={<section id="install" className="bg-white px-6 py-16" />} className="w-full rounded-none border-0 shadow-none">
           <CardPanel className="mx-auto max-w-6xl">
             <div className="mb-8 flex items-center gap-2 text-sm font-medium text-zinc-600">
-              <Download className="h-4 w-4 text-[#2f7bff]" />
+              <Download className="h-4 w-4 text-[#2563eb]" />
               Install path
             </div>
             <div className="grid gap-4 lg:grid-cols-3">
@@ -125,7 +125,7 @@ export default async function DesktopBetaPage({ searchParams }: DesktopBetaPageP
             </Card>
             <Card>
               <CardHeader>
-                <div className="mb-4 flex items-center gap-2 text-sm font-medium text-[#2f7bff]">
+                <div className="mb-4 flex items-center gap-2 text-sm font-medium text-[#2563eb]">
                   <RefreshCw className="h-4 w-4" />
                   Updates during beta
                 </div>
@@ -156,7 +156,7 @@ function DesktopReturnBar() {
         <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/desktop/welcome"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#2f7bff] hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2f7bff] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#2563eb] hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to desktop setup
@@ -181,7 +181,7 @@ function Step({ n, title, body }: { n: string; title: string; body: string }) {
   return (
     <Card>
       <CardPanel>
-        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-black/[0.07] bg-[#fafaf8] text-sm font-medium text-[#2f7bff]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-black/[0.07] bg-[#fafaf8] text-sm font-medium text-[#2563eb]">
           {n}
         </div>
         <h2 className="mt-5 text-lg font-medium text-zinc-900">{title}</h2>

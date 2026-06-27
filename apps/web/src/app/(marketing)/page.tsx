@@ -26,7 +26,7 @@ import {
 //
 // Visual reference: https://www.ando.so — light/airy "accessible
 // sophistication". Warm-white surfaces (#fafaf8 / #ffffff), monochrome
-// black-opacity text, a single sky-blue accent (#2f7bff), large light
+// black-opacity text, a single sky-blue accent (#2563eb), large light
 // (400-weight) headings with tight tracking, rounded cards with hairline
 // black/8% borders and soft shadows, a sky-grid hero glow. The action
 // color is a near-black rounded-full pill (ando's "Get access" button),
@@ -49,7 +49,10 @@ import {
 //   • Private beta, free — accurate (no payment flow exists).
 // ───────────────────────────────────────────────────────────────────────────
 
-const ACCENT = "#2f7bff";
+// Single accent used across the whole product + marketing. #2563eb is the
+// homepage blue family but deep enough to clear WCAG AA at small sizes
+// (≈4.8:1 on the warm-white surface; white text on it ≈5.1:1).
+const ACCENT = "#2563eb";
 // Display headings approximate ando's GT Standard with the self-hosted
 // SN Pro at its lighter (400) weight + tight tracking — no new font dep.
 const DISPLAY = "font-[family-name:var(--font-sn-pro)] font-normal tracking-[-0.02em]";
@@ -315,7 +318,7 @@ function Architecture(): React.ReactElement {
       <div className="mx-auto max-w-6xl">
         <SectionHead
           eyebrow="Control plane for agent work"
-          title={<>Run workflows without <span className="text-zinc-400">losing control</span>.</>}
+          title={<>Run workflows without <span className="text-zinc-500">losing control</span>.</>}
           description="Agent workflows touch code, customer context, internal docs, and decisions. Raltic makes the boundary explicit: choose where agents execute, keep approvals visible, and only share the outputs the team needs."
         />
         <div className="mt-16 grid items-stretch gap-4 lg:grid-cols-3">
@@ -370,13 +373,13 @@ function Architecture(): React.ReactElement {
               <p className="font-medium text-zinc-900">What stays out of the workspace</p>
               <ul className="mt-2 space-y-1.5 text-zinc-600">
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" /> Source code, diffs, or local files for bridge-hosted agents
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Source code, diffs, or local files for bridge-hosted agents
                 </li>
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" /> Claude or OpenAI keys used by your local runtime
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Claude or OpenAI keys used by your local runtime
                 </li>
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" /> Anything the agent did not deliberately share into the room
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Anything the agent did not deliberately share into the room
                 </li>
               </ul>
             </div>
@@ -422,7 +425,7 @@ function UseCases(): React.ReactElement {
       <div className="mx-auto max-w-6xl">
         <SectionHead
           eyebrow="GTM-ready workflows"
-          title={<>Start with one workflow your team <span className="text-zinc-400">already owns</span>.</>}
+          title={<>Start with one workflow your team <span className="text-zinc-500">already owns</span>.</>}
           description="The first customer should not buy an abstract workspace. They should recognize a process they run every week."
         />
         <div className="mt-14 grid gap-4 lg:grid-cols-4">
@@ -490,13 +493,13 @@ function WorkflowUseCase({ tag, href, title, input, agent, gate, output }: {
         <span className="rounded-full border border-black/[0.08] bg-[#fafaf8] px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
           {tag}
         </span>
-        <ArrowRight className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-900" aria-hidden="true" />
+        <ArrowRight className="h-4 w-4 text-zinc-500 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-900" aria-hidden="true" />
       </div>
       <h3 className="mt-4 text-xl font-medium tracking-tight text-zinc-900">{title}</h3>
       <div className="mt-5 space-y-2">
         {rows.map(([label, value]) => (
           <div key={label} className="grid grid-cols-[72px_1fr] items-center gap-3 rounded-xl border border-black/[0.06] bg-[#fafaf8] px-3 py-2">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">{label}</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">{label}</span>
             <span className="min-w-0 truncate text-sm font-medium text-zinc-800">{value}</span>
           </div>
         ))}
@@ -531,7 +534,7 @@ function Comparison(): React.ReactElement {
                   <th scope="col" className="px-4 py-4 text-center font-medium">ChatGPT for Work</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Cursor / Copilot</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Slack + AI bots</th>
-                  <th scope="col" className="px-4 py-4 text-center font-medium" style={{ backgroundColor: "#eef4ff", color: "#2f7bff" }}>Raltic</th>
+                  <th scope="col" className="px-4 py-4 text-center font-medium" style={{ backgroundColor: "#eef4ff", color: "#2563eb" }}>Raltic</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/[0.06] text-zinc-600">
@@ -566,7 +569,7 @@ function ComparisonRow({ label, vals }: {
       {vals.map((v, i) => {
         const isRaltic = i === vals.length - 1;
         return (
-          <td key={i} className="px-4 py-4 text-center" style={isRaltic ? { backgroundColor: "rgba(47,123,255,0.05)" } : undefined}>
+          <td key={i} className="px-4 py-4 text-center" style={isRaltic ? { backgroundColor: "rgba(37, 99, 235,0.05)" } : undefined}>
             <ComparisonCell value={v} highlight={isRaltic} />
           </td>
         );
@@ -583,7 +586,7 @@ function ComparisonCell({ value, highlight }: { value: "yes" | "no" | "partial";
         style={{ backgroundColor: highlight ? "#dbe9ff" : "#eef4ff" }}
         aria-label="Yes"
       >
-        <CheckCircle2 className="h-4 w-4" style={{ color: "#2f7bff" }} aria-label="Yes" />
+        <CheckCircle2 className="h-4 w-4" style={{ color: "#2563eb" }} aria-label="Yes" />
       </span>
     );
   }
@@ -609,7 +612,7 @@ function Privacy(): React.ReactElement {
       <div className="mx-auto max-w-6xl">
         <SectionHead
           eyebrow="Governance for real workflows"
-          title={<>Keep humans in control when <span className="text-zinc-400">agents touch real work</span>.</>}
+          title={<>Keep humans in control when <span className="text-zinc-500">agents touch real work</span>.</>}
           description="The more useful an agent workflow becomes, the more buyers ask where it runs, what it can access, what gets logged, and how to revoke it. Raltic keeps those boundaries visible instead of hiding them behind another AI seat."
         />
         <div className="mt-16 grid gap-4 md:grid-cols-2">
@@ -655,7 +658,7 @@ function Pricing(): React.ReactElement {
       <div className="mx-auto max-w-6xl">
         <SectionHead
           eyebrow="Pricing"
-          title={<>Free <span className="text-zinc-400">while we&apos;re in beta.</span></>}
+          title={<>Free <span className="text-zinc-500">while we&apos;re in beta.</span></>}
           description="Your team is already paying for ChatGPT, Claude, Cursor, and scattered coordination around them. Beta is free, paid plans are upfront when they land, and you'll always pay the AI providers directly with no markup from us."
         />
         <div className="mt-12 grid gap-4 md:grid-cols-3">
@@ -713,7 +716,7 @@ function PricingCard({ tag, name, price, note, features, highlight }: {
     <div
       className={
         highlight
-          ? "rounded-2xl border-2 bg-white p-7 shadow-[0_2px_4px_rgba(16,24,40,0.04),0_24px_60px_-28px_rgba(47,123,255,0.45)]"
+          ? "rounded-2xl border-2 bg-white p-7 shadow-[0_2px_4px_rgba(16,24,40,0.04),0_24px_60px_-28px_rgba(37, 99, 235,0.45)]"
           : `${CARD} p-7`
       }
       style={highlight ? { borderColor: "#9ec4ff" } : undefined}

@@ -36,12 +36,12 @@ export default function SecurityPage() {
           <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] px-6 pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-3xl text-center">
               <Chip size="sm" variant="soft" color="default" className="gap-2">
-                <ShieldCheck className="h-3 w-3 text-[#2f7bff]" />
+                <ShieldCheck className="h-3 w-3 text-[#2563eb]" />
                 Security &amp; Privacy
               </Chip>
               <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
                 What we see.<br />
-                <span className="text-[#2f7bff]">What we don't.</span>
+                <span className="text-[#2563eb]">What we don't.</span>
               </h1>
               <p className="mx-auto mt-6 text-balance text-lg text-zinc-500">
                 Most AI tools need to see your source to do their job. Raltic doesn't. Bridge agents run on your machine; cloud agents run in our sandbox container. Your provider keys never touch our servers. Read on for the honest, line-by-line version.
@@ -141,7 +141,7 @@ export default function SecurityPage() {
               </ul>
               <p className="mt-6 text-sm text-zinc-500">
                 If any of these would block your team from using Raltic, tell us — at
-                <a href="mailto:hello@raltic.com" className="text-[#2f7bff] underline underline-offset-4 hover:text-[#1f5fd6]"> hello@raltic.com</a>. We prioritize what real conversations surface, not a hypothetical compliance roadmap.
+                <a href="mailto:hello@raltic.com" className="text-[#2563eb] underline underline-offset-4 hover:text-[#1d4ed8]"> hello@raltic.com</a>. We prioritize what real conversations surface, not a hypothetical compliance roadmap.
               </p>
             </CardPanel>
           </Card>
@@ -152,7 +152,7 @@ export default function SecurityPage() {
                 <h3 className="text-lg font-medium text-zinc-900">Responsible disclosure</h3>
                 <p className="mt-2 text-sm text-zinc-500">
                   Found a vulnerability? Email
-                  <a href="mailto:security@raltic.com" className="text-[#2f7bff] underline underline-offset-4 hover:text-[#1f5fd6]"> security@raltic.com</a>.
+                  <a href="mailto:security@raltic.com" className="text-[#2563eb] underline underline-offset-4 hover:text-[#1d4ed8]"> security@raltic.com</a>.
                   We acknowledge within 1 business day and credit reporters in the resolution note unless they ask otherwise.
                 </p>
               </div>
@@ -211,7 +211,7 @@ function Control({ icon, title, children }: { icon: React.ReactNode; title: stri
   return (
     <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
       <CardPanel>
-        <div className="text-[#2f7bff]">{icon}</div>
+        <div className="text-[#2563eb]">{icon}</div>
         <h4 className="mt-3 text-base font-medium text-zinc-900">{title}</h4>
         <p className="mt-2 text-sm leading-relaxed text-zinc-600">{children}</p>
       </CardPanel>

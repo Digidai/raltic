@@ -260,7 +260,7 @@ export default function WorkspaceSettingsPage() {
                     "focus-within:ring-[color-mix(in_srgb,var(--accent)_14%,transparent)]",
                   ].join(" ")}
                 >
-                  <span className="flex min-h-9 shrink-0 items-center border-r border-accent/20 bg-[var(--accent-soft)] px-3 font-mono text-sm font-semibold text-foreground select-none">
+                  <span className="flex min-h-9 shrink-0 items-center border-r border-[var(--border)] bg-[var(--surface-secondary)] px-3 font-mono text-sm font-semibold text-foreground select-none">
                     /s/
                   </span>
                   <Input
