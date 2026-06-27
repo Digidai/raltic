@@ -1,4 +1,6 @@
 import { WORKFLOW_SEO_PAGES } from "@/lib/workflow-seo";
+import { COMPARISON_PAGES } from "@/lib/comparison-seo";
+import { CONNECTOR_PAGES } from "@/lib/connector-seo";
 import { INDEXNOW_ENDPOINT, INDEXNOW_KEY_LOCATION } from "@/lib/indexnow";
 import { SITE_DESCRIPTION, SITE_LAST_MODIFIED, SITE_NAME, SITE_URL } from "@/lib/seo";
 
@@ -7,6 +9,12 @@ export const dynamic = "force-static";
 export function GET(): Response {
   const workflowLinks = WORKFLOW_SEO_PAGES
     .map((page) => `- [${page.starter.title}](${SITE_URL}${page.path}): ${page.metaDescription}`)
+    .join("\n");
+  const comparisonLinks = COMPARISON_PAGES
+    .map((page) => `- [Raltic vs ${page.competitor}](${SITE_URL}/compare/${page.slug}): ${page.metaDescription}`)
+    .join("\n");
+  const connectorLinks = CONNECTOR_PAGES
+    .map((page) => `- [${page.name} connector](${SITE_URL}/connectors/${page.slug}): ${page.metaDescription}`)
     .join("\n");
 
   const body = `# ${SITE_NAME}
@@ -22,9 +30,14 @@ Raltic is an AI agent workflow platform for teams that need humans and agents in
 ${workflowLinks}
 - [Runtimes](${SITE_URL}/runtimes): verified Claude Code and OpenAI Codex bridge runtimes, plus cloud agents.
 - [Connectors](${SITE_URL}/connectors): GitHub, Linear, and Notion connector overview.
+${connectorLinks}
+- [Comparisons](${SITE_URL}/compare): how Raltic compares to ChatGPT for Work, Cursor, and Slack AI.
+${comparisonLinks}
+- [Glossary](${SITE_URL}/glossary): definitions for agent workflow, workflow room, human-in-the-loop, cloud agent, and bridge runtime.
 - [Security](${SITE_URL}/security): what Raltic sees, what stays local, and current limitations.
 - [Sign up](${SITE_URL}/signup): private beta signup.
 - [Sitemap](${SITE_URL}/sitemap.xml): canonical public URLs for search crawlers.
+- [Full reference for AI engines](${SITE_URL}/llms-full.txt): extended, citation-ready summaries of every public page.
 - [Robots policy](${SITE_URL}/robots.txt): crawler policy for public, private, and auth-only surfaces.
 - [IndexNow key](${INDEXNOW_KEY_LOCATION}): root-hosted key file for URL-change notifications to ${INDEXNOW_ENDPOINT}.
 

@@ -7,6 +7,15 @@ export const SITE_DESCRIPTION =
   "Raltic helps AI-native operators start cloud agent workflow rooms, review the next action, and keep approvals and memory visible before adding local runtimes.";
 export const SITE_LAST_MODIFIED = new Date("2026-06-19T00:00:00.000Z");
 export const SITE_PUBLISHED_AT = new Date("2026-06-01T00:00:00.000Z");
+// Freshness date for the SEO/GEO content batch (comparison, integration,
+// glossary pages). Bump this when those pages get a real content update —
+// it's the `dateModified` signal search + AI engines read.
+export const SITE_CONTENT_UPDATED = new Date("2026-06-27T00:00:00.000Z");
+
+function toIso(value: string | Date | undefined, fallback: Date): string {
+  if (!value) return fallback.toISOString();
+  return (value instanceof Date ? value : new Date(value)).toISOString();
+}
 export const SITE_OG_IMAGE_PATH = "/opengraph-image";
 export const SITE_ICON_PATH = "/icon";
 
@@ -155,12 +164,18 @@ export function webPageJsonLd({
   description,
   mainEntity,
   type = "WebPage",
+  datePublished,
+  dateModified,
 }: {
   path: string;
   name: string;
   description: string;
   mainEntity?: Record<string, unknown>;
   type?: "WebPage" | "CollectionPage";
+  // Per-page freshness overrides. Default to the site-wide dates so existing
+  // callers are unchanged; pass a real date for pages with their own cadence.
+  datePublished?: string | Date;
+  dateModified?: string | Date;
 }): Record<string, unknown> {
   return {
     "@type": type,
@@ -171,10 +186,44 @@ export function webPageJsonLd({
     isPartOf: { "@id": absoluteUrl("/#website") },
     about: { "@id": absoluteUrl("/#software") },
     mainEntity,
-    datePublished: SITE_PUBLISHED_AT.toISOString(),
-    dateModified: SITE_LAST_MODIFIED.toISOString(),
+    datePublished: toIso(datePublished, SITE_PUBLISHED_AT),
+    dateModified: toIso(dateModified, SITE_LAST_MODIFIED),
     isAccessibleForFree: true,
     inLanguage: "en-US",
+  };
+}
+
+/**
+ * DefinedTermSet for the glossary page — helps AI engines + Google associate
+ * Raltic with the vocabulary of its category (a GEO entity/definition signal).
+ */
+export function definedTermSetJsonLd({
+  path,
+  name,
+  description,
+  terms,
+}: {
+  path: string;
+  name: string;
+  description: string;
+  terms: Array<{ term: string; definition: string; id: string }>;
+}): Record<string, unknown> {
+  const setId = `${absoluteUrl(path)}#glossary`;
+  return {
+    "@type": "DefinedTermSet",
+    "@id": setId,
+    url: absoluteUrl(path),
+    name,
+    description,
+    inLanguage: "en-US",
+    mainEntityOfPage: { "@id": `${absoluteUrl(path)}#webpage` },
+    hasDefinedTerm: terms.map((t) => ({
+      "@type": "DefinedTerm",
+      "@id": `${absoluteUrl(path)}#${t.id}`,
+      name: t.term,
+      description: t.definition,
+      inDefinedTermSet: { "@id": setId },
+    })),
   };
 }
 

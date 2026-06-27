@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { WORKFLOW_SEO_PAGES } from "@/lib/workflow-seo";
-import { SITE_LAST_MODIFIED, SITE_URL } from "@/lib/seo";
+import { COMPARISON_PAGES } from "@/lib/comparison-seo";
+import { CONNECTOR_PAGES } from "@/lib/connector-seo";
+import { SITE_CONTENT_UPDATED, SITE_LAST_MODIFIED, SITE_URL } from "@/lib/seo";
 
 /**
  * Public sitemap — served at /sitemap.xml. Submit this URL in Google
@@ -31,8 +33,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/runtimes`,        lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/runtimes/claude`, lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/runtimes/codex`,  lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${base}/indie`,           lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.75 },
+    { url: `${base}/compare`,         lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.85 },
+    ...COMPARISON_PAGES.map((page) => ({
+      url: `${base}/compare/${page.slug}`,
+      lastModified: SITE_CONTENT_UPDATED,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
     { url: `${base}/connectors`,      lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.7 },
+    ...CONNECTOR_PAGES.map((page) => ({
+      url: `${base}/connectors/${page.slug}`,
+      lastModified: SITE_CONTENT_UPDATED,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    { url: `${base}/glossary`,        lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/indie`,           lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.75 },
     { url: `${base}/security`,        lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/privacy`,         lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.4 },
     { url: `${base}/terms`,           lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.4 },

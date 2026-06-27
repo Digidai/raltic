@@ -159,7 +159,14 @@ test.describe("marketing public access", () => {
   });
 
   test("/404 uses the token brand monogram and avoids mobile horizontal overflow", async ({ page }) => {
-    const response = await page.goto("/connectors/missing-heroui-brand-check", { waitUntil: "domcontentloaded" });
+    // Probe an unmatched path UNDER a static public prefix (/security has no
+    // dynamic child route) so it: (a) clears the middleware allowlist instead
+    // of 307-ing to /login, and (b) falls through to the ROOT not-found page
+    // rather than a notFound() rendered inside the (marketing) layout. The
+    // latter would add the nav's own "Raltic" logo link and break the
+    // single-monogram assertion below. (Paths under /connectors/* or
+    // /compare/* now match a dynamic [param] route, so they can't be used.)
+    const response = await page.goto("/security/missing-heroui-brand-check", { waitUntil: "domcontentloaded" });
 
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
@@ -180,7 +187,7 @@ test.describe("marketing public access", () => {
     expect(brandMetrics.color, "monogram text should not rely on low-contrast white over accent").not.toBe("rgb(255, 255, 255)");
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/connectors/missing-heroui-brand-check-mobile", { waitUntil: "domcontentloaded" });
+    await page.goto("/security/missing-heroui-brand-check-mobile", { waitUntil: "domcontentloaded" });
     const mobileMetrics = await page.evaluate(() => ({
       bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
       documentOverflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -402,6 +409,44 @@ test.describe("marketing public access", () => {
       expect(ld, path).toContain("BreadcrumbList");
       expect(ld, path).toContain(`https://raltic.com${path}#webpage`);
     }
+
+    // Comparison hub + detail.
+    const compareHub = await ldFor("/compare");
+    expect(compareHub).toContain("CollectionPage");
+    expect(compareHub).toContain("ItemList");
+    expect(compareHub).toContain("https://raltic.com/compare/cursor");
+    const compareDetail = await ldFor("/compare/cursor");
+    expect(compareDetail).toContain("FAQPage");
+    expect(compareDetail).toContain("BreadcrumbList");
+    expect(compareDetail).toContain("https://raltic.com/compare/cursor#webpage");
+
+    // Connector detail: webpage + HowTo setup + FAQ.
+    const connectorDetail = await ldFor("/connectors/github");
+    expect(connectorDetail).toContain("HowTo");
+    expect(connectorDetail).toContain("HowToStep");
+    expect(connectorDetail).toContain("FAQPage");
+
+    // Glossary: DefinedTermSet for definitional GEO queries.
+    const glossary = await ldFor("/glossary");
+    expect(glossary).toContain("DefinedTermSet");
+    expect(glossary).toContain("DefinedTerm");
+  });
+
+  test("SEO discovery files include the comparison, connector, and glossary pages", async ({ request }) => {
+    const sitemap = await (await request.get("/sitemap.xml")).text();
+    for (const path of ["/compare", "/compare/cursor", "/connectors/github", "/connectors/notion", "/glossary"]) {
+      expect(sitemap, path).toContain(`https://raltic.com${path}`);
+    }
+    const llms = await (await request.get("/llms.txt")).text();
+    expect(llms).toContain("https://raltic.com/compare/");
+    expect(llms).toContain("https://raltic.com/llms-full.txt");
+
+    const llmsFull = await request.get("/llms-full.txt");
+    expect(llmsFull.status()).toBe(200);
+    expect(llmsFull.headers()["content-type"]).toContain("text/plain");
+    const llmsFullText = await llmsFull.text();
+    expect(llmsFullText).toContain("Raltic vs");
+    expect(llmsFullText).toContain("Bridge runtime");
   });
 
   test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {

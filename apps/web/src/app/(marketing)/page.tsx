@@ -550,7 +550,12 @@ function Comparison(): React.ReactElement {
             </table>
           </div>
         </div>
-        <p className="mx-auto mt-8 max-w-2xl text-center text-xs text-zinc-500">
+        <div className="mt-8 flex justify-center">
+          <Link href="/compare" className="inline-flex items-center gap-1.5 text-sm font-medium" style={{ color: ACCENT }}>
+            See detailed comparisons <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+        <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-zinc-500">
           Comparisons reflect each product&apos;s mainstream offering. We&apos;d love
           to be wrong on any cell — tell us at <span className="text-zinc-800">hello@raltic.com</span> and we&apos;ll update.
         </p>

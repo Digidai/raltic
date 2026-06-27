@@ -228,7 +228,10 @@ for (const path of [
   });
 }
 
-for (const path of ["/runtimes", "/connectors", "/indie", "/teams", "/security", "/desktop"]) {
+for (const path of [
+  "/runtimes", "/connectors", "/indie", "/teams", "/security", "/desktop",
+  "/compare", "/compare/cursor", "/connectors/github", "/glossary",
+]) {
   test(`${path} marketing page has no serious axe issues and one h1`, async ({ page }) => {
     await page.goto(path);
 

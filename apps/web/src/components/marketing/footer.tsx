@@ -75,6 +75,8 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
           { label: "Workflows", href: "/workflows" },
           { label: "Runtimes", href: "/runtimes" },
           { label: "Connectors", href: "/connectors" },
+          { label: "Compare", href: "/compare" },
+          { label: "Glossary", href: "/glossary" },
           { label: "Desktop beta", href: "/desktop" },
           { label: "Security", href: "/security" },
         ]} />

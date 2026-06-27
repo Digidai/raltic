@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ArrowRight, GitBranch, Layers, FileText } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { MarketingButton } from "@/components/marketing/marketing-button";
@@ -68,16 +69,19 @@ export default function ConnectorsPage() {
         <CardPanel className="mx-auto max-w-5xl">
           <div className="grid gap-4 md:grid-cols-3">
             <ConnectorCard
+              href="/connectors/github"
               icon={<GitBranch className="h-6 w-6" />}
               name="GitHub"
               blurb="Read repos, PRs, issues, and review comments. Your agents draft PR replies and pull context the way you would from the gh CLI."
             />
             <ConnectorCard
+              href="/connectors/linear"
               icon={<Layers className="h-6 w-6" />}
               name="Linear"
               blurb="Read + create issues, comment on threads, manage cycle context. Agents can triage and update tickets without leaving chat."
             />
             <ConnectorCard
+              href="/connectors/notion"
               icon={<FileText className="h-6 w-6" />}
               name="Notion"
               blurb="Read + write pages, query databases, follow backlinks. Agents pull in docs you reference, or draft pages from a discussion."
@@ -141,15 +145,21 @@ export default function ConnectorsPage() {
   );
 }
 
-function ConnectorCard({ icon, name, blurb }: { icon: React.ReactNode; name: string; blurb: string }) {
+function ConnectorCard({ href, icon, name, blurb }: { href: string; icon: React.ReactNode; name: string; blurb: string }) {
   return (
-    <Card className="rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)]">
+    <Card
+      render={<Link href={href} />}
+      className="group block rounded-2xl border border-black/[0.07] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_14px_40px_-22px_rgba(16,24,40,0.18)] transition-colors hover:border-black/[0.12] hover:bg-[#fafaf8]"
+    >
       <CardPanel>
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#d4e4ff] bg-[#eef4ff] text-[#2563eb]">
           {icon}
         </span>
         <h3 className="mt-4 text-lg font-medium text-zinc-900">{name}</h3>
         <p className="mt-2 text-sm leading-relaxed text-zinc-500">{blurb}</p>
+        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-[#2563eb]">
+          See {name} connector <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+        </span>
       </CardPanel>
     </Card>
   );
