@@ -350,7 +350,7 @@
   --accent-foreground: #FFFFFF;
   --accent-hover: #1d4ed8;
   --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
-  --accent-soft-foreground: #85BEA3;
+  --accent-soft-foreground: #93C5FD;
   --accent-soft-hover: color-mix(in srgb, var(--accent) 16%, transparent);
   --inline-token-bg: color-mix(in srgb, var(--surface-secondary) 84%, var(--accent) 16%);
   --inline-token-foreground: color-mix(in srgb, var(--accent-soft-foreground) 75%, var(--foreground) 25%);
@@ -449,9 +449,9 @@
   --sidebar-accent: #1F2A2F;
   --sidebar-accent-foreground: #FCFCFC;
   --sidebar-border: #28363C;
-  --sidebar-primary: #54A783;
-  --sidebar-primary-foreground: #18181B;
-  --sidebar-ring: #54A783;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-ring: #2563eb;
   --code-highlight: #1F292D;
   --background-gradient: var(--background);
   --color-backdrop: var(--backdrop);
@@ -977,7 +977,7 @@ textarea:-webkit-autofill {
 .raltic-marketing-icon-chip {
   /* Sky-blue (ando.so) accent chip on a light surface. */
   background: #eef4ff;
-  color: #2f7bff;
+  color: #2563eb;
   border: 1px solid #d4e4ff;
 }
 .raltic-marketing-status-chip {

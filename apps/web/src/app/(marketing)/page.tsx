@@ -569,7 +569,7 @@ function ComparisonRow({ label, vals }: {
       {vals.map((v, i) => {
         const isRaltic = i === vals.length - 1;
         return (
-          <td key={i} className="px-4 py-4 text-center" style={isRaltic ? { backgroundColor: "rgba(37, 99, 235,0.05)" } : undefined}>
+          <td key={i} className="px-4 py-4 text-center" style={isRaltic ? { backgroundColor: "rgba(37,99,235,0.05)" } : undefined}>
             <ComparisonCell value={v} highlight={isRaltic} />
           </td>
         );
@@ -716,7 +716,7 @@ function PricingCard({ tag, name, price, note, features, highlight }: {
     <div
       className={
         highlight
-          ? "rounded-2xl border-2 bg-white p-7 shadow-[0_2px_4px_rgba(16,24,40,0.04),0_24px_60px_-28px_rgba(37, 99, 235,0.45)]"
+          ? "rounded-2xl border-2 bg-white p-7 shadow-[0_2px_4px_rgba(16,24,40,0.04),0_24px_60px_-28px_rgba(37,99,235,0.45)]"
           : `${CARD} p-7`
       }
       style={highlight ? { borderColor: "#9ec4ff" } : undefined}

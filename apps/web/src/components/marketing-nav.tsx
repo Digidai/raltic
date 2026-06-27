@@ -47,27 +47,27 @@ export function MarketingNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const linkClass = "text-zinc-600 hover:text-zinc-900";
+  const linkClass = "text-muted-foreground hover:text-foreground";
 
   return (
     <header
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         scrolled
-          ? "border-b border-black/[0.07] bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60"
+          ? "border-b border-border bg-surface/70 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/60"
           : "bg-transparent",
       )}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link
           href="/"
-          className="flex items-center gap-2 font-medium tracking-tight text-zinc-900"
+          className="flex items-center gap-2 font-medium tracking-tight text-foreground"
         >
           <RalticLogo size={32} idSuffix="nav" onDark={false} />
           <span>Raltic</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-zinc-600 md:flex">
+        <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           <Link href="/workflows" className={linkClass}>Workflows</Link>
           <Link href="/runtimes" className={linkClass}>Runtimes</Link>
           <Link href="/connectors" className={linkClass}>Connectors</Link>
@@ -102,7 +102,7 @@ function MobileNavDropdown() {
         aria-label="Open marketing navigation"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/[0.1] bg-white text-zinc-900 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-foreground transition-colors hover:bg-[color-mix(in_srgb,var(--foreground)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
       >
         <MenuIcon className="h-4 w-4" aria-hidden="true" />
       </DropdownMenuTrigger>
@@ -177,7 +177,7 @@ function ForDropdown() {
   return (
     <DropdownMenu onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-zinc-600 transition-colors hover:bg-black/[0.04] hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
+        className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-muted-foreground transition-colors hover:bg-[color-mix(in_srgb,var(--foreground)_4%,transparent)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]"
         aria-haspopup="menu"
         aria-expanded={open}
       >

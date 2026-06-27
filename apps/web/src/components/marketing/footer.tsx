@@ -27,7 +27,7 @@ type MarketingFooterProps = {
 
 const LIGHT_FOOTER_STYLE: CSSProperties = {
   background: "linear-gradient(180deg, #ffffff 0%, #f6f5f1 100%)",
-  borderTop: "1px solid rgba(0,0,0,0.07)",
+  borderTop: "1px solid var(--border)",
 };
 
 export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFooterProps = {}) {
@@ -38,7 +38,7 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
       className={cn(
         "w-full",
         isLight
-          ? "text-zinc-500"
+          ? "text-muted-foreground"
           : "raltic-marketing-footer-surface text-[color-mix(in_srgb,var(--snow)_68%,transparent)]",
       )}
       style={isLight ? LIGHT_FOOTER_STYLE : undefined}
@@ -49,7 +49,7 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
           data-raltic-footer-lead
           className={cn(
             "mx-auto max-w-6xl scroll-mt-20 px-6 py-7 text-center sm:py-9",
-            isLight && "border-b border-black/[0.07]",
+            isLight && "border-b border-border",
           )}
         >
           {lead}
@@ -58,15 +58,15 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
       <div
         className={cn(
           "raltic-marketing-footer-grid mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 sm:py-16 lg:grid-cols-5",
-          isLight && "border-black/[0.07]",
+          isLight && "border-border",
         )}
       >
         <div className="lg:col-span-2">
-          <div className={cn("flex items-center gap-2", isLight ? "text-zinc-900" : "text-[var(--snow)]")}>
+          <div className={cn("flex items-center gap-2", isLight ? "text-foreground" : "text-[var(--snow)]")}>
             <RalticLogo size={24} idSuffix="footer-shared" onDark={!isLight} />
             <span className="font-medium">Raltic</span>
           </div>
-          <p className={cn("mt-3 max-w-xs text-sm leading-relaxed", isLight ? "text-zinc-500" : "text-[color-mix(in_srgb,var(--snow)_64%,transparent)]")}>
+          <p className={cn("mt-3 max-w-xs text-sm leading-relaxed", isLight ? "text-muted-foreground" : "text-[color-mix(in_srgb,var(--snow)_64%,transparent)]")}>
             Workflow rooms where humans and AI agents ship together.
           </p>
         </div>
@@ -91,14 +91,14 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
       </div>
       <div
         className="raltic-marketing-footer-base"
-        style={isLight ? { borderTop: "1px solid rgba(0,0,0,0.07)" } : undefined}
+        style={isLight ? { borderTop: "1px solid var(--border)" } : undefined}
       >
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs sm:flex-row">
           <span>© {new Date().getFullYear()} Raltic</span>
           <span>
             Reach out:{" "}
             <a
-              className={isLight ? "text-zinc-700 underline-offset-4 hover:text-zinc-900 hover:underline" : "raltic-marketing-footer-link"}
+              className={isLight ? "text-muted-foreground underline-offset-4 hover:text-foreground hover:underline" : "raltic-marketing-footer-link"}
               href="mailto:hello@raltic.com"
             >
               hello@raltic.com
@@ -113,13 +113,13 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
 function FooterCol({ isLight, label, links }: { isLight: boolean; label: string; links: { label: string; href: string }[] }) {
   return (
     <div className="space-y-2.5">
-      <p className={cn("text-[10.5px] font-medium uppercase tracking-[0.18em]", isLight ? "text-zinc-500" : "text-[color-mix(in_srgb,var(--snow)_58%,transparent)]")}>{label}</p>
+      <p className={cn("text-[10.5px] font-medium uppercase tracking-[0.18em]", isLight ? "text-muted-foreground" : "text-[color-mix(in_srgb,var(--snow)_58%,transparent)]")}>{label}</p>
       <ul className="space-y-2.5 text-sm">
         {links.map((l) => (
           <li key={l.href + l.label}>
             <Link
               href={l.href}
-              className={isLight ? "text-zinc-600 underline-offset-4 transition-colors hover:text-zinc-900 hover:underline" : "raltic-marketing-footer-link"}
+              className={isLight ? "text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" : "raltic-marketing-footer-link"}
             >
               {l.label}
             </Link>

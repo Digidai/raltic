@@ -24,11 +24,11 @@ export function SectionHeader({
           {eyebrow}
         </p>
       )}
-      <h2 className="mt-4 text-balance text-4xl font-normal leading-[1.1] tracking-[-0.02em] text-zinc-900 sm:text-5xl font-[family-name:var(--font-sn-pro)]">
+      <h2 className="mt-4 text-balance text-4xl font-normal leading-[1.1] tracking-[-0.02em] text-foreground sm:text-5xl font-[family-name:var(--font-sn-pro)]">
         {title}
       </h2>
       {description && (
-        <p className="mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed text-zinc-600 sm:text-lg">
+        <p className="mx-auto mt-5 max-w-2xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
           {description}
         </p>
       )}

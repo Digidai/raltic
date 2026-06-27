@@ -28,7 +28,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
   // round. Scope a non-zero radius to the marketing tree so all token-based
   // corners round consistently (ando.so style) without touching the product.
   return (
-    <div className="bg-[#fafaf8] text-zinc-900" style={{ "--radius": "12px" } as CSSProperties}>
+    <div className="bg-[#fafaf8] text-foreground" style={{ "--radius": "12px" } as CSSProperties}>
       <MarketingTracking />
       <MarketingNav />
       {children}

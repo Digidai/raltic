@@ -13,14 +13,14 @@ import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
 const ACCENT_TEXT: Record<RuntimeDoc["accent"], string> = {
   cyan: "text-[#2563eb]",
   amber: "text-[#d9821f]",
-  violet: "text-zinc-700",
-  neutral: "text-zinc-700",
+  violet: "text-muted-foreground",
+  neutral: "text-muted-foreground",
 };
 const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
   cyan: "border-[#d4e4ff] bg-[#eef4ff] text-[#2563eb]",
   amber: "border-[#f3d9ad] bg-[#fdf2e1] text-[#92560f]",
-  violet: "border-black/[0.07] bg-[#f7f6f2] text-zinc-700",
-  neutral: "border-black/[0.07] bg-[#f7f6f2] text-zinc-600",
+  violet: "border-border bg-[#f7f6f2] text-muted-foreground",
+  neutral: "border-border bg-[#f7f6f2] text-muted-foreground",
 };
 const ACCENT_GLOW: Record<RuntimeDoc["accent"], string> = {
   cyan: "color-mix(in srgb, #2563eb 10%, transparent)",
@@ -29,15 +29,15 @@ const ACCENT_GLOW: Record<RuntimeDoc["accent"], string> = {
   neutral: "color-mix(in srgb, #2563eb 5%, transparent)",
 };
 
-const DARK_SECTION = "border-black/[0.07] bg-white text-zinc-900";
-const DARK_MUTED = "text-zinc-600";
-const DARK_BODY = "text-zinc-600";
-const DARK_SURFACE = "border-black/[0.07] bg-[#fafaf8]";
-const DARK_SURFACE_SOFT = "border-black/[0.07] bg-[#f7f6f2]";
-const LIGHT_SECTION = "bg-[#fafaf8] text-zinc-900";
-const LIGHT_SURFACE = "border-black/[0.07] bg-[#fafaf8]";
-const LIGHT_MUTED = "text-zinc-500";
-const LIGHT_BODY = "text-zinc-900";
+const DARK_SECTION = "border-border bg-surface text-foreground";
+const DARK_MUTED = "text-muted-foreground";
+const DARK_BODY = "text-muted-foreground";
+const DARK_SURFACE = "border-border bg-[#fafaf8]";
+const DARK_SURFACE_SOFT = "border-border bg-[#f7f6f2]";
+const LIGHT_SECTION = "bg-[#fafaf8] text-foreground";
+const LIGHT_SURFACE = "border-border bg-[#fafaf8]";
+const LIGHT_MUTED = "text-muted-foreground";
+const LIGHT_BODY = "text-foreground";
 
 function runtimeSignupHref(doc: RuntimeDoc): string {
   return doc.verification === "verified" ? CONNECT_RUNTIME_SIGNUP_HREF : "/signup";
@@ -63,19 +63,19 @@ export function RuntimePage({ doc }: { doc: RuntimeDoc }) {
       <Card render={<section className={DARK_SECTION} />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto grid max-w-6xl gap-12 px-6 py-24 lg:grid-cols-2">
           <div>
-            <h2 className="text-2xl font-medium text-zinc-900">What it is</h2>
+            <h2 className="text-2xl font-medium text-foreground">What it is</h2>
             <p className={`mt-3 ${DARK_MUTED}`}>{doc.whatItIs}</p>
             <a
               href={doc.upstreamHref}
               target="_blank"
               rel="noreferrer"
-              className={`mt-4 inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:text-zinc-900 hover:underline ${DARK_BODY}`}
+              className={`mt-4 inline-flex items-center gap-1.5 text-sm underline-offset-4 hover:text-foreground hover:underline ${DARK_BODY}`}
             >
               {doc.upstreamLabel} <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
           <div>
-            <h2 className="text-2xl font-medium text-zinc-900">How Raltic uses it</h2>
+            <h2 className="text-2xl font-medium text-foreground">How Raltic uses it</h2>
             <p className={`mt-3 ${DARK_MUTED}`}>{doc.howRalticUses}</p>
             <div className={`mt-4 inline-flex items-center gap-2 rounded-md border px-3 py-1 text-[11px] font-medium ${DARK_SURFACE} ${DARK_MUTED}`}>
               Lifecycle: <span className={DARK_BODY}>{doc.lifecycle === "external_daemon" ? "External daemon (yours)" : "Per-turn CLI spawn"}</span>
@@ -113,7 +113,7 @@ function Hero({ doc }: { doc: RuntimeDoc }) {
             </>
           )}
         </span>
-        <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
+        <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-foreground sm:text-6xl">
           <span className={ACCENT_TEXT[doc.accent]}>{doc.shortName}</span>{" "}
           in Raltic
         </h1>
@@ -225,7 +225,7 @@ function Cta({ doc }: { doc: RuntimeDoc }) {
   return (
     <Card render={<section className={DARK_SECTION} />} className="w-full rounded-none border-0 shadow-none">
       <CardPanel className="mx-auto max-w-2xl px-6 py-24 text-center">
-        <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-zinc-900 sm:text-4xl">
+        <h2 className="text-balance text-3xl font-medium tracking-[-0.02em] text-foreground sm:text-4xl">
           {doc.verification === "experimental"
             ? `${doc.shortName} is visible for evaluation.`
             : `Bring ${doc.shortName} into a workflow room.`}

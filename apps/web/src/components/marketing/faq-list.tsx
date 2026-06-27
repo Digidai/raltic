@@ -35,11 +35,11 @@ const THEME = {
     // ando.so language: white card, hairline black/8% borders, warm-white
     // open state, sky-blue chevron — matches the homepage cards, not the
     // green-tinted HeroUI surface tokens.
-    container: "rounded-2xl border-black/[0.08] bg-white text-zinc-600 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_18px_50px_-30px_rgba(16,24,40,0.18)]",
-    item: "border-black/[0.07] text-zinc-600",
-    title: "text-zinc-900",
+    container: "rounded-2xl border-border bg-surface text-muted-foreground shadow-[0_1px_2px_rgba(16,24,40,0.04),0_18px_50px_-30px_rgba(16,24,40,0.18)]",
+    item: "border-border text-muted-foreground",
+    title: "text-foreground",
     open: "bg-[#fafaf8]",
-    border: "border-black/[0.07]",
+    border: "border-border",
     indicator: "text-[#2563eb]",
   },
 } satisfies Record<FaqTheme, {
