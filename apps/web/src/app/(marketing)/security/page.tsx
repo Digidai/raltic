@@ -5,6 +5,8 @@ import { Chip } from "@/components/heroui-pro/chip";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { MarketingButton } from "@/components/marketing/marketing-button";
 import { SectionHeader } from "@/components/marketing/section-header";
+import { JsonLdScript } from "@/components/marketing/json-ld";
+import { breadcrumbJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from "@/lib/seo";
 
 /**
  * /security — plain-language "what we see, what we don't".
@@ -18,20 +20,36 @@ import { SectionHeader } from "@/components/marketing/section-header";
  *   - SSO/SAML: NOT shipped. Explicit disclosure.
  *   - SOC 2 / HIPAA: NOT pursued. Explicit disclosure.
  */
-export const metadata: Metadata = {
-  title: "Security — what Raltic sees, what we don't",
-  description: "Local-first execution. Provider keys never leave your computer. Runtime keys with instant revoke. Plain disclosure of what we don't have yet.",
-  alternates: { canonical: "https://raltic.com/security" },
-  openGraph: {
-    title: "Raltic — Security & Privacy",
-    description: "What we see, what we don't. Plain disclosure of what's shipped and what isn't.",
-    url: "https://raltic.com/security",
-  },
-};
+export const metadata: Metadata = marketingMetadata({
+  title: "Security: What We See and What Stays Local",
+  description:
+    "Local-first execution keeps source code and provider keys on your machine. Runtime credentials with instant revoke, and a plain disclosure of what Raltic does not have yet.",
+  path: "/security",
+  keywords: [
+    "AI agent security",
+    "local-first AI execution",
+    "AI provider key privacy",
+    "AI workflow data boundaries",
+  ],
+});
 
 export default function SecurityPage() {
   return (
     <>
+      <JsonLdScript
+        data={jsonLdGraph([
+          webPageJsonLd({
+            path: "/security",
+            name: "Security: What Raltic Sees and What Stays Local",
+            description:
+              "How Raltic keeps source code and provider keys local, scopes what crosses the workspace, and discloses what is not yet shipped.",
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Security", path: "/security" },
+          ]),
+        ])}
+      />
       <main className="min-h-screen text-zinc-900">
           <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] px-6 pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
             <CardPanel className="mx-auto max-w-3xl text-center">

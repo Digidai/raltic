@@ -5,6 +5,8 @@ import { MarketingButton } from "@/components/marketing/marketing-button";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { SectionHeader } from "@/components/marketing/section-header";
+import { JsonLdScript } from "@/components/marketing/json-ld";
+import { breadcrumbJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from "@/lib/seo";
 
 /**
  * Connectors overview. Per codex review HIGH-3 + MED-5, this page
@@ -16,20 +18,36 @@ import { SectionHeader } from "@/components/marketing/section-header";
  * NOT claimed: webhook automation, PR-triggered runs, scheduling.
  * Those would belong under a future "Workflows" page when shipped.
  */
-export const metadata: Metadata = {
-  title: "Connectors — give your agents access to your tools",
-  description: "GitHub, Linear, Notion. Store a PAT once, grant per-agent. Tokens encrypted at rest, never leave Raltic without your agent's request.",
-  alternates: { canonical: "https://raltic.com/connectors" },
-  openGraph: {
-    title: "Raltic Connectors",
-    description: "GitHub + Linear + Notion access for your agents, with per-agent grants.",
-    url: "https://raltic.com/connectors",
-  },
-};
+export const metadata: Metadata = marketingMetadata({
+  title: "Connectors: GitHub, Linear & Notion for AI Agents",
+  description:
+    "Give your agents scoped access to GitHub, Linear, and Notion. Store a PAT once, grant per-agent. Tokens are encrypted at rest and never leave Raltic without your agent's request.",
+  path: "/connectors",
+  keywords: [
+    "AI agent GitHub connector",
+    "AI agent Linear integration",
+    "AI agent Notion access",
+    "per-agent access tokens",
+  ],
+});
 
 export default function ConnectorsPage() {
   return (
     <>
+      <JsonLdScript
+        data={jsonLdGraph([
+          webPageJsonLd({
+            path: "/connectors",
+            name: "Connectors: GitHub, Linear & Notion for AI Agents",
+            description:
+              "Scoped GitHub, Linear, and Notion access for your agents, with per-agent grants and encrypted-at-rest token storage.",
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Connectors", path: "/connectors" },
+          ]),
+        ])}
+      />
       <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">

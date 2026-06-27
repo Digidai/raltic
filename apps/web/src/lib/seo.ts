@@ -64,6 +64,23 @@ export function marketingMetadata({
   };
 }
 
+// Official, verifiable profiles that identify the Raltic entity elsewhere.
+// `sameAs` strengthens entity recognition for both Google's knowledge graph
+// and AI engines (GEO). Only list profiles we actually control — do not pad
+// with invented social handles.
+const ORG_SAME_AS = ["https://github.com/Digidai/raltic"];
+
+// Topics the entity is authoritative about — a lightweight, accurate GEO
+// signal that helps AI engines associate Raltic with these queries.
+const ORG_KNOWS_ABOUT = [
+  "AI agent workflows",
+  "Human-in-the-loop AI",
+  "Claude Code",
+  "OpenAI Codex",
+  "AI agent orchestration",
+  "Workflow automation for teams",
+];
+
 export function organizationJsonLd(): Record<string, unknown> {
   return {
     "@type": "Organization",
@@ -71,13 +88,21 @@ export function organizationJsonLd(): Record<string, unknown> {
     name: SITE_NAME,
     url: SITE_URL,
     email: "hello@raltic.com",
+    description: SITE_DESCRIPTION,
     logo: {
       "@type": "ImageObject",
       url: absoluteUrl(SITE_ICON_PATH),
       width: 32,
       height: 32,
     },
-    sameAs: [SITE_URL],
+    sameAs: ORG_SAME_AS,
+    contactPoint: {
+      "@type": "ContactPoint",
+      email: "hello@raltic.com",
+      contactType: "customer support",
+      availableLanguage: ["English"],
+    },
+    knowsAbout: ORG_KNOWS_ABOUT,
   };
 }
 
@@ -102,6 +127,17 @@ export function softwareApplicationJsonLd(): Record<string, unknown> {
     operatingSystem: "Web, macOS, Windows, Linux",
     url: SITE_URL,
     description: SITE_DESCRIPTION,
+    // Accurate capability summary — helps AI engines describe what Raltic
+    // does without paraphrasing marketing copy. Keep each item true to
+    // shipped behavior (see the homepage truth audit).
+    featureList: [
+      "Workflow rooms where humans and AI agents share one accountable space",
+      "Verified Claude Code and OpenAI Codex bridge runtimes",
+      "Cloud agents that run with zero local install",
+      "Human approval gates before agent output reaches customers",
+      "Local-first execution that keeps source code and provider keys on your machine",
+      "GitHub, Linear, and Notion connectors with per-agent grants",
+    ],
     offers: {
       "@type": "Offer",
       price: "0",
@@ -117,13 +153,13 @@ export function webPageJsonLd({
   path,
   name,
   description,
-  primaryEntity,
+  mainEntity,
   type = "WebPage",
 }: {
   path: string;
   name: string;
   description: string;
-  primaryEntity?: Record<string, unknown>;
+  mainEntity?: Record<string, unknown>;
   type?: "WebPage" | "CollectionPage";
 }): Record<string, unknown> {
   return {
@@ -134,7 +170,7 @@ export function webPageJsonLd({
     description,
     isPartOf: { "@id": absoluteUrl("/#website") },
     about: { "@id": absoluteUrl("/#software") },
-    primaryEntity,
+    mainEntity,
     datePublished: SITE_PUBLISHED_AT.toISOString(),
     dateModified: SITE_LAST_MODIFIED.toISOString(),
     isAccessibleForFree: true,

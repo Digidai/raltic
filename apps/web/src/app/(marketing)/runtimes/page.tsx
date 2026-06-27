@@ -1,24 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { JsonLdScript } from "@/components/marketing/json-ld";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { RUNTIME_DOCS, type RuntimeDoc } from "@/components/marketing/runtime-data";
+import {
+  absoluteUrl,
+  breadcrumbJsonLd,
+  itemListJsonLd,
+  jsonLdGraph,
+  marketingMetadata,
+  webPageJsonLd,
+} from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Runtimes · Raltic — Claude, Codex, cloud agents, and experimental daemons",
-  description: "Verified Claude and Codex bridge runtimes, cloud agents, and experimental OpenClaw/Hermes daemon integrations in one workflow surface.",
-  // Codex 3 HIGH — every other runtime sub-page declared canonical,
-  // this hub was missed.
-  alternates: { canonical: "https://raltic.com/runtimes" },
-  openGraph: {
-    type: "website",
-    title: "Raltic — verified bridge runtimes and experimental daemon integrations",
-    description: "Claude Code and OpenAI Codex are verified today; OpenClaw and Hermes are visible for evaluation until smoke verification passes.",
-    url: "https://raltic.com/runtimes",
-  },
-};
+export const metadata: Metadata = marketingMetadata({
+  title: "AI Agent Runtimes: Claude Code, Codex & Cloud Agents",
+  description:
+    "Verified Claude and Codex bridge runtimes, cloud agents, and experimental OpenClaw/Hermes daemon integrations in one workflow surface — Raltic never touches your provider keys.",
+  path: "/runtimes",
+  keywords: [
+    "Claude Code runtime",
+    "OpenAI Codex runtime",
+    "bring your own AI agent",
+    "AI agent runtimes",
+    "local AI agent bridge",
+  ],
+});
 
 const ACCENT_BG: Record<RuntimeDoc["accent"], string> = {
   cyan: "border-[#d4e4ff] bg-[#eef4ff] text-[#2563eb]",
@@ -36,6 +45,31 @@ export default function RuntimesHub() {
   ];
   return (
     <>
+      <JsonLdScript
+        data={jsonLdGraph([
+          webPageJsonLd({
+            path: "/runtimes",
+            name: "AI Agent Runtimes for Raltic",
+            description:
+              "Verified Claude Code and OpenAI Codex bridge runtimes, cloud agents, and experimental OpenClaw/Hermes daemon integrations.",
+            type: "CollectionPage",
+            mainEntity: { "@id": `${absoluteUrl("/runtimes")}#itemlist` },
+          }),
+          itemListJsonLd({
+            path: "/runtimes",
+            name: "Raltic agent runtimes",
+            items: ordered.map((doc) => ({
+              name: doc.longName,
+              description: doc.tagline,
+              path: `/runtimes/${doc.key}`,
+            })),
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Runtimes", path: "/runtimes" },
+          ]),
+        ])}
+      />
       <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl px-6 text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">

@@ -42,7 +42,7 @@ export default function WorkflowsPage(): React.ReactElement {
             description:
               "Raltic workflow rooms for customer risk, launch readiness, research synthesis, and local code review.",
             type: "CollectionPage",
-            primaryEntity: { "@id": `${absoluteUrl("/workflows")}#itemlist` },
+            mainEntity: { "@id": `${absoluteUrl("/workflows")}#itemlist` },
           }),
           itemListJsonLd({
             path: "/workflows",

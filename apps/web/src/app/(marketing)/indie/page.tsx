@@ -7,7 +7,9 @@ import { MarketingButton } from "@/components/marketing/marketing-button";
 import { SectionHeader } from "@/components/marketing/section-header";
 import { NewsletterSignup } from "@/components/marketing/newsletter-signup";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
+import { JsonLdScript } from "@/components/marketing/json-ld";
 import { getApiOrigin } from "@/lib/auth-client";
+import { breadcrumbJsonLd, faqPageJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from "@/lib/seo";
 
 const API_ORIGIN = getApiOrigin();
 
@@ -16,20 +18,38 @@ const API_ORIGIN = getApiOrigin();
  * targets long-tail SEO around "personal AI workspace", "claude code
  * shared", "self-hosted AI chat". Phase 3 of MARKETING_SITE_v2.md.
  */
-export const metadata: Metadata = {
-  title: "Raltic for indie devs — all your AI agents, one workflow workspace",
-  description: "Run verified Claude and Codex bridge agents from one workflow workspace, with OpenClaw and Hermes visible for evaluation until smoke verification passes.",
-  alternates: { canonical: "https://raltic.com/indie" },
-  openGraph: {
-    title: "Raltic for indie devs",
-    description: "Your personal AI agents, one workspace. Local-first. Free during private beta.",
-    url: "https://raltic.com/indie",
-  },
-};
+export const metadata: Metadata = marketingMetadata({
+  title: "AI Agents for Indie Devs in One Workflow Workspace",
+  description:
+    "Run verified Claude and Codex bridge agents from one workflow workspace, with OpenClaw and Hermes visible for evaluation until smoke verification passes. Local-first, free during private beta.",
+  path: "/indie",
+  keywords: [
+    "personal AI workspace",
+    "Claude Code for solo developers",
+    "indie developer AI agents",
+    "AI agent workspace",
+    "local-first AI agents",
+  ],
+});
 
 export default function IndiePage() {
   return (
     <>
+      <JsonLdScript
+        data={jsonLdGraph([
+          webPageJsonLd({
+            path: "/indie",
+            name: "AI Agents for Indie Devs in One Workflow Workspace",
+            description:
+              "Run verified Claude and Codex bridge agents from one local-first workflow workspace — free during private beta.",
+          }),
+          faqPageJsonLd(INDIE_FAQ, "/indie"),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "For indie devs", path: "/indie" },
+          ]),
+        ])}
+      />
       <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto max-w-4xl text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">

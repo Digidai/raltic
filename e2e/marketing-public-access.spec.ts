@@ -357,6 +357,53 @@ test.describe("marketing public access", () => {
     expect(metrics.documentOverflowX).toBe(false);
   });
 
+  test("marketing pages emit page-specific structured data and entity signals", async ({ page }) => {
+    const ldFor = async (path: string) => {
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      return page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
+        scripts.map((s) => s.textContent ?? "").join("\n"),
+      );
+    };
+
+    // Organization entity signals (global graph) — sameAs + knowsAbout +
+    // contactPoint strengthen knowledge-graph + AI-engine entity recognition.
+    const home = await ldFor("/");
+    expect(home).toContain("https://github.com/Digidai/raltic");
+    expect(home).toContain("knowsAbout");
+    expect(home).toContain("ContactPoint");
+    expect(home).toContain("featureList");
+
+    // Runtimes hub: collection + item list + breadcrumb.
+    const runtimes = await ldFor("/runtimes");
+    expect(runtimes).toContain("CollectionPage");
+    expect(runtimes).toContain("ItemList");
+    expect(runtimes).toContain("BreadcrumbList");
+    expect(runtimes).toContain("https://raltic.com/runtimes/claude");
+
+    // Verified runtime detail: webpage + FAQ + breadcrumb.
+    const claude = await ldFor("/runtimes/claude");
+    expect(claude).toContain("FAQPage");
+    expect(claude).toContain("BreadcrumbList");
+    expect(claude).toContain("https://raltic.com/runtimes/claude#webpage");
+
+    // Experimental (noindex) runtime detail: NO page-specific rich data.
+    const openclaw = await ldFor("/runtimes/openclaw");
+    expect(openclaw).not.toContain("FAQPage");
+    expect(openclaw).not.toContain("#webpage");
+
+    // Indie page surfaces its FAQ as structured data.
+    const indie = await ldFor("/indie");
+    expect(indie).toContain("FAQPage");
+    expect(indie).toContain("BreadcrumbList");
+
+    // Connectors + Security: webpage + breadcrumb.
+    for (const path of ["/connectors", "/security"]) {
+      const ld = await ldFor(path);
+      expect(ld, path).toContain("BreadcrumbList");
+      expect(ld, path).toContain(`https://raltic.com${path}#webpage`);
+    }
+  });
+
   test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 844 });
     await page.route("**/api/v1/marketing/newsletter", (route) => route.fulfill({

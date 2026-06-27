@@ -214,7 +214,7 @@ function workflowJsonLd(page: WorkflowSeoPage): Record<string, unknown> {
       path: page.path,
       name: page.metaTitle,
       description: page.metaDescription,
-      primaryEntity: {
+      mainEntity: {
         "@type": "HowTo",
         "@id": `${absoluteUrl(page.path)}#howto`,
         url: absoluteUrl(page.path),

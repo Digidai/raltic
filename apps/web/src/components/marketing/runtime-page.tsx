@@ -5,8 +5,10 @@ import { MarketingButton } from "./marketing-button";
 import { SectionHeader } from "./section-header";
 import type { RuntimeDoc } from "./runtime-data";
 import { MarketingFaqList } from "./faq-list";
+import { JsonLdScript } from "./json-ld";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
+import { breadcrumbJsonLd, faqPageJsonLd, jsonLdGraph, webPageJsonLd } from "@/lib/seo";
 
 /** Per-accent class lookups — kept inline (vs. dynamic class names) so
  *  Tailwind's purger sees the strings at build time. */
@@ -57,8 +59,30 @@ function runtimeCtaLabel(doc: RuntimeDoc): string {
  * Each runtime's body content is hand-written, distinct from the others.
  */
 export function RuntimePage({ doc }: { doc: RuntimeDoc }) {
+  const path = `/runtimes/${doc.key}`;
+  // Only verified runtimes are indexable (openclaw/hermes carry
+  // robots:noindex until smoke verification). Emit rich structured data
+  // for indexable pages only — no point decorating noindex pages.
+  const indexable = doc.verification === "verified";
   return (
     <>
+      {indexable && (
+        <JsonLdScript
+          data={jsonLdGraph([
+            webPageJsonLd({
+              path,
+              name: `${doc.longName} runtime for Raltic`,
+              description: doc.tagline,
+            }),
+            faqPageJsonLd(doc.faq, path),
+            breadcrumbJsonLd([
+              { name: "Home", path: "/" },
+              { name: "Runtimes", path: "/runtimes" },
+              { name: doc.shortName, path },
+            ]),
+          ])}
+        />
+      )}
       <Hero doc={doc} />
       <Card render={<section className={DARK_SECTION} />} className="w-full rounded-none border-0 shadow-none">
         <CardPanel className="mx-auto grid max-w-6xl gap-12 px-6 py-24 lg:grid-cols-2">
