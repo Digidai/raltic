@@ -26,6 +26,7 @@ Raltic is an AI agent workflow platform for teams that need humans and agents in
 ## Primary URLs
 
 - [Homepage](${SITE_URL}/): product overview and signup CTA.
+- [For indie developers](${SITE_URL}/indie): Raltic for solo developers and small teams running verified Claude and Codex bridge agents from one workspace.
 - [Workflow templates](${SITE_URL}/workflows): index of workflow-specific landing pages.
 ${workflowLinks}
 - [Runtimes](${SITE_URL}/runtimes): verified Claude Code and OpenAI Codex bridge runtimes, plus cloud agents.

@@ -42,7 +42,7 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
     category: "Hosted AI assistant",
     metaTitle: "Raltic vs ChatGPT for Work: Team AI Workflows",
     metaDescription:
-      "ChatGPT for Work is a hosted assistant for individual chats. Raltic is a workflow room where humans and multiple AI agents share accountable work with approval gates and team memory.",
+      "ChatGPT for Work is a hosted assistant for solo chats. Raltic is the shared workflow room where humans and multiple AI agents do accountable team work.",
     keywords: [
       "ChatGPT for Work alternative",
       "ChatGPT Team alternative",
@@ -92,7 +92,7 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
     category: "AI coding assistant",
     metaTitle: "Raltic vs Cursor / Copilot: Team AI Code Review",
     metaDescription:
-      "Cursor and Copilot are AI pair-programmers in the editor. Raltic is the team workflow room around agent work — including local code review where repo context stays on your machine.",
+      "Cursor and Copilot are AI pair-programmers in the editor. Raltic is the team room around agent work, with local code review that keeps your repo private.",
     keywords: [
       "Cursor alternative for teams",
       "Copilot alternative",
@@ -142,7 +142,7 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
     category: "Team chat with bolt-on AI",
     metaTitle: "Raltic vs Slack + AI Bots: AI Workflow Rooms",
     metaDescription:
-      "Slack plus AI bots keeps work chat-first with scattered, per-vendor bots. Raltic is workflow-first: one accountable room per process, with approval gates, team memory, and local execution.",
+      "Slack plus AI bots stays chat-first, with agent work scattered across bots. Raltic is workflow-first: one accountable room per process.",
     keywords: [
       "Slack AI bot alternative",
       "AI agents in Slack alternative",

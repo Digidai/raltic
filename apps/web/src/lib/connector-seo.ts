@@ -58,7 +58,7 @@ export const CONNECTOR_PAGES: ConnectorPage[] = [
     icon: "github",
     metaTitle: "GitHub Connector for AI Agents",
     metaDescription:
-      "Give Raltic agents scoped GitHub access — read repos, PRs, issues, and review comments — with a per-agent token grant and encrypted-at-rest storage. No code upload, no webhook automation.",
+      "Give Raltic agents scoped GitHub access: read repos, files, and PR diffs, then file issues, comment, and open PRs — with a per-agent, encrypted token.",
     keywords: [
       "AI agent GitHub access",
       "GitHub AI agent connector",
@@ -68,18 +68,18 @@ export const CONNECTOR_PAGES: ConnectorPage[] = [
     eyebrow: "GitHub connector",
     h1: "Connect GitHub to your AI agents.",
     intro:
-      "Grant an agent scoped GitHub access and it can pull repo context, read pull requests and issues, and draft review replies the way you would from the gh CLI — inside a workflow room the whole team can see, with a token that stays encrypted at rest.",
+      "Grant an agent scoped GitHub access and it can pull repo and file context, read pull-request diffs, and draft issues, comments, and pull requests the way you would from the gh CLI — inside a workflow room the whole team can see, with a token that stays encrypted at rest.",
     capabilities: [
-      "Read repositories, branches, and file context an agent needs to reason about a change.",
-      "Read pull requests, diffs, issues, and review comments to ground its responses in the real thread.",
-      "Draft PR replies and issue comments for a human to approve before anything is posted.",
+      "Read repositories and any file at a branch, tag, or commit to ground the agent in the real code.",
+      "Read the files and diffs in a pull request to review a change without cloning the repo.",
+      "Open pull requests and post issue and PR comments — visible in the room so a human stays in the loop on what ships.",
     ],
     goodFirstWorkflow:
       "Pair the GitHub connector with the local code-review workflow: a bridge runtime reads the diff locally, while GitHub context and the team's review record live in the room.",
     faqs: [
       {
         q: "Does the GitHub connector upload my source code to Raltic?",
-        a: "The connector reads GitHub through your token for repo, PR, and issue context. For deep code review, pair it with a bridge runtime so the diff is read on your own machine — Raltic receives only what the agent posts into the room.",
+        a: "The connector reads GitHub through your token for repo, file, and pull-request context. For deep code review, pair it with a bridge runtime so the diff is read on your own machine — Raltic receives only what the agent posts into the room.",
       },
       {
         q: "How is my GitHub token stored?",
@@ -97,7 +97,7 @@ export const CONNECTOR_PAGES: ConnectorPage[] = [
     icon: "linear",
     metaTitle: "Linear Connector for AI Agents",
     metaDescription:
-      "Let Raltic agents read and create Linear issues, comment on threads, and use cycle context — with per-agent grants and encrypted token storage. Triage and update tickets from a workflow room.",
+      "Let Raltic agents read and create Linear issues and comment on them, with per-agent grants and encrypted token storage. Triage from a workflow room.",
     keywords: [
       "AI agent Linear integration",
       "Linear AI agent",
@@ -107,18 +107,18 @@ export const CONNECTOR_PAGES: ConnectorPage[] = [
     eyebrow: "Linear connector",
     h1: "Connect Linear to your AI agents.",
     intro:
-      "Grant an agent Linear access and it can read and create issues, comment on threads, and work with cycle context — so triage and ticket updates happen inside a workflow room instead of a side conversation, with the human approval boundary kept visible.",
+      "Grant an agent Linear access and it can read and create issues and comment on them — so triage and follow-ups happen inside a workflow room instead of a side conversation, with the human approval boundary kept visible.",
     capabilities: [
-      "Read and create issues so an agent can file what a discussion surfaced.",
-      "Comment on issue threads and reference cycle and project context.",
-      "Turn workflow outcomes into tracked tickets a human approves before they ship.",
+      "List and read issues, filtered by team or state, so an agent has the current picture.",
+      "Create issues and comment on existing ones to file what a discussion surfaced.",
+      "Turn workflow outcomes into tracked Linear tickets, created from the room where the evidence lives.",
     ],
     goodFirstWorkflow:
       "Use Linear with the customer-risk or launch-readiness workflow so the agent's follow-ups land as real tickets tied to the room where the evidence lives.",
     faqs: [
       {
         q: "What can the Linear connector do?",
-        a: "An agent granted the Linear connector can read and create issues, comment on threads, and use cycle context — useful for triage and turning workflow outcomes into tracked tickets.",
+        a: "An agent granted the Linear connector can list and read issues, create new ones, and comment on them — useful for triage and turning workflow outcomes into tracked tickets.",
       },
       {
         q: "Is my Linear token secure?",
@@ -126,7 +126,7 @@ export const CONNECTOR_PAGES: ConnectorPage[] = [
       },
       {
         q: "Will agents change my Linear tickets without review?",
-        a: "Raltic is built around a visible approval boundary. The workflow keeps a human in the loop before customer- or team-facing actions, and you control which agents have the connector at all.",
+        a: "Agents can create issues and add comments — they can't silently edit or close your existing tickets. Raltic is built around a visible approval boundary, and you control which agents have the connector at all.",
       },
     ],
   },
@@ -136,7 +136,7 @@ export const CONNECTOR_PAGES: ConnectorPage[] = [
     icon: "notion",
     metaTitle: "Notion Connector for AI Agents",
     metaDescription:
-      "Let Raltic agents read and write Notion pages, query databases, and follow backlinks — with per-agent grants and encrypted token storage. Pull docs into a workflow or draft pages from a discussion.",
+      "Let Raltic agents search Notion pages and databases, read page content, and create new pages — with per-agent grants and encrypted token storage.",
     keywords: [
       "AI agent Notion integration",
       "Notion AI agent",
@@ -146,18 +146,18 @@ export const CONNECTOR_PAGES: ConnectorPage[] = [
     eyebrow: "Notion connector",
     h1: "Connect Notion to your AI agents.",
     intro:
-      "Grant an agent Notion access and it can read and write pages, query databases, and follow backlinks — so it pulls in the docs you reference and can draft pages from a discussion, all inside a workflow room where the result becomes reusable team memory.",
+      "Grant an agent Notion access and it can search across your pages and databases, read page content, and create new pages — so it pulls in the docs you reference and can draft pages from a discussion, all inside a workflow room where the result becomes reusable team memory.",
     capabilities: [
-      "Read and write pages so an agent can ground its work in your docs and draft new ones.",
-      "Query databases to pull structured context into a workflow.",
-      "Follow backlinks to gather the surrounding documents a decision depends on.",
+      "Read page content as clean text so an agent can ground its work in your existing docs.",
+      "Search across the pages and databases the integration can see to find the right doc.",
+      "Create new pages under a parent so a discussion becomes a written, reusable doc.",
     ],
     goodFirstWorkflow:
       "Pair Notion with the research-synthesis workflow so sources and the final decision memo are written back where the rest of the team already reads.",
     faqs: [
       {
         q: "Can a Raltic agent write to my Notion workspace?",
-        a: "Yes, if you grant it. With the Notion connector an agent can read and write pages and query databases — useful for pulling docs into a workflow or drafting pages from a discussion. You choose which agents have access.",
+        a: "Yes, if you grant it. With the Notion connector an agent can search, read pages, and create new pages — useful for pulling docs into a workflow or drafting pages from a discussion. You choose which agents have access.",
       },
       {
         q: "How is my Notion token handled?",

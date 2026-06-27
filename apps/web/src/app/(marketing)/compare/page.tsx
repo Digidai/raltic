@@ -21,7 +21,7 @@ import {
 export const metadata: Metadata = marketingMetadata({
   title: "Raltic Compared: ChatGPT for Work, Cursor & Slack AI",
   description:
-    "How Raltic compares to ChatGPT for Work, Cursor / Copilot, and Slack + AI bots. Honest side-by-side breakdowns of where each tool stops and where an AI workflow room fits.",
+    "How Raltic compares to ChatGPT for Work, Cursor / Copilot, and Slack AI — honest breakdowns of where each tool stops and where a workflow room fits.",
   path: "/compare",
   keywords: [
     "AI workflow platform comparison",

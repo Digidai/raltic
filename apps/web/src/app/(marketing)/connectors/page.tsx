@@ -7,6 +7,7 @@ import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
 import { SectionHeader } from "@/components/marketing/section-header";
 import { JsonLdScript } from "@/components/marketing/json-ld";
+import { Breadcrumbs } from "@/components/marketing/breadcrumbs";
 import { breadcrumbJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from "@/lib/seo";
 
 /**
@@ -22,7 +23,7 @@ import { breadcrumbJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from 
 export const metadata: Metadata = marketingMetadata({
   title: "Connectors: GitHub, Linear & Notion for AI Agents",
   description:
-    "Give your agents scoped access to GitHub, Linear, and Notion. Store a PAT once, grant per-agent. Tokens are encrypted at rest and never leave Raltic without your agent's request.",
+    "Give your agents scoped access to GitHub, Linear, and Notion. Store a PAT once, grant per-agent, and keep tokens encrypted at rest.",
   path: "/connectors",
   keywords: [
     "AI agent GitHub connector",
@@ -32,7 +33,7 @@ export const metadata: Metadata = marketingMetadata({
   ],
 });
 
-export default function ConnectorsPage() {
+export default function ConnectorsPage(): React.ReactElement {
   return (
     <>
       <JsonLdScript
@@ -50,9 +51,10 @@ export default function ConnectorsPage() {
         ])}
       />
       <Card render={<section className="border-b border-black/[0.07] bg-[#fafaf8] pt-32 pb-20 sm:pt-40" />} className="w-full rounded-none border-0 shadow-none">
-        <CardPanel className="mx-auto max-w-4xl text-center">
+        <Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Connectors", href: "/connectors" }]} />
+        <CardPanel className="mx-auto mt-8 max-w-4xl text-center">
           <Chip size="sm" variant="soft" color="default" className="gap-2">
-            <Layers className="h-3 w-3 text-[#2563eb]" />
+            <Layers className="h-3 w-3 text-[#2563eb]" aria-hidden="true" />
             Connectors
           </Chip>
           <h1 className="mt-7 text-balance text-5xl font-medium leading-[1.05] tracking-[-0.02em] text-zinc-900 sm:text-6xl">
@@ -70,21 +72,21 @@ export default function ConnectorsPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <ConnectorCard
               href="/connectors/github"
-              icon={<GitBranch className="h-6 w-6" />}
+              icon={<GitBranch className="h-6 w-6" aria-hidden="true" />}
               name="GitHub"
-              blurb="Read repos, PRs, issues, and review comments. Your agents draft PR replies and pull context the way you would from the gh CLI."
+              blurb="Read repos, files, and PR diffs. Agents file issues, comment, and open PRs the way you would from the gh CLI."
             />
             <ConnectorCard
               href="/connectors/linear"
-              icon={<Layers className="h-6 w-6" />}
+              icon={<Layers className="h-6 w-6" aria-hidden="true" />}
               name="Linear"
-              blurb="Read + create issues, comment on threads, manage cycle context. Agents can triage and update tickets without leaving chat."
+              blurb="Read and create issues, comment on threads. Agents triage and file tickets from a workflow room — not edit your existing ones."
             />
             <ConnectorCard
               href="/connectors/notion"
-              icon={<FileText className="h-6 w-6" />}
+              icon={<FileText className="h-6 w-6" aria-hidden="true" />}
               name="Notion"
-              blurb="Read + write pages, query databases, follow backlinks. Agents pull in docs you reference, or draft pages from a discussion."
+              blurb="Search, read, and create pages. Agents pull in the docs you reference, or draft new pages from a discussion."
             />
           </div>
 
@@ -93,7 +95,7 @@ export default function ConnectorsPage() {
               <h2 className="text-lg font-medium text-zinc-900">How it works in practice</h2>
               <ol className="space-y-3 text-sm text-zinc-500">
                 <li><span className="font-semibold text-zinc-900">1.</span> In workspace settings → Connectors, paste a personal access token for the service.</li>
-                <li><span className="font-semibold text-zinc-900">2.</span> In each agent's settings, grant the connector. Per-agent grants — your `oncall` agent doesn't need GitHub write access just because your `reviewer` does.</li>
+                <li><span className="font-semibold text-zinc-900">2.</span> In each agent's settings, grant the connector. Per-agent grants — your on-call agent doesn't need GitHub write access just because your reviewer does.</li>
                 <li><span className="font-semibold text-zinc-900">3.</span> The agent gets tools to call that service. Mention the agent in a workflow room; it uses the token to do the work.</li>
                 <li><span className="font-semibold text-zinc-900">4.</span> Revoke any grant — or any token — instantly. The agent immediately loses access; room history stays intact.</li>
               </ol>
@@ -134,8 +136,8 @@ export default function ConnectorsPage() {
               Wire your stack into workflow rooms.
             </h2>
             <div className="mt-7 flex justify-center">
-              <MarketingButton href="/signup">
-                Start free <ArrowRight className="h-4 w-4" />
+              <MarketingButton href="/signup" ctaTarget="connectors_index_signup">
+                Start free <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </MarketingButton>
             </div>
           </div>

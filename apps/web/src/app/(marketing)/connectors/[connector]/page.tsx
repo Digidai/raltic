@@ -70,6 +70,7 @@ export default async function ConnectorDetailPage({ params }: Props): Promise<Re
               name: `How to connect ${page.name} to a Raltic agent`,
               description: `Grant a Raltic agent scoped ${page.name} access with a per-agent token.`,
               inLanguage: "en-US",
+              url: absoluteUrl(path),
               mainEntityOfPage: { "@id": `${absoluteUrl(path)}#webpage` },
               step: CONNECTOR_SETUP_STEPS.map((step, i) => ({
                 "@type": "HowToStep",
