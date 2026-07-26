@@ -54,9 +54,9 @@ test.describe("landing — workflow-room framing (post-rewrite)", () => {
     await page.goto("/");
     const heroSection = page.locator("section").first();
     await expect(page.getByRole("heading", { name: /Launch your first\s+agent workflow/i })).toBeVisible();
-    await expect(heroSection.getByText(/turns one business process into a workflow room/i)).toBeVisible();
-    await expect(heroSection.getByText(/let a cloud Agent produce the next action/i)).toBeVisible();
-    await expect(heroSection.getByText(/Bring local runtimes later/i)).toBeVisible();
+    await expect(heroSection.getByText(/Turn launch readiness or code review into one accountable room/i)).toBeVisible();
+    await expect(heroSection.getByText(/brief a cloud or local agent/i)).toBeVisible();
+    await expect(heroSection.getByText(/no local install to start/i)).toBeVisible();
   });
 
   test("TwoWaysToRun explicitly names the two workflow paths", async ({ page }) => {

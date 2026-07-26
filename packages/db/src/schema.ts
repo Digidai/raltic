@@ -531,17 +531,58 @@ export const agentFacts = sqliteTable("agent_facts", {
 ]);
 
 // ---------------------------------------------------------------------------
-// Marketing — waitlist + newsletter signups
+// Marketing — first-party funnel, waitlist, and newsletter signups
 // ---------------------------------------------------------------------------
 //
-// Public, anonymous form submissions from the marketing site. Persisted
-// so we can (a) follow up by hand during private beta, (b) export to
-// CSV when a CRM lands, (c) track conversion of UTM-tagged campaigns.
+// Public funnel events and anonymous form submissions from the marketing
+// site. The event path deliberately avoids raw IP, full referrer URLs,
+// emails, or browser fingerprints. A short-lived journey id carried through
+// auth links lets pre-signup activity attach to the verified account.
 //
-// Privacy: no PII beyond what the visitor types into the form. IP and
-// UA stored for spam-classification — TTL via a future scheduled prune
-// job (~90 days is a reasonable default).
+// Form IP and UA are retained separately for spam classification and should
+// be pruned on the form-retention schedule.
 // ---------------------------------------------------------------------------
+
+export const marketingEvents = sqliteTable("marketing_events", {
+  id: text("id").primaryKey(),
+  event: text("event").notNull(),
+  anonymousId: text("anonymous_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  journeyId: text("journey_id").notNull(),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  path: text("path").notNull(),
+  target: text("target"),
+  referrerHost: text("referrer_host"),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmContent: text("utm_content"),
+  utmTerm: text("utm_term"),
+  occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
+}, (t) => [
+  index("idx_marketing_events_event_time").on(t.event, t.occurredAt),
+  index("idx_marketing_events_anonymous_time").on(t.anonymousId, t.occurredAt),
+  index("idx_marketing_events_journey_time").on(t.journeyId, t.occurredAt),
+  index("idx_marketing_events_user_time").on(t.userId, t.occurredAt),
+]);
+
+export const userAttributions = sqliteTable("user_attributions", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  journeyId: text("journey_id").notNull(),
+  anonymousId: text("anonymous_id").notNull(),
+  firstPath: text("first_path").notNull(),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmContent: text("utm_content"),
+  utmTerm: text("utm_term"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().$defaultFn(() => new Date()),
+}, (t) => [
+  index("idx_user_attributions_journey").on(t.journeyId),
+  index("idx_user_attributions_source").on(t.utmSource, t.createdAt),
+]);
 
 export const waitlistSignups = sqliteTable("waitlist_signups", {
   id: text("id").primaryKey(),
@@ -605,5 +646,7 @@ export type Message = typeof messages.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type AgentRun = typeof agentRuns.$inferSelect;
 export type MachineKey = typeof machineKeys.$inferSelect;
+export type MarketingEvent = typeof marketingEvents.$inferSelect;
+export type UserAttribution = typeof userAttributions.$inferSelect;
 export type WaitlistSignup = typeof waitlistSignups.$inferSelect;
 export type NewsletterSignup = typeof newsletterSignups.$inferSelect;

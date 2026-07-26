@@ -2,15 +2,15 @@ import type { Metadata } from "next";
 
 export const SITE_URL = "https://raltic.com";
 export const SITE_NAME = "Raltic";
-export const SITE_TITLE = "Raltic - Launch agent workflows in minutes";
+export const SITE_TITLE = "Raltic - Agent workflow rooms for product teams";
 export const SITE_DESCRIPTION =
-  "Raltic helps AI-native operators start cloud agent workflow rooms, review the next action, and keep approvals and memory visible before adding local runtimes.";
-export const SITE_LAST_MODIFIED = new Date("2026-06-19T00:00:00.000Z");
+  "Raltic gives AI-native product and engineering teams one room to brief cloud or local agents, review proof, approve decisions, and keep the outcome searchable.";
+export const SITE_LAST_MODIFIED = new Date("2026-07-26T00:00:00.000Z");
 export const SITE_PUBLISHED_AT = new Date("2026-06-01T00:00:00.000Z");
 // Freshness date for the SEO/GEO content batch (comparison, integration,
 // glossary pages). Bump this when those pages get a real content update —
 // it's the `dateModified` signal search + AI engines read.
-export const SITE_CONTENT_UPDATED = new Date("2026-06-27T00:00:00.000Z");
+export const SITE_CONTENT_UPDATED = new Date("2026-07-26T00:00:00.000Z");
 
 function toIso(value: string | Date | undefined, fallback: Date): string {
   if (!value) return fallback.toISOString();
@@ -144,7 +144,7 @@ export function softwareApplicationJsonLd(): Record<string, unknown> {
       "Verified Claude Code and OpenAI Codex bridge runtimes",
       "Cloud agents that run with zero local install",
       "Human approval gates before agent output reaches customers",
-      "Local-first execution that keeps source code and provider keys on your machine",
+      "Bridge runtimes read repositories locally while Raltic receives only posted messages, artifacts, and run status",
       "GitHub, Linear, and Notion connectors with per-agent grants",
     ],
     offers: {

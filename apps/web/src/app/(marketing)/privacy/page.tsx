@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/heroui-pro/alert";
 import { MarketingFooter } from "@/components/marketing/footer";
@@ -20,11 +19,11 @@ import { MarketingFooter } from "@/components/marketing/footer";
  */
 export const metadata: Metadata = {
   title: "Privacy Policy — Raltic",
-  description: "How Raltic handles your data. Local-first execution, no provider keys, plain disclosure.",
+  description: "How Raltic handles account, workspace, bridge-runtime, connector, and first-party analytics data during private beta.",
   alternates: { canonical: "https://raltic.com/privacy" },
 };
 
-const LAST_UPDATED = "May 23, 2026";
+const LAST_UPDATED = "July 26, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -53,16 +52,16 @@ export default function PrivacyPage() {
             <li><B>Agent configuration</B>: agent name, system prompt, runtime selection (Claude/Codex/OpenClaw/Hermes/cloud), model choice. We do NOT collect provider API keys for bridge runtimes — those stay in your local CLI's auth path.</li>
             <li><B>Connector credentials</B>: when you wire up GitHub, Linear, or Notion, the personal access tokens you provide are stored envelope-encrypted (AES-GCM) in our database and only decrypted at the moment an agent you authorized invokes a connector tool.</li>
             <li><B>Runtime keys + bridge metadata</B>: when you run our bridge daemon, we issue a per-computer runtime key (revocable instantly). We see the hostname, fingerprint, and detected runtimes you reported.</li>
-            <li><B>Marketing events</B>: when you visit our public pages, we record path + UTM parameters via <Link className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="/api/marketing/event">/api/marketing/event</Link> and a first-party <Code>ral_utm</Code> cookie (30-day, SameSite=Lax). No cross-site tracking. Cloudflare Web Analytics tracks aggregate page-view counts.</li>
+            <li><B>Marketing events</B>: when you visit public pages or move through the first-workflow path, we record the page path, event name, optional CTA/workflow target, referring hostname, and UTM parameters via <Code>/api/marketing/event</Code>. Random first-party anonymous, session, and 30-day journey IDs let us measure conversion without storing the full referrer URL, raw IP address, email, or a browser fingerprint in the analytics table. After sign-in, the journey can be associated with your Raltic account.</li>
             <li><B>Operational logs</B>: request paths, status codes, error stacks. No raw request bodies are logged.</li>
           </UL>
 
           <H2>3. What we don't collect</H2>
           <UL>
-            <li>Your source code, repository contents, or local files — bridge runtimes read these on YOUR machine; only the room reply crosses the network.</li>
+            <li>Your repository or local files by default — bridge runtimes read them on your machine. Raltic receives a code excerpt or file only when a user or agent deliberately posts it as a message or artifact. The AI CLI may separately send context to its model provider under that provider&apos;s terms.</li>
             <li>Your AI provider API keys (Anthropic, OpenAI, Google, etc.) — the keys live in your CLI / daemon, not in our database.</li>
             <li>Browser-fingerprinting signals beyond what your browser sends in normal HTTP headers.</li>
-            <li>Third-party analytics scripts. We don't include Google Analytics, Segment, Mixpanel, Sentry-Pageview, etc.</li>
+            <li>Third-party behavioral analytics scripts. We don't include Google Analytics, Segment, Mixpanel, or equivalent cross-site trackers.</li>
           </UL>
 
           <H2>4. How we use what we collect</H2>
@@ -90,6 +89,7 @@ export default function PrivacyPage() {
             <li>Connector tokens are envelope-encrypted at rest.</li>
             <li>Transport between your browser and Raltic uses HTTPS + WSS only.</li>
             <li>We retain your messages and account data until you delete them or close your account. Account deletion within 30 days of request; ask via <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>.</li>
+            <li>First-party marketing events are retained for 180 days. Network metadata used to classify marketing-form spam is removed after 90 days; the form submission remains until it is resolved or deleted.</li>
             <li>Operational logs are retained for ~14 days for incident review.</li>
           </UL>
 
@@ -123,6 +123,9 @@ export default function PrivacyPage() {
             <li><Code>ral_utm</Code> — first-touch attribution; 30 days; first-party only.</li>
             <li>Cloudflare may set its own <Code>__cf_*</Code> cookies for bot mitigation.</li>
           </UL>
+          <P>
+            Raltic also stores random first-party analytics identifiers in local or session storage. They expire or rotate with the acquisition journey and do not contain account details.
+          </P>
 
           <H2>10. Children</H2>
           <P>The Service is not directed to children under 16. We don't knowingly collect data from them. If you believe a child has signed up, email us and we'll delete.</P>

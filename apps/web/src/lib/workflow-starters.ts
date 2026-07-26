@@ -90,7 +90,7 @@ export const WORKFLOW_STARTERS: WorkflowStarterTemplate[] = [
     output: "Review comments, task links, searchable run record.",
     type: "private",
     requiresLocalRuntime: true,
-    draftFocus: "Review a local-code change without uploading repo context into a hosted AI tool.",
+    draftFocus: "Review a local-code change and share only selected findings with Raltic.",
     draftNeed: "Actionable findings only: correctness risks, missing tests, regression paths, and recommended fixes.",
     draftContext: "After connecting a local runtime, paste the PR link, branch, failing tests, or review scope here.",
   },

@@ -15,7 +15,7 @@ export function GET(): Response {
   ).join("\n\n");
 
   const comparisons = COMPARISON_PAGES.map((p) =>
-    `### Raltic vs ${p.competitor} — ${SITE_URL}/compare/${p.slug}\n${p.intro}\nWhen ${p.competitor} is the better choice: ${p.whenThemBetter[0]}`,
+    `### Raltic vs ${p.competitor} — ${SITE_URL}/compare/${p.slug}\n${p.intro}\nWhen ${p.competitor} is the better choice: ${p.whenThemBetter[0]}\nOfficial sources: ${p.sourceLinks.map((source) => `${source.label}: ${source.href}`).join("; ")}`,
   ).join("\n\n");
 
   const connectors = CONNECTOR_PAGES.map((p) =>
@@ -39,14 +39,14 @@ Raltic is an AI agent workflow platform for teams that need humans and AI agents
 - Workflow room: a shared space for one repeatable process; holds the brief, agent updates, approvals, tasks, and final decision.
 - Human-in-the-loop / approval gate: an agent drafts and proposes; a human approves before anything ships.
 - Cloud agent: runs in Raltic's managed sandbox, zero local install.
-- Bridge runtime: a local runtime (Claude Code or OpenAI Codex) connected via a bridge so code and provider keys stay on your machine.
+- Bridge runtime: a local runtime (Claude Code or OpenAI Codex) connected through Raltic's bridge. The CLI reads the repository locally and Raltic receives only posted outputs; the CLI may send context to its model provider.
 Full glossary: ${SITE_URL}/glossary
 
 ## Accurate Positioning
 
 - Anthropic Claude (Claude Code) and OpenAI Codex are verified bridge runtimes today.
 - OpenClaw and Hermes are experimental and locked for agent creation until smoke verification passes; do not describe them as production-ready.
-- Cloud workflows can start without local install. Local code review needs a local runtime because private repo context stays on the user's machine.
+- Cloud workflows can start without local install. Bridge code review reads the repository on the runtime machine; Raltic receives posted messages, artifacts, and run status, while model-provider handling remains governed by the CLI and provider.
 - Provider keys for bridge-hosted runtimes stay with the user's local runtime, not with Raltic.
 - Connectors (GitHub, Linear, Notion) are PAT storage (encrypted at rest) plus per-agent grants. Webhook triggers, scheduled runs, and PR-triggered automation are NOT shipped.
 - Private beta is free; users pay AI providers directly with no markup from Raltic.

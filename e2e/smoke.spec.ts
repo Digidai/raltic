@@ -40,7 +40,7 @@ test.describe("homepage", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("heading", { name: /Launch your first\s+agent workflow/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Start in 3 minutes/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Start a launch workflow/i }).first()).toBeVisible();
   });
 });
 

@@ -1,3 +1,5 @@
+import { trackFunnelEvent } from "@/lib/funnel-analytics";
+
 type ProductEvent =
   | "workflow_starter_match_selected"
   | "workflow_starter_click"
@@ -5,27 +7,10 @@ type ProductEvent =
   | "workflow_room_opened"
   | "workflow_room_created"
   | "workflow_room_joined"
-  | "workflow_starter_draft_used";
+  | "workflow_starter_draft_used"
+  | "workflow_starter_brief_sent"
+  | "workspace_opened";
 
 export function trackProductEvent(event: ProductEvent, target: string): void {
-  if (typeof window === "undefined") return;
-  const body = JSON.stringify({
-    event,
-    path: window.location.pathname,
-    target,
-    referrer: document.referrer || null,
-    ts: Date.now(),
-  });
-  try {
-    const blob = new Blob([body], { type: "application/json" });
-    if (navigator.sendBeacon?.("/api/marketing/event", blob)) return;
-  } catch {
-    // Fall through to fetch below.
-  }
-  void fetch("/api/marketing/event", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body,
-    keepalive: true,
-  }).catch(() => {});
+  trackFunnelEvent(event, { target });
 }

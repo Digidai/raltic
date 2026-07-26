@@ -30,9 +30,6 @@ export const metadata: Metadata = {
   creator: "Raltic",
   publisher: "Raltic",
   category: "productivity",
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
     url: SITE_URL,

@@ -19,6 +19,11 @@ export type WorkflowSeoPage = {
     body: string;
   }>;
   proofPoints: string[];
+  exampleOutput: {
+    title: string;
+    findings: string[];
+    decision: string;
+  };
   faqs: FaqEntry[];
 };
 
@@ -62,6 +67,15 @@ const CONFIG: Record<WorkflowStarterKey, Omit<WorkflowSeoPage, "starter" | "path
       "Follow-up tasks tied to the workflow room where the evidence lives.",
       "A reusable account memory that helps the next renewal conversation start faster.",
     ],
+    exampleOutput: {
+      title: "Renewal risk is medium until sponsor and adoption evidence are confirmed",
+      findings: [
+        "Executive sponsor has not joined either of the last two review notes provided in the brief.",
+        "Two support issues remain open, but their customer impact is not yet quantified.",
+        "Next step: assign an owner to confirm adoption data and the sponsor meeting date.",
+      ],
+      decision: "A human owner approves any customer-facing follow-up after the missing evidence is attached.",
+    },
     faqs: [
       {
         q: "Can Raltic replace a customer success workspace?",
@@ -116,6 +130,15 @@ const CONFIG: Record<WorkflowStarterKey, Omit<WorkflowSeoPage, "starter" | "path
       "Owner mapping for docs, support, GTM, and product blockers.",
       "A decision log that shows why the launch was approved or held.",
     ],
+    exampleOutput: {
+      title: "Hold public launch until docs ownership and rollback proof are confirmed",
+      findings: [
+        "Release notes and the support brief do not have a named owner in the supplied context.",
+        "The rollback path is described but no tested run or result is linked.",
+        "The customer announcement remains blocked until both gaps have evidence.",
+      ],
+      decision: "The launch owner decides hold or ship after docs and rollback evidence are attached.",
+    },
     faqs: [
       {
         q: "Is this a project-management board?",
@@ -170,6 +193,15 @@ const CONFIG: Record<WorkflowStarterKey, Omit<WorkflowSeoPage, "starter" | "path
       "Evidence gaps that tell the team what to research next.",
       "A reusable research memory instead of a one-off AI summary.",
     ],
+    exampleOutput: {
+      title: "Evidence supports a narrow pilot; pricing confidence remains low",
+      findings: [
+        "Three supplied sources support the workflow pain, but only one includes a named buyer.",
+        "No primary source validates willingness to pay at the proposed tier.",
+        "Next research: five buyer interviews and a direct pricing comparison.",
+      ],
+      decision: "The decision owner approves a pilot, not a broad launch, until pricing evidence improves.",
+    },
     faqs: [
       {
         q: "Can Raltic browse the web for research?",
@@ -190,9 +222,9 @@ const CONFIG: Record<WorkflowStarterKey, Omit<WorkflowSeoPage, "starter" | "path
     metaDescription:
       "Use Raltic to run a local AI code review workflow where Claude Code or Codex inspects repo context locally while the team sees findings and tasks.",
     eyebrow: "Engineering workflow",
-    h1: "Local AI code review workflow without uploading repo context.",
+    h1: "Local-runtime AI code review with team-visible findings.",
     intro:
-      "Raltic is an AI agent workflow platform for engineering teams that want code review outcomes visible without turning private repo context into hosted AI chat. Create the workflow room first, connect a verified local runtime such as Claude Code or Codex, then let the team review only actionable findings.",
+      "Raltic is an AI agent workflow platform for engineering teams that want code review outcomes visible beyond one local session. Create the workflow room, connect a verified local runtime such as Claude Code or Codex, and let the team review only the findings and artifacts posted to Raltic. The AI CLI may still send repo context to its model provider under that provider's terms.",
     searchIntent: "Engineering teams searching for a local AI code review workflow with human review and visible run records.",
     audience: "Engineering, devtool teams, security-sensitive repos",
     proofLabel: "findings + missing tests + run record",
@@ -220,14 +252,23 @@ const CONFIG: Record<WorkflowStarterKey, Omit<WorkflowSeoPage, "starter" | "path
       },
     ],
     proofPoints: [
-      "Repo context stays with the bridge-hosted runtime you operate.",
+      "The repository is read by the bridge-hosted runtime you operate.",
       "Only agent messages, artifacts, and run status cross into the workflow room.",
       "Review findings become tasks and searchable team memory.",
     ],
+    exampleOutput: {
+      title: "Two actionable findings; one needs a regression test before merge",
+      findings: [
+        "The authorization path lacks a denial test for a workspace non-member.",
+        "A retry branch can emit the same side effect twice after a timeout.",
+        "The proposed fix is scoped to the handler and one regression test.",
+      ],
+      decision: "A human reviewer accepts, rejects, or downgrades each finding before merge.",
+    },
     faqs: [
       {
         q: "Does Raltic upload my repository for code review?",
-        a: "For bridge-hosted agents, code is read on the machine running the local runtime. Raltic receives the messages, artifacts, and run status the agent chooses to post.",
+        a: "For bridge-hosted agents, code is read on the machine running the local runtime. Raltic receives only the messages, artifacts, and run status posted to the room. The AI CLI may send code or context to its own model provider under that provider's privacy terms.",
       },
       {
         q: "Which local code runtimes are verified?",

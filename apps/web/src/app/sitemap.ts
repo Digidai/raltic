@@ -52,9 +52,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/security`,        lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/privacy`,         lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.4 },
     { url: `${base}/terms`,           lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${base}/signup`,          lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${base}/login`,           lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${base}/forgot-password`, lastModified: SITE_LAST_MODIFIED, changeFrequency: "yearly",  priority: 0.3 },
   ];
 
   return publicPages;

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import {
   ArrowRight, ShieldCheck,
@@ -12,14 +13,35 @@ import { WorkflowMiniMap, WorkflowPreview } from "@/components/marketing/workflo
 import { SignedInRedirect } from "@/components/signed-in-redirect";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { CONNECT_RUNTIME_SIGNUP_HREF } from "@/lib/onboarding-intent";
+import { workflowSignupHref } from "@/lib/workflow-intent";
 import {
   faqPageJsonLd,
   jsonLdGraph,
   SITE_DESCRIPTION,
   SITE_TITLE,
+  marketingMetadata,
   webPageJsonLd,
   type FaqEntry,
 } from "@/lib/seo";
+
+const baseMetadata = marketingMetadata({
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  path: "/",
+  keywords: [
+    "AI product workflow",
+    "AI engineering workflow",
+    "agent workflow room",
+    "human approval AI agents",
+    "Claude Code team workflow",
+    "Codex team workflow",
+  ],
+});
+
+export const metadata: Metadata = {
+  ...baseMetadata,
+  title: { absolute: SITE_TITLE },
+};
 
 // ───────────────────────────────────────────────────────────────────────────
 // Marketing landing page.
@@ -145,12 +167,12 @@ function Hero(): React.ReactElement {
 
       <div className="relative mx-auto max-w-6xl px-6 pt-36 pb-24 sm:pt-44">
         <div className="mx-auto max-w-3xl text-center">
-          {/* Eyebrow — leads with the buyer. Keeps "Private beta · Free". */}
-          <span className="inline-flex items-center gap-2 rounded-full border border-black/[0.08] bg-white px-3.5 py-1.5 text-[13px] text-zinc-600 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          {/* Buyer first, with bounded wrapping on narrow phones. */}
+          <span className="inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-black/[0.08] bg-white px-3.5 py-1.5 text-center text-[13px] text-zinc-600 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }} aria-hidden="true" />
-            Built for <span className="font-medium text-zinc-900">AI-native operators</span>
-            <span className="mx-0.5 text-zinc-300">·</span>
-            Private beta · Free
+            <span>Built for <span className="font-medium text-zinc-900">AI-native product + engineering teams</span></span>
+            <span className="text-zinc-300" aria-hidden="true">·</span>
+            <span>Private beta · Free</span>
           </span>
 
           <h1 className={`${DISPLAY} mt-8 text-balance text-5xl leading-[1.04] text-zinc-900 sm:text-7xl`}>
@@ -159,9 +181,9 @@ function Hero(): React.ReactElement {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-balance text-base leading-relaxed text-zinc-600 sm:text-lg">
-            Raltic turns one business process into a workflow room: send the brief,
-            let a cloud Agent produce the next action, keep approval and memory visible.
-            Bring local runtimes later when private code or keys need to stay on your machine.
+            Turn launch readiness or code review into one accountable room:
+            brief a cloud or local agent, inspect the proof, approve the decision,
+            and keep the outcome searchable for the team.
           </p>
 
           <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -169,7 +191,7 @@ function Hero(): React.ReactElement {
           </div>
 
           <p className="mt-5 text-xs text-zinc-500">
-            No credit card · no local install to start · first workflow in minutes
+            No credit card · no local install to start · every workflow keeps a visible approval boundary
           </p>
         </div>
 
@@ -207,14 +229,14 @@ function TwoWaysToRun(): React.ReactElement {
             title="Run a workflow"
             label="default"
             body="Start with a cloud runtime when the workflow is low-risk and speed matters."
-            href="/signup"
+            href={workflowSignupHref("launch-readiness")}
             cta="Start a workflow"
             accent
           />
           <RuntimePath
             title="Bring your agents"
             label="local bridge"
-            body="Connect Claude Code or Codex when code, keys, or customer context should stay in your environment. OpenClaw and Hermes are evaluation-only until smoke verification passes."
+            body="Connect Claude Code or Codex when repository access and provider credentials should remain with a runtime you operate. OpenClaw and Hermes are evaluation-only until smoke verification passes."
             href={CONNECT_RUNTIME_SIGNUP_HREF}
             cta="Connect a local runtime"
           />
@@ -330,7 +352,7 @@ function Architecture(): React.ReactElement {
             tag="local"
             footer={
               <div className="mt-5 flex items-center justify-between rounded-xl border border-black/[0.07] bg-[#fafaf8] px-3 py-2">
-                <span className="text-[12px] font-medium text-zinc-700">Installs in under a minute</span>
+                <span className="text-[12px] font-medium text-zinc-700">Local bridge runtime</span>
                 <span className="font-mono text-[10.5px] uppercase tracking-wider text-zinc-500">
                   macOS · Windows · Linux
                 </span>
@@ -373,7 +395,7 @@ function Architecture(): React.ReactElement {
               <p className="font-medium text-zinc-900">What stays out of the workspace</p>
               <ul className="mt-2 space-y-1.5 text-zinc-600">
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Source code, diffs, or local files for bridge-hosted agents
+                  <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Repository files unless a user or agent deliberately posts them
                 </li>
                 <li className="flex items-start gap-2">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" /> Claude or OpenAI keys used by your local runtime
@@ -424,20 +446,11 @@ function UseCases(): React.ReactElement {
     <section id="use-cases" className="bg-[#faf9f6] px-6 py-24 sm:py-28">
       <div className="mx-auto max-w-6xl">
         <SectionHead
-          eyebrow="GTM-ready workflows"
-          title={<>Start with one workflow your team <span className="text-zinc-500">already owns</span>.</>}
-          description="The first customer should not buy an abstract workspace. They should recognize a process they run every week."
+          eyebrow="Product and engineering workflows"
+          title={<>Start with one decision your team <span className="text-zinc-500">already owns</span>.</>}
+          description="Launch review and local code review are the primary paths. Research and customer-risk rooms remain available when the same approval pattern repeats."
         />
         <div className="mt-14 grid gap-4 lg:grid-cols-4">
-          <WorkflowUseCase
-            tag="revenue"
-            href="/workflows/customer-risk"
-            title="Customer-risk brief"
-            input="Call notes + support context"
-            agent="research + ops"
-            gate="approve customer copy"
-            output="risk brief + follow-up tasks"
-          />
           <WorkflowUseCase
             tag="launch"
             href="/workflows/launch-readiness"
@@ -446,6 +459,15 @@ function UseCases(): React.ReactElement {
             agent="reviewer + writer"
             gate="block public send"
             output="decision log + checklist"
+          />
+          <WorkflowUseCase
+            tag="engineering"
+            href="/workflows/code-review"
+            title="Local code review"
+            input="PR diff on your machine"
+            agent="bridge-hosted reviewer"
+            gate="accept real issues only"
+            output="comments + task links"
           />
           <WorkflowUseCase
             tag="research"
@@ -457,13 +479,13 @@ function UseCases(): React.ReactElement {
             output="decision memo + evidence gaps"
           />
           <WorkflowUseCase
-            tag="engineering"
-            href="/workflows/code-review"
-            title="Local code review"
-            input="PR diff on your machine"
-            agent="bridge-hosted reviewer"
-            gate="accept real issues only"
-            output="comments + task links"
+            tag="customer success"
+            href="/workflows/customer-risk"
+            title="Customer-risk brief"
+            input="Call notes + support context"
+            agent="research + ops"
+            gate="approve customer copy"
+            output="risk brief + follow-up tasks"
           />
         </div>
       </div>
@@ -531,21 +553,18 @@ function Comparison(): React.ReactElement {
               <thead>
                 <tr className="border-b border-black/[0.07] text-[11px] uppercase tracking-wider text-zinc-500">
                   <th scope="col" className="px-6 py-4 font-medium">What you actually need</th>
-                  <th scope="col" className="px-4 py-4 text-center font-medium">ChatGPT for Work</th>
+                  <th scope="col" className="px-4 py-4 text-center font-medium">ChatGPT Business</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Cursor / Copilot</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium">Slack + AI bots</th>
                   <th scope="col" className="px-4 py-4 text-center font-medium" style={{ backgroundColor: "#eef4ff", color: "#2563eb" }}>Raltic</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/[0.06] text-zinc-600">
-                <ComparisonRow label="Workflow outputs reach the whole team" vals={["no", "no", "partial", "yes"]} />
-                <ComparisonRow label="Mix multiple AI providers in one place" vals={["no", "no", "partial", "yes"]} />
-                <ComparisonRow label="Your source code never uploads" vals={["no", "partial", "no", "yes"]} />
-                <ComparisonRow label="Multiple specialist agents in one workflow" vals={["no", "no", "no", "yes"]} />
-                <ComparisonRow label="Off-board a teammate in one click" vals={["no", "no", "no", "yes"]} />
-                <ComparisonRow label="No per-seat markup on the AI you already pay for" vals={["no", "no", "no", "yes"]} />
-                <ComparisonRow label="Evaluate local daemon integrations (OpenClaw / Hermes)" vals={["no", "no", "no", "partial"]} />
-                <ComparisonRow label="Provider keys never leave your machine" vals={["no", "partial", "no", "yes"]} />
+                <ComparisonRow label="Workflow room with task and run evidence" vals={["partial", "no", "partial", "yes"]} />
+                <ComparisonRow label="Claude and Codex runtimes in one workspace" vals={["no", "partial", "partial", "yes"]} />
+                <ComparisonRow label="Repo read locally; selected outputs sent to Raltic" vals={["no", "no", "partial", "yes"]} />
+                <ComparisonRow label="Human approval boundary attached to the workflow" vals={["partial", "partial", "partial", "yes"]} />
+                <ComparisonRow label="Team can inspect run status and output together" vals={["partial", "no", "partial", "yes"]} />
               </tbody>
             </table>
           </div>
@@ -556,8 +575,8 @@ function Comparison(): React.ReactElement {
           </Link>
         </div>
         <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-zinc-500">
-          Comparisons reflect each product&apos;s mainstream offering. We&apos;d love
-          to be wrong on any cell — tell us at <span className="text-zinc-800">hello@raltic.com</span> and we&apos;ll update.
+          Capability fit, not a feature score. Reviewed against mainstream public offerings on July 26, 2026.
+          Detailed pages explain when the other product is the better choice.
         </p>
       </div>
     </section>
@@ -707,6 +726,20 @@ function Pricing(): React.ReactElement {
             ]}
           />
         </div>
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href={workflowSignupHref("launch-readiness")}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-zinc-950 px-5 text-sm font-medium text-white hover:bg-zinc-800"
+          >
+            Start launch readiness <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <Link
+            href="/teams#waitlist"
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-black/10 bg-white px-5 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+          >
+            Apply as a design partner
+          </Link>
+        </div>
       </div>
     </section>
   );
@@ -774,7 +807,7 @@ const FAQS: FaqEntry[] = [
   },
   {
     q: "Where does our code go?",
-    a: "For bridge-hosted agents, code is read on the same machine as your repo, using your existing AI CLI. Raltic receives the messages, artifacts, and run status the agent chooses to post into the workflow room.",
+    a: "For bridge-hosted agents, code is read on the same machine as your repo, using your existing AI CLI. Raltic receives the messages, artifacts, and run status posted into the workflow room. The AI CLI may send code or context to its model provider under that provider's terms.",
   },
   {
     q: "What if my computer is asleep?",
@@ -786,7 +819,7 @@ const FAQS: FaqEntry[] = [
   },
   {
     q: "What does it cost once we're past beta?",
-    a: "Less than what you're paying today across private AI tools and workflow coordination overhead — that's the design intent. Paid plans land with public pricing, and you'll always pay AI providers directly without us marking up Claude or OpenAI.",
+    a: "Pricing is not set yet. We will publish paid-plan pricing before billing starts, and bridge-runtime AI usage will continue to be billed directly by your chosen provider without a Raltic markup.",
   },
 ];
 

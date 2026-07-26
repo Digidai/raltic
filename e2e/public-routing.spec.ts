@@ -79,13 +79,23 @@ test.describe("public routing and crawler files", () => {
     expect(res.status()).toBe(200);
     const body = await res.text();
 
-    for (const path of ["/", "/runtimes", "/runtimes/claude", "/runtimes/codex", "/indie", "/connectors", "/security", "/privacy", "/terms", "/signup", "/login", "/forgot-password"]) {
+    for (const path of ["/", "/runtimes", "/runtimes/claude", "/runtimes/codex", "/indie", "/connectors", "/security", "/privacy", "/terms"]) {
       expect(body, `sitemap should include ${path}`).toContain(`https://raltic.com${path === "/" ? "/" : path}`);
     }
-    for (const path of ["/teams", "/runtimes/openclaw", "/runtimes/hermes", "/s/"]) {
+    for (const path of ["/teams", "/runtimes/openclaw", "/runtimes/hermes", "/signup", "/login", "/forgot-password", "/s/"]) {
       expect(body, `sitemap should exclude ${path}`).not.toContain(`https://raltic.com${path}`);
     }
   });
+
+  for (const path of ["/signup", "/login", "/forgot-password", "/verify-email"]) {
+    test(`${path} is usable but noindex`, async ({ page }) => {
+      const response = await page.goto(path, { waitUntil: "domcontentloaded" });
+      expect(response?.status()).toBe(200);
+      const robots = await page.locator("meta[name='robots']").getAttribute("content");
+      expect(robots).toContain("noindex");
+      expect(robots).toContain("nofollow");
+    });
+  }
 
   test("robots disallows non-indexable public and private surfaces", async ({ request }) => {
     const res = await getWithRetry(request, "/robots.txt");

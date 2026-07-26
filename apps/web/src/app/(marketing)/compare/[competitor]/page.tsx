@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type React from "react";
 import { notFound } from "next/navigation";
-import { ArrowRight, CheckCircle2, Minus, X, Scale, ThumbsUp } from "lucide-react";
+import { ArrowRight, CheckCircle2, ExternalLink, Minus, X, Scale, ThumbsUp } from "lucide-react";
 import { JsonLdScript } from "@/components/marketing/json-ld";
 import { MarketingButton } from "@/components/marketing/marketing-button";
 import { MarketingFooter } from "@/components/marketing/footer";
@@ -81,7 +81,7 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
             {page.intro}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <MarketingButton href="/signup" ctaTarget={`compare_${page.slug}_signup`}>
+            <MarketingButton href="/signup?workflow=launch-readiness" ctaTarget={`compare_${page.slug}_signup`}>
               Start free beta <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </MarketingButton>
             <MarketingButton href="/compare" variant="secondary" ctaTarget={`compare_${page.slug}_browse`}>
@@ -123,8 +123,22 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
             </div>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-zinc-500">
-            Comparisons reflect each product&apos;s mainstream offering. We&apos;d love to be wrong on any cell — tell us at <span className="text-zinc-800">hello@raltic.com</span> and we&apos;ll update.
+            Capability-fit review updated July 26, 2026. &quot;Partial&quot; means the capability exists but is not the product&apos;s primary workflow model. Tell us at <span className="text-zinc-800">hello@raltic.com</span> if a source has changed.
           </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
+            {page.sourceLinks.map((source) => (
+              <a
+                key={source.href}
+                href={source.href}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-zinc-600 underline underline-offset-4 hover:text-zinc-900"
+              >
+                {source.label}
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -133,7 +147,7 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-start">
           <div>
             <h2 className="text-2xl font-medium tracking-[-0.01em] text-zinc-900 sm:text-3xl">
-              Where {page.competitor} stops.
+              Different center of gravity.
             </h2>
             <div className="mt-6 grid gap-3">
               {page.whereTheyStop.map((point) => (
@@ -185,7 +199,7 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
               Start with one workflow your team already runs. Free during private beta — bring your own Claude or OpenAI subscription.
             </p>
             <div className="mt-7 flex justify-center">
-              <MarketingButton href="/signup" ctaTarget={`compare_${page.slug}_footer_signup`}>
+              <MarketingButton href="/signup?workflow=launch-readiness" ctaTarget={`compare_${page.slug}_footer_signup`}>
                 Start free beta <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </MarketingButton>
             </div>

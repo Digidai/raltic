@@ -26,6 +26,8 @@ import type { Env } from "./lib/env";
 
 const BACKUP_BUCKET = "raltic-backups"; // matches wrangler.jsonc R2 binding name
 const RETENTION_DAYS = 30;
+const MARKETING_EVENT_RETENTION_DAYS = 180;
+const MARKETING_FORM_NETWORK_RETENTION_DAYS = 90;
 
 interface ExportPollState {
   filename?: string;
@@ -97,6 +99,23 @@ export async function scheduled(
           try { await Sentry.flush(2000); } catch { /* best-effort */ }
         }),
       );
+      ctx.waitUntil(
+        runMarketingDataRetention(env).catch(async (err) => {
+          Sentry.captureException(err, {
+            tags: { source: "scheduled", cron: event.cron, job: "marketing-data-retention" },
+          });
+          // eslint-disable-next-line no-console
+          console.error(JSON.stringify({
+            ts: new Date().toISOString(),
+            level: "error",
+            msg: "scheduled.job_failed",
+            cron: event.cron,
+            job: "marketing-data-retention",
+            error: err instanceof Error ? { name: err.name, message: err.message } : String(err),
+          }));
+          try { await Sentry.flush(2000); } catch { /* best-effort */ }
+        }),
+      );
       break;
     case "*/5 * * * *":
       // Every 5 minutes — incremental Vectorize backfill for any
@@ -151,6 +170,45 @@ export async function scheduled(
         cron: event.cron,
       }));
   }
+}
+
+export async function runMarketingDataRetention(
+  env: Env,
+  opts?: { now?: Date },
+): Promise<{ deletedEvents: number; scrubbedWaitlist: number; scrubbedNewsletter: number }> {
+  const now = opts?.now ?? new Date();
+  const eventCutoff = now.getTime() - MARKETING_EVENT_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const formCutoff = now.getTime() - MARKETING_FORM_NETWORK_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+  const [eventsResult, waitlistResult, newsletterResult] = await env.DB.batch([
+    env.DB.prepare("DELETE FROM marketing_events WHERE occurred_at < ?").bind(eventCutoff),
+    env.DB.prepare(`
+      UPDATE waitlist_signups
+      SET ip = NULL, user_agent = NULL
+      WHERE created_at < ? AND (ip IS NOT NULL OR user_agent IS NOT NULL)
+    `).bind(formCutoff),
+    env.DB.prepare(`
+      UPDATE newsletter_signups
+      SET ip = NULL, user_agent = NULL
+      WHERE created_at < ? AND (ip IS NOT NULL OR user_agent IS NOT NULL)
+    `).bind(formCutoff),
+  ]);
+
+  const result = {
+    deletedEvents: eventsResult.meta.changes ?? 0,
+    scrubbedWaitlist: waitlistResult.meta.changes ?? 0,
+    scrubbedNewsletter: newsletterResult.meta.changes ?? 0,
+  };
+  // eslint-disable-next-line no-console
+  console.log(JSON.stringify({
+    ts: now.toISOString(),
+    level: "info",
+    msg: "marketing_data_retention.done",
+    event_cutoff: new Date(eventCutoff).toISOString(),
+    form_network_cutoff: new Date(formCutoff).toISOString(),
+    ...result,
+  }));
+  return result;
 }
 
 // ─── Agent run stale-state sweeper ──────────────────────────────────────────

@@ -158,12 +158,12 @@ test.describe("GTM first-value path", () => {
 
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /Launch your first\s+agent workflow/i })).toBeVisible();
-    await expect(page.getByText(/turns one business process into a workflow room/i)).toBeVisible();
-    await expect(page.locator("section").first().getByRole("link", { name: /^Start in 3 minutes$/ })).toHaveAttribute("href", "/signup");
+    await expect(page.getByText(/Turn launch readiness or code review into one accountable room/i)).toBeVisible();
+    await expect(page.locator("section").first().getByRole("link", { name: /^Start a launch workflow$/ })).toHaveAttribute("href", "/signup?workflow=launch-readiness");
 
     await setupMockWorkspace(page, context, { tasks, agentRuns, inboxResponse });
 
-    await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+    await page.goto("/s/demo?workflow=launch-readiness", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Pick one workflow and make the agent work visible." })).toBeVisible();
     await expect(page.getByText("1. Pick", { exact: true })).toBeVisible();
     await expect(page.getByText("2. Send", { exact: true })).toBeVisible();

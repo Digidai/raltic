@@ -18,6 +18,20 @@ import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Card, CardHeader, CardTitle, CardDescription, CardPanel, CardFooter } from "@/components/heroui-pro/card";
 import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
+import {
+  addTrackingJourneyToPath,
+  getOrCreateJourneyId,
+  persistJourneyId,
+  trackFunnelEvent,
+  trackingJourneyFromSearch,
+} from "@/lib/funnel-analytics";
+import {
+  addWorkflowStarterIntentToPath,
+  persistWorkflowStarterIntent,
+  readStoredWorkflowStarterIntent,
+  readWorkflowStarterIntentFromSearch,
+  type WorkflowStarterKey,
+} from "@/lib/workflow-intent";
 
 /**
  * Landing page for email verification.
@@ -58,7 +72,17 @@ function VerifyEmailInner() {
   const session = authClient.useSession();
   const nextBasePath = safeNext(sp.get("next")) ?? "/";
   const onboardingIntent = readAllowedOnboardingIntent(sp, nextBasePath);
-  const nextPath = addOnboardingIntentToPath(nextBasePath, onboardingIntent);
+  const queryWorkflowIntent = readWorkflowStarterIntentFromSearch(sp);
+  const queryJourneyId = trackingJourneyFromSearch(sp);
+  const [workflowIntent, setWorkflowIntent] = useState<WorkflowStarterKey | null>(queryWorkflowIntent);
+  const [journeyId, setJourneyId] = useState<string | null>(queryJourneyId);
+  const nextPath = addTrackingJourneyToPath(
+    addWorkflowStarterIntentToPath(
+      addOnboardingIntentToPath(nextBasePath, onboardingIntent),
+      workflowIntent,
+    ),
+    journeyId,
+  );
 
   // ?error=<code> set by better-auth on failure paths. Common codes:
   //   INVALID_TOKEN | TOKEN_EXPIRED | INVALID_EMAIL | INTERNAL_ERROR
@@ -71,6 +95,7 @@ function VerifyEmailInner() {
   const emailFromUrl = sp.get("email") ?? "";
 
   const redirected = useRef(false);
+  const verificationTracked = useRef(false);
   useEffect(() => { redirected.current = false; }, [nextPath]);
 
   useEffect(() => {
@@ -80,6 +105,18 @@ function VerifyEmailInner() {
       clearStoredOnboardingIntent();
     }
   }, [onboardingIntent]);
+
+  useEffect(() => {
+    const resolvedWorkflow = queryWorkflowIntent ?? readStoredWorkflowStarterIntent();
+    if (resolvedWorkflow) {
+      persistWorkflowStarterIntent(resolvedWorkflow);
+      setWorkflowIntent(resolvedWorkflow);
+    }
+    const resolvedJourney = queryJourneyId
+      ? persistJourneyId(queryJourneyId)
+      : getOrCreateJourneyId();
+    setJourneyId(resolvedJourney);
+  }, [queryJourneyId, queryWorkflowIntent]);
 
   // Notify any signup tab (in any browser-window/tab on the same origin)
   // that this email is now verified. The signup tab will listen + reload
@@ -103,10 +140,17 @@ function VerifyEmailInner() {
 
   useEffect(() => {
     if (session.data?.user && !redirected.current) {
+      if (!verificationTracked.current) {
+        verificationTracked.current = true;
+        trackFunnelEvent("email_verified", {
+          target: workflowIntent ?? "no-workflow-selected",
+          journeyId,
+        });
+      }
       redirected.current = true;
       router.replace(nextPath);
     }
-  }, [session.data?.user, nextPath, router]);
+  }, [journeyId, nextPath, router, session.data?.user, workflowIntent]);
 
   // Error UI takes precedence over loading/auth state. The user clicked
   // a bad link; spinning forever or bouncing to login both hide the
@@ -118,6 +162,8 @@ function VerifyEmailInner() {
         emailFromUrl={emailFromUrl}
         nextBasePath={nextBasePath}
         onboardingIntent={onboardingIntent}
+        workflowIntent={workflowIntent}
+        journeyId={journeyId}
       />
     );
   }
@@ -156,12 +202,14 @@ function VerifyEmailInner() {
 }
 
 function ErrorPanel({
-  errorCode, emailFromUrl, nextBasePath, onboardingIntent,
+  errorCode, emailFromUrl, nextBasePath, onboardingIntent, workflowIntent, journeyId,
 }: {
   errorCode: string;
   emailFromUrl: string;
   nextBasePath: string;
   onboardingIntent: OnboardingIntent | null;
+  workflowIntent: WorkflowStarterKey | null;
+  journeyId: string | null;
 }) {
   const [email, setEmail] = useState(emailFromUrl);
   const [resending, setResending] = useState(false);
@@ -182,6 +230,8 @@ function ErrorPanel({
         callbackURL: buildAuthPath("/verify-email", {
           next: nextBasePath !== "/" ? nextBasePath : null,
           intent: onboardingIntent,
+          workflow: workflowIntent,
+          journey: journeyId,
         }),
       });
       if (error) {
@@ -258,6 +308,8 @@ function ErrorPanel({
             href={buildAuthPath("/login", {
               next: nextBasePath !== "/" ? nextBasePath : null,
               intent: onboardingIntent,
+              workflow: workflowIntent,
+              journey: journeyId,
             })}
             className="underline hover:text-foreground"
           >

@@ -32,7 +32,7 @@ ${workflowLinks}
 - [Runtimes](${SITE_URL}/runtimes): verified Claude Code and OpenAI Codex bridge runtimes, plus cloud agents.
 - [Connectors](${SITE_URL}/connectors): GitHub, Linear, and Notion connector overview.
 ${connectorLinks}
-- [Comparisons](${SITE_URL}/compare): how Raltic compares to ChatGPT for Work, Cursor, and Slack AI.
+- [Comparisons](${SITE_URL}/compare): evidence-linked comparisons with ChatGPT Business, Cursor, and Slack AI.
 ${comparisonLinks}
 - [Glossary](${SITE_URL}/glossary): definitions for agent workflow, workflow room, human-in-the-loop, cloud agent, and bridge runtime.
 - [Security](${SITE_URL}/security): what Raltic sees, what stays local, and current limitations.
@@ -47,7 +47,7 @@ ${comparisonLinks}
 - Raltic is not generic team chat. It is a workflow room for agent-assisted work.
 - Claude Code and OpenAI Codex are verified bridge runtimes.
 - OpenClaw and Hermes are experimental and should not be described as production-ready until their smoke verification passes.
-- Cloud workflows can start without local install. Local code review requires a local runtime because private repo context should stay on the user's machine.
+- Cloud workflows can start without local install. In bridge mode the local CLI reads the repository and Raltic receives only posted messages, artifacts, and run status; the CLI's model provider may receive context under its own terms.
 - Provider keys for bridge-hosted runtimes stay with the user's local runtime, not with Raltic.
 
 ## AI Retrieval And Crawler Policy

@@ -45,15 +45,27 @@ function resolveCliEntry():
   | { kind: "ts"; entry: string; tsxPath: string }
   | null {
   const require = createRequire(import.meta.url);
+  let cliRoot: string | null = null;
   try {
     const pkgPath = require.resolve("@raltic/cli/package.json");
+    cliRoot = dirname(pkgPath);
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { bin?: string | Record<string, string> };
     const binSpec = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.raltic;
     if (binSpec) {
-      const entry = resolve(dirname(pkgPath), binSpec);
+      const entry = resolve(cliRoot, binSpec);
       if (existsSync(entry)) return { kind: "compiled", entry };
     }
   } catch { /* fall through */ }
+  // A workspace install intentionally has no compiled CLI yet. In that
+  // case run the CLI source with the tsx dependency owned by @raltic/cli,
+  // not a hoisted copy that may or may not exist beside bridge-core.
+  if (cliRoot) {
+    const cliEntry = resolve(cliRoot, "src", "index.ts");
+    const tsxPath = resolve(cliRoot, "node_modules", "tsx", "dist", "cli.mjs");
+    if (existsSync(cliEntry) && existsSync(tsxPath)) {
+      return { kind: "ts", entry: cliEntry, tsxPath };
+    }
+  }
   try {
     const bridgeRoot = resolve(__dirname, "..");
     const cliEntry = resolve(bridgeRoot, "..", "..", "packages", "cli", "src", "index.ts");

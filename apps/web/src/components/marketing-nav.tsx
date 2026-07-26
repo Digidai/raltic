@@ -14,6 +14,9 @@ import { Chip } from "@/components/heroui-pro/chip";
 import { MarketingButton } from "@/components/marketing/marketing-button";
 import { cn } from "@/lib/utils";
 import { RalticLogo } from "./raltic-logo";
+import { workflowSignupHref } from "@/lib/workflow-intent";
+
+const PRIMARY_SIGNUP_HREF = workflowSignupHref("launch-readiness");
 
 /**
  * Marketing site sticky nav — light (ando.so) treatment across the whole
@@ -70,21 +73,20 @@ export function MarketingNav() {
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           <Link href="/workflows" className={linkClass}>Workflows</Link>
           <Link href="/runtimes" className={linkClass}>Runtimes</Link>
-          <Link href="/connectors" className={linkClass}>Connectors</Link>
           <Link href="/desktop" className={linkClass}>Desktop beta</Link>
           <Link href="/security" className={linkClass}>Security</Link>
           {/* Audience dropdown — surfaces /indie + /teams without
               crowding the top nav. */}
           <ForDropdown />
           <Link href="/login" className={linkClass}>Sign in</Link>
-          <MarketingButton href="/signup" variant="light-nav-primary">
+          <MarketingButton href={PRIMARY_SIGNUP_HREF} variant="light-nav-primary">
             Get started <ArrowRight className="h-3.5 w-3.5" />
           </MarketingButton>
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
           <MobileNavDropdown />
-          <MarketingButton href="/signup" variant="light-nav-primary">
+          <MarketingButton href={PRIMARY_SIGNUP_HREF} variant="light-nav-primary">
             Start
           </MarketingButton>
         </div>
@@ -113,7 +115,6 @@ function MobileNavDropdown() {
       >
         <MobileNavItem href="/workflows" label="Workflows" />
         <MobileNavItem href="/runtimes" label="Runtimes" />
-        <MobileNavItem href="/connectors" label="Connectors" />
         <MobileNavItem href="/desktop" label="Desktop beta" />
         <MobileNavItem href="/security" label="Security" />
         <MobileNavItem href="/indie" label="For indie devs" description="Solo dev / AI tinkerer" />
@@ -133,7 +134,7 @@ function MobileNavDropdown() {
           )}
         />
         <MobileNavItem href="/login" label="Sign in" />
-        <MobileNavItem href="/signup" label="Get started" />
+        <MobileNavItem href={PRIMARY_SIGNUP_HREF} label="Get started" />
       </DropdownMenuContent>
     </DropdownMenu>
   );

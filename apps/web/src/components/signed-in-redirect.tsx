@@ -10,6 +10,11 @@ import {
   readStoredOnboardingIntent,
   workspaceEntryForIntent,
 } from "@/lib/onboarding-intent";
+import {
+  addWorkflowStarterIntentToPath,
+  readStoredWorkflowStarterIntent,
+  readWorkflowStarterIntentFromSearch,
+} from "@/lib/workflow-intent";
 
 /**
  * Mounted at the top of the marketing landing (`/`). For signed-in users,
@@ -55,12 +60,18 @@ export function SignedInRedirect(): null {
           ? readOnboardingIntentFromSearch(new URLSearchParams(window.location.search))
           : null;
         const intent = queryIntent ?? readStoredOnboardingIntent();
-        const target = workspaceEntryForIntent({
+        const search = new URLSearchParams(window.location.search);
+        const workflowIntent = readWorkflowStarterIntentFromSearch(search)
+          ?? readStoredWorkflowStarterIntent();
+        const baseTarget = workspaceEntryForIntent({
           intent,
           defaultSlug: me.defaultServerSlug,
           personalSlug: me.personalServerSlug,
           fallbackSlug: me.servers[0]?.slug,
         });
+        const target = baseTarget
+          ? addWorkflowStarterIntentToPath(baseTarget, workflowIntent)
+          : null;
         if (target) {
           clearStoredOnboardingIntent();
           router.replace(target);

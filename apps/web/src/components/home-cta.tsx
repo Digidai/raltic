@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { api } from "@/lib/api";
 import { MarketingButton } from "@/components/marketing/marketing-button";
+import { workflowSignupHref } from "@/lib/workflow-intent";
 
 /**
  * Auth-aware CTA pair shown in the homepage hero.
  *
- * Not signed in → "Start in 3 minutes"
+ * Not signed in → launch-readiness signup path
  * Signed in    → "Open Raltic" (resolves to first workspace slug)
  */
 export function HomeCta(): React.ReactElement {
+  const signupHref = workflowSignupHref("launch-readiness");
   const { data: session, isPending } = useSession();
   const [hydrated, setHydrated] = useState(false);
   // null = signed in but workspace lookup hasn't resolved yet. Render a
@@ -57,8 +59,8 @@ export function HomeCta(): React.ReactElement {
   // can otherwise hydrate `/signup` into `Open Raltic` and throw.
   if (!hydrated || isPending) {
     return (
-      <MarketingButton href="/signup" variant="light-primary" className={CTA_MIN} ctaTarget="home_first_value">
-        Start in 3 minutes <span aria-hidden="true">→</span>
+      <MarketingButton href={signupHref} variant="light-primary" className={CTA_MIN} ctaTarget="home_first_value">
+        Start a launch workflow <span aria-hidden="true">→</span>
       </MarketingButton>
     );
   }
@@ -84,8 +86,8 @@ export function HomeCta(): React.ReactElement {
   // Primary CTA names the first-value path after signup. Runtime choice
   // is deliberately deferred until the user asks for private local work.
   return (
-    <MarketingButton href="/signup" variant="light-primary" className={CTA_MIN} ctaTarget="home_first_value">
-      Start in 3 minutes <span aria-hidden="true">→</span>
+    <MarketingButton href={signupHref} variant="light-primary" className={CTA_MIN} ctaTarget="home_first_value">
+      Start a launch workflow <span aria-hidden="true">→</span>
     </MarketingButton>
   );
 }

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
+import {
+  trackFunnelEvent,
+  UTM_KEYS,
+  type FunnelEvent,
+  type FunnelUtm,
+} from "@/lib/funnel-analytics";
 
 /**
  * Lightweight marketing tracking.
@@ -8,26 +15,26 @@ import { useEffect } from "react";
  * Capabilities:
  *   1. UTM persistence — reads `utm_*` query params on landing, drops
  *      them in a first-party cookie (`ral_utm`, 30-day) so attribution
- *      survives the signup round-trip. Server-side signup hook can
- *      read this cookie to record acquisition source on user.create.
- *   2. landing_view event — fires once per page load. Sends a fetch
+ *      survives the signup round-trip and can be attached when an
+ *      authenticated funnel event establishes the user attribution.
+ *   2. landing_view event — fires once per marketing route transition. Sends
  *      to /api/marketing/event with the path + utm fields. Failure
  *      is silent (we'd rather lose a beacon than break a landing).
  *
- * No third-party scripts. No fingerprinting. Cloudflare Web Analytics
- * still gives us the volume picture; this adds attribution.
- *
- * Placement: drop <MarketingTracking /> into any marketing landing
- * (page.tsx, /indie, /teams, /runtimes, /security, /connectors).
- * Calling it on workspace routes is a no-op — the events fire but
- * the server hook checks pathname starts with /s/ and skips.
+ * No third-party scripts and no fingerprinting. MarketingShell mounts this
+ * once for the public route group, so pathname must be a dependency.
  */
-export function MarketingTracking({ event = "landing_view" }: { event?: string }) {
+export function MarketingTracking({ event = "landing_view" }: { event?: FunnelEvent }) {
+  const pathname = usePathname();
+  const lastTrackedPath = useRef<string | null>(null);
+
   useEffect(() => {
+    if (lastTrackedPath.current === pathname) return;
+    lastTrackedPath.current = pathname;
     try {
       const url = new URL(window.location.href);
-      const utm: Record<string, string> = {};
-      for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"]) {
+      const utm: FunnelUtm = {};
+      for (const key of UTM_KEYS) {
         const v = url.searchParams.get(key);
         if (v) utm[key] = v.slice(0, 64);
       }
@@ -38,57 +45,20 @@ export function MarketingTracking({ event = "landing_view" }: { event?: string }
         if (!existing) {
           const value = encodeURIComponent(JSON.stringify({ ...utm, t: Date.now(), p: window.location.pathname }));
           // 30-day TTL, Lax so signup form submission still includes it.
-          document.cookie = `ral_utm=${value}; path=/; max-age=${30 * 24 * 3600}; SameSite=Lax`;
+          const secure = window.location.protocol === "https:" ? "; Secure" : "";
+          document.cookie = `ral_utm=${value}; path=/; max-age=${30 * 24 * 3600}; SameSite=Lax${secure}`;
         }
       }
-      // Beacon the event. Use sendBeacon if available so it survives
-      // navigation away from the page; fall back to fetch with keepalive.
-      // Keep this object's `event` field in lock-step with
-      // ALLOWED_EVENTS in apps/web/src/app/api/marketing/event/route.ts
-      // — the server rejects anything not on the allowlist (400).
-      const body = JSON.stringify({
-        event,
-        path: window.location.pathname,
-        referrer: document.referrer || null,
-        utm,
-        ts: Date.now(),
-      });
-      const ok = (navigator as Navigator & { sendBeacon?: (url: string, data: BodyInit) => boolean })
-        .sendBeacon?.("/api/marketing/event", new Blob([body], { type: "application/json" }));
-      if (!ok) {
-        void fetch("/api/marketing/event", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body,
-          keepalive: true,
-        }).catch(() => { /* silent */ });
-      }
+      trackFunnelEvent(event, { utm });
     } catch {
       // any failure here is acceptable — no telemetry is worth breaking the landing
     }
-  }, [event]);
+  }, [event, pathname]);
   return null;
 }
 
 /** CTA-click tracker. Wrap a CTA element with onClick to fire a
  *  beacon BEFORE navigation. Server logs the click_target. */
 export function trackCtaClick(target: string): void {
-  try {
-    const body = JSON.stringify({
-      event: "cta_click",
-      target,
-      path: window.location.pathname,
-      ts: Date.now(),
-    });
-    const ok = (navigator as Navigator & { sendBeacon?: (url: string, data: BodyInit) => boolean })
-      .sendBeacon?.("/api/marketing/event", new Blob([body], { type: "application/json" }));
-    if (!ok) {
-      void fetch("/api/marketing/event", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body,
-        keepalive: true,
-      }).catch(() => {});
-    }
-  } catch { /* silent */ }
+  trackFunnelEvent("cta_click", { target });
 }
