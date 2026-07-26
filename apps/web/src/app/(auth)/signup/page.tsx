@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { MailCheckIcon, ExternalLinkIcon } from "lucide-react";
 import { signUp, authClient } from "@/lib/auth-client";
 import { safeNext } from "@/lib/safe-redirect";
@@ -19,6 +19,21 @@ import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
+import {
+  addTrackingJourneyToPath,
+  getOrCreateJourneyId,
+  persistJourneyId,
+  trackFunnelEvent,
+  trackingJourneyFromSearch,
+} from "@/lib/funnel-analytics";
+import {
+  addWorkflowStarterIntentToPath,
+  persistWorkflowStarterIntent,
+  readStoredWorkflowStarterIntent,
+  readWorkflowStarterIntentFromSearch,
+  type WorkflowStarterKey,
+} from "@/lib/workflow-intent";
+import { WORKFLOW_STARTERS } from "@/lib/workflow-starters";
 
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 256;
@@ -37,12 +52,26 @@ function SignupInner() {
   const sp = useSearchParams();
   const nextBasePath = safeNext(sp.get("next")) ?? "/";
   const onboardingIntent = readAllowedOnboardingIntent(sp, nextBasePath);
-  const nextPath = addOnboardingIntentToPath(nextBasePath, onboardingIntent);
+  const queryWorkflowIntent = readWorkflowStarterIntentFromSearch(sp);
+  const queryJourneyId = trackingJourneyFromSearch(sp);
+  const [workflowIntent, setWorkflowIntent] = useState<WorkflowStarterKey | null>(queryWorkflowIntent);
+  const [journeyId, setJourneyId] = useState<string | null>(queryJourneyId);
+  const signupViewTracked = useRef(false);
+  const selectedWorkflow = WORKFLOW_STARTERS.find((starter) => starter.key === workflowIntent) ?? null;
+  const nextPath = addTrackingJourneyToPath(
+    addWorkflowStarterIntentToPath(
+      addOnboardingIntentToPath(nextBasePath, onboardingIntent),
+      workflowIntent,
+    ),
+    journeyId,
+  );
   const desktopClient = sp.get("client") === "desktop" || nextBasePath.startsWith("/desktop");
   const loginHref = buildAuthPath("/login", {
     client: desktopClient ? "desktop" : null,
     next: nextBasePath !== "/" ? nextBasePath : null,
     intent: onboardingIntent,
+    workflow: workflowIntent,
+    journey: journeyId,
   });
 
   const [email, setEmail] = useState("");
@@ -82,6 +111,26 @@ function SignupInner() {
       clearStoredOnboardingIntent();
     }
   }, [onboardingIntent]);
+
+  useEffect(() => {
+    const resolvedWorkflow = queryWorkflowIntent ?? readStoredWorkflowStarterIntent();
+    if (resolvedWorkflow) {
+      persistWorkflowStarterIntent(resolvedWorkflow);
+      setWorkflowIntent(resolvedWorkflow);
+    }
+
+    const resolvedJourney = queryJourneyId
+      ? persistJourneyId(queryJourneyId)
+      : getOrCreateJourneyId();
+    setJourneyId(resolvedJourney);
+    if (!signupViewTracked.current) {
+      signupViewTracked.current = true;
+      trackFunnelEvent("signup_view", {
+        target: resolvedWorkflow ?? "no-workflow-selected",
+        journeyId: resolvedJourney,
+      });
+    }
+  }, [queryJourneyId, queryWorkflowIntent]);
 
   // Cross-tab handoff (codex P3 onboarding audit, UX angle 2 H1):
   // when the verification link is clicked in a different tab in the
@@ -132,6 +181,8 @@ function SignupInner() {
     return buildAuthPath("/verify-email", {
       next: nextBasePath !== "/" ? nextBasePath : null,
       intent: onboardingIntent,
+      workflow: workflowIntent,
+      journey: journeyId,
     });
   }
 
@@ -139,6 +190,10 @@ function SignupInner() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    trackFunnelEvent("signup_submitted", {
+      target: workflowIntent ?? "no-workflow-selected",
+      journeyId,
+    });
 
     try {
       const { error } = await signUp.email({
@@ -162,6 +217,10 @@ function SignupInner() {
         }
         return;
       }
+      trackFunnelEvent("signup_created", {
+        target: workflowIntent ?? "no-workflow-selected",
+        journeyId,
+      });
       setSentTo(email);
       setResendReadyAt(Date.now() + RESEND_COOLDOWN_MS);
       setNow(Date.now());
@@ -224,6 +283,7 @@ function SignupInner() {
             onUseDifferentEmail={handleUseDifferentEmail}
             nextPath={nextPath}
             onboardingIntent={onboardingIntent}
+            workflowTitle={selectedWorkflow?.title ?? null}
           />
         ) : (
           <Card>
@@ -234,12 +294,35 @@ function SignupInner() {
                   ? "Create an account to connect this computer"
                   : onboardingIntent
                     ? "Create your account, then connect this computer's runtime"
-                    : "Create your account, then start a workflow in 3 minutes"}
+                    : selectedWorkflow
+                      ? `Create your account, then start ${selectedWorkflow.title.toLowerCase()}`
+                      : "Create your account, then start your first workflow"}
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSignup}>
               <CardPanel>
                 <div className="space-y-4">
+                  {selectedWorkflow && (
+                    <div className="border-y border-border py-3 text-left">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                            Selected workflow
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-foreground">{selectedWorkflow.title}</p>
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                            First proof: {selectedWorkflow.firstProof}
+                          </p>
+                        </div>
+                        <Link
+                          href="/workflows"
+                          className="shrink-0 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                        >
+                          Change
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                   {HAS_GOOGLE && (
                     <>
                       <Button type="button" variant="outline" className="w-full"
@@ -342,7 +425,7 @@ function SignupInner() {
 // ---------------------------------------------------------------------------
 function CheckInboxCard({
   email, cooldown, resendLoading, resendNotice,
-  onResend, onUseDifferentEmail, nextPath, onboardingIntent,
+  onResend, onUseDifferentEmail, nextPath, onboardingIntent, workflowTitle,
 }: {
   email: string;
   cooldown: number;
@@ -352,6 +435,7 @@ function CheckInboxCard({
   onUseDifferentEmail: () => void;
   nextPath: string;
   onboardingIntent: OnboardingIntent | null;
+  workflowTitle: string | null;
 }) {
   const mailbox = mailboxFor(email);
   return (
@@ -377,7 +461,9 @@ function CheckInboxCard({
           <p className="text-sm text-muted-foreground">
             {onboardingIntent
               ? "Click the link in the email. After verification we'll take you straight to the local runtime setup."
-              : "Click the link in the email. After verification you can send your first workflow brief."}
+              : workflowTitle
+                ? `Click the link in the email. After verification you can start ${workflowTitle.toLowerCase()}.`
+                : "Click the link in the email. After verification you can send your first workflow brief."}
             {" "}It can take a minute to arrive — check your spam folder if you don&apos;t see it.
           </p>
           {resendNotice && (

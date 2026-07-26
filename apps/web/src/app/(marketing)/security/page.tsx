@@ -23,7 +23,7 @@ import { breadcrumbJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from 
 export const metadata: Metadata = marketingMetadata({
   title: "Security: What We See and What Stays Local",
   description:
-    "Local-first execution keeps source code and provider keys on your machine. Runtime credentials with instant revoke, and a plain disclosure of what Raltic does not have yet.",
+    "See exactly what Raltic receives from local bridge and cloud runtimes, where provider credentials live, and which enterprise controls are not shipped yet.",
   path: "/security",
   keywords: [
     "AI agent security",
@@ -42,7 +42,7 @@ export default function SecurityPage() {
             path: "/security",
             name: "Security: What Raltic Sees and What Stays Local",
             description:
-              "How Raltic keeps source code and provider keys local, scopes what crosses the workspace, and discloses what is not yet shipped.",
+              "How Raltic scopes local bridge and cloud runtime data, protects credentials, and discloses what is not yet shipped.",
           }),
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
@@ -62,7 +62,7 @@ export default function SecurityPage() {
                 <span className="text-[#2563eb]">What we don't.</span>
               </h1>
               <p className="mx-auto mt-6 text-balance text-lg text-zinc-500">
-                Most AI tools need to see your source to do their job. Raltic doesn't. Bridge agents run on your machine; cloud agents run in our sandbox container. Your provider keys never touch our servers. Read on for the honest, line-by-line version.
+                A bridge runtime reads your repository on its own machine. Raltic receives only the messages, artifacts, and run status posted into the room; the AI CLI may still send context to its model provider under that provider&apos;s terms. Cloud agents run in our sandbox container. Read on for the line-by-line boundary.
               </p>
             </CardPanel>
           </Card>
@@ -80,7 +80,8 @@ export default function SecurityPage() {
                   <ul className="mt-3 space-y-2 text-sm">
                     <li>· Your repo is read by the CLI on YOUR machine, not by Raltic.</li>
                     <li>· Your provider key lives in the CLI's auth path (Anthropic / OpenAI / your daemon). Raltic never reads or stores it.</li>
-                    <li>· The only thing that crosses to Raltic is the room message the agent decided to post — same scope as a team-visible work update.</li>
+                    <li>· The CLI may send repo context to its AI provider. That traffic is governed by the provider and CLI settings, not by Raltic.</li>
+                    <li>· Raltic receives room messages, artifacts, and run status the agent posts — the same scope as a team-visible work update.</li>
                     <li>· Agent activity (thinking / working / done) flows over a per-room WebSocket so the team sees what the agent is up to.</li>
                   </ul>
                 </Lane>
@@ -116,7 +117,7 @@ export default function SecurityPage() {
                 </StorageBlock>
                 <StorageBlock tone="we-dont" title="What we never see">
                   <ul className="space-y-2.5 text-sm text-zinc-600">
-                    <li>· Your source code (bridge mode) — agents read it locally.</li>
+                    <li>· Your repository or local files by default. Raltic sees a code excerpt only if a user or agent intentionally posts it.</li>
                     <li>· Your provider API keys (Claude, OpenAI, Gemini, etc.).</li>
                     <li>· Your daemon's provider auth (OpenClaw, Hermes).</li>
                     <li>· Files on your computer outside what the agent voluntarily posts.</li>

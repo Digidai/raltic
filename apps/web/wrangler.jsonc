@@ -20,7 +20,8 @@
     {
       "binding": "DB",
       "database_name": "raltic-staging",
-      "database_id": "b1c3ee93-69a6-45a3-bfa9-56d37e8971f2"
+      "database_id": "b1c3ee93-69a6-45a3-bfa9-56d37e8971f2",
+      "migrations_dir": "../../packages/db/migrations"
     }
   ],
 

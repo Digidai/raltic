@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 const ACCENT = "#2563eb";
 
-type ScenarioKey = "revenue" | "launch" | "engineering";
+type ScenarioKey = "launch" | "engineering" | "revenue";
 
 type WorkflowScenario = {
   key: ScenarioKey;
@@ -47,23 +47,6 @@ type WorkflowScenario = {
 
 const SCENARIOS: WorkflowScenario[] = [
   {
-    key: "revenue",
-    label: "Customer risk",
-    shortLabel: "Risk",
-    room: "#customer-risk",
-    owner: "GTM",
-    icon: <LineChart className="h-4 w-4" aria-hidden="true" />,
-    brief: "Renewal risk brief for Acme before the next account call.",
-    agents: [
-      { name: "research", runtime: "Codex", job: "Pull call notes + competitor context" },
-      { name: "ops", runtime: "Claude", job: "Turn blockers into owned follow-ups" },
-    ],
-    approval: "Human approves customer-facing draft.",
-    output: "Risk brief, email draft, 3 assigned tasks.",
-    metric: "15 min to account plan",
-    chips: ["calls", "support", "renewal"],
-  },
-  {
     key: "launch",
     label: "Launch room",
     shortLabel: "Launch",
@@ -77,7 +60,7 @@ const SCENARIOS: WorkflowScenario[] = [
     ],
     approval: "Human blocks public send until docs are ready.",
     output: "Decision log, launch checklist, owner map.",
-    metric: "1 room for launch state",
+    metric: "Proof gaps + owner decision",
     chips: ["docs", "proof", "support"],
   },
   {
@@ -87,20 +70,37 @@ const SCENARIOS: WorkflowScenario[] = [
     room: "#code-review",
     owner: "Eng",
     icon: <GitPullRequest className="h-4 w-4" aria-hidden="true" />,
-    brief: "Review a PR without uploading repo context into a hosted AI tool.",
+    brief: "Review a PR locally while sharing only selected findings with Raltic.",
     agents: [
       { name: "reviewer", runtime: "Claude", job: "Read local diff via bridge" },
       { name: "tester", runtime: "Codex", job: "Map failing paths to fixes" },
     ],
     approval: "Human accepts only actionable review items.",
     output: "Focused comments, task links, review record.",
-    metric: "code stays local",
+    metric: "Raltic gets selected output",
     chips: ["PR", "tests", "owner"],
+  },
+  {
+    key: "revenue",
+    label: "Customer risk",
+    shortLabel: "Risk",
+    room: "#customer-risk",
+    owner: "GTM",
+    icon: <LineChart className="h-4 w-4" aria-hidden="true" />,
+    brief: "Renewal risk brief for Acme before the next account call.",
+    agents: [
+      { name: "research", runtime: "Codex", job: "Pull call notes + competitor context" },
+      { name: "ops", runtime: "Claude", job: "Turn blockers into owned follow-ups" },
+    ],
+    approval: "Human approves customer-facing draft.",
+    output: "Risk brief, email draft, 3 assigned tasks.",
+    metric: "Risk brief + approval gate",
+    chips: ["calls", "support", "renewal"],
   },
 ];
 
 export function WorkflowPreview(): React.ReactElement {
-  const [activeKey, setActiveKey] = useState<ScenarioKey>("revenue");
+  const [activeKey, setActiveKey] = useState<ScenarioKey>("launch");
   const active = useMemo(
     () => SCENARIOS.find((scenario) => scenario.key === activeKey) ?? SCENARIOS[0],
     [activeKey],

@@ -19,13 +19,13 @@ import {
 } from "@/lib/seo";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Raltic Compared: ChatGPT for Work, Cursor & Slack AI",
+  title: "Raltic Compared: ChatGPT Business, Cursor & Slack AI",
   description:
-    "How Raltic compares to ChatGPT for Work, Cursor / Copilot, and Slack AI — honest breakdowns of where each tool stops and where a workflow room fits.",
+    "Evidence-linked comparisons of Raltic with ChatGPT Business, Cursor, and Slack AI, including where each product is the better fit.",
   path: "/compare",
   keywords: [
     "AI workflow platform comparison",
-    "ChatGPT for Work alternative",
+    "ChatGPT Business alternative",
     "Cursor alternative for teams",
     "Slack AI bot alternative",
   ],
@@ -38,9 +38,9 @@ export default function CompareIndexPage(): React.ReactElement {
         data={jsonLdGraph([
           webPageJsonLd({
             path: "/compare",
-            name: "Raltic Compared to ChatGPT for Work, Cursor, and Slack AI",
+            name: "Raltic Compared to ChatGPT Business, Cursor, and Slack AI",
             description:
-              "Honest side-by-side comparisons of Raltic against ChatGPT for Work, Cursor / Copilot, and Slack + AI bots.",
+              "Evidence-linked comparisons of Raltic against ChatGPT Business, Cursor, and Slack AI.",
             type: "CollectionPage",
             dateModified: SITE_CONTENT_UPDATED,
             mainEntity: { "@id": `${absoluteUrl("/compare")}#itemlist` },
@@ -72,7 +72,7 @@ export default function CompareIndexPage(): React.ReactElement {
             How Raltic compares.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-zinc-600">
-            If your team has tried ChatGPT for work, Cursor for engineering, or AI bots in Slack, here&apos;s where each one stops at a tool — and where an accountable AI workflow room fits. Honest breakdowns, including when the other tool is the better choice.
+            If your team has tried ChatGPT Business, Cursor, or Slack AI, compare the products by operating model: shared context, runtimes, run evidence, tasks, and approval boundaries. Each page links to current first-party sources and explains when the other product is the better fit.
           </p>
         </div>
       </section>

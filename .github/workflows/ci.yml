@@ -105,6 +105,8 @@ jobs:
           HEROUI_AUTH_TOKEN: ${{ secrets.HEROUI_AUTH_TOKEN }}
       - name: Verify test migration imports
         run: pnpm test:migrations
+      - name: Verify IndexNow changed-URL selection
+        run: pnpm test:indexnow
       - name: Run all package tests
         run: pnpm -r test --run
 

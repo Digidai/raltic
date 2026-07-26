@@ -1,5 +1,6 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import { setupMockWorkspace } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 type Rgb = {
   r: number;
@@ -19,6 +20,9 @@ const MINIMUM_FOOTER_PATHS = [
   "/signup",
   "/login",
 ];
+const ANONYMOUS_ID = "11111111-1111-4111-8111-111111111111";
+const SESSION_ID = "22222222-2222-4222-8222-222222222222";
+const JOURNEY_ID = "33333333-3333-4333-8333-333333333333";
 
 function hero(page: Page) {
   return page.locator("section").first();
@@ -109,6 +113,23 @@ async function expectPathAndSearch(page: Page, pathname: string, search: string)
   }).toBe(`${pathname}${search}`);
 }
 
+async function expectAuthHref(
+  locator: Locator,
+  pathname: string,
+  params: Record<string, string>,
+) {
+  await expect.poll(async () => {
+    const href = await locator.getAttribute("href");
+    if (!href) return null;
+    const url = new URL(href, "https://raltic.com");
+    return {
+      pathname: url.pathname,
+      params: Object.fromEntries(Object.entries(params).map(([key]) => [key, url.searchParams.get(key)])),
+      journeyIsUuid: !url.searchParams.has("journey") || /^[0-9a-f-]{36}$/i.test(url.searchParams.get("journey") ?? ""),
+    };
+  }).toEqual({ pathname, params, journeyIsUuid: true });
+}
+
 async function expectNoHorizontalOverflow(page: Page, label: string) {
   const metrics = await page.evaluate(() => ({
     bodyOverflowX: document.body.scrollWidth > window.innerWidth + 1,
@@ -124,10 +145,17 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 
 test.describe("homepage CTAs", () => {
   test("marketing endpoint accepts workspace PLG funnel events", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The funnel event schema requires the current bundle, not the pre-deploy production bundle.",
+    );
     for (const event of ["workflow_starter_match_selected", "workflow_starter_runtime_gate_opened", "workflow_room_opened"]) {
       const res = await request.post("/api/marketing/event", {
         data: {
           event,
+          anonymousId: ANONYMOUS_ID,
+          sessionId: SESSION_ID,
+          journeyId: JOURNEY_ID,
           path: "/s/demo",
           target: "launch-readiness",
           referrer: null,
@@ -138,12 +166,51 @@ test.describe("homepage CTAs", () => {
     }
   });
 
+  test("marketing endpoint rejects unsupported and malformed payloads", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The funnel event validation contract requires the current bundle, not the pre-deploy production bundle.",
+    );
+    const unsupportedType = await request.post("/api/marketing/event", {
+      headers: { "content-type": "text/plain" },
+      data: "landing_view",
+    });
+    expect(unsupportedType.status()).toBe(415);
+
+    const unknownEvent = await request.post("/api/marketing/event", {
+      data: {
+        event: "made_up_event",
+        anonymousId: ANONYMOUS_ID,
+        sessionId: SESSION_ID,
+        journeyId: JOURNEY_ID,
+        path: "/",
+      },
+    });
+    expect(unknownEvent.status()).toBe(400);
+
+    const oversized = await request.post("/api/marketing/event", {
+      data: {
+        event: "landing_view",
+        anonymousId: ANONYMOUS_ID,
+        sessionId: SESSION_ID,
+        journeyId: JOURNEY_ID,
+        path: "/",
+        target: "x".repeat(5000),
+      },
+    });
+    expect(oversized.status()).toBe(413);
+  });
+
   test("anonymous hero CTA points at the first-value signup flow", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The first-value CTA assertion requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
 
-    const primaryCta = hero(page).getByRole("link", { name: /^Start in 3 minutes$/ });
+    const primaryCta = hero(page).getByRole("link", { name: /^Start a launch workflow$/ });
     await expect(primaryCta).toBeVisible();
-    await expect(primaryCta).toHaveAttribute("href", "/signup");
+    await expect(primaryCta).toHaveAttribute("href", "/signup?workflow=launch-readiness");
     await expect(hero(page).getByRole("status", { name: "Loading" })).toHaveCount(0);
     await expect(hero(page).getByRole("link", { name: /^Connect a local runtime$/ })).toHaveCount(0);
 
@@ -155,7 +222,7 @@ test.describe("homepage CTAs", () => {
         text: element.textContent?.trim() ?? "",
       };
     });
-    expect(primaryStyles.text).toContain("Start in 3 minutes");
+    expect(primaryStyles.text).toContain("Start a launch workflow");
     expect(contrastRatio(primaryStyles.color, primaryStyles.backgroundColor)).toBeGreaterThanOrEqual(4.5);
 
     await page.evaluate(() => {
@@ -170,31 +237,85 @@ test.describe("homepage CTAs", () => {
     await primaryCta.click();
     const request = await ctaRequest;
     expect(request.postData()).toContain('"path":"/"');
+    const payload = JSON.parse(request.postData() ?? "{}") as Record<string, unknown>;
+    expect(payload.anonymousId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(payload.sessionId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(payload.journeyId).toMatch(/^[0-9a-f-]{36}$/i);
     await expectPathname(page, "/signup");
   });
 
+  test("marketing route transitions record separate landing views", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Route-transition tracking requires the current bundle, not the pre-deploy production bundle.",
+    );
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "sendBeacon", { value: undefined, configurable: true });
+    });
+    const paths: string[] = [];
+    page.on("request", (request) => {
+      if (request.method() !== "POST" || new URL(request.url()).pathname !== "/api/marketing/event") return;
+      const payload = request.postDataJSON() as { event?: string; path?: string };
+      if (payload.event === "landing_view" && payload.path) paths.push(payload.path);
+    });
+
+    await page.goto("/");
+    await expect.poll(() => paths).toContain("/");
+    await topNav(page).getByRole("link", { name: "Workflows" }).click();
+    await expectPathname(page, "/workflows");
+    await expect.poll(() => paths).toContain("/workflows");
+  });
+
   test("runtime path CTA still navigates to the bridge wizard", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Journey-aware auth links require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
 
     await page.getByRole("link", { name: /^Connect a local runtime$/ }).first().click();
     await expectPathAndSearch(page, "/signup", "?intent=connect-runtime");
-    await expect(page.getByRole("link", { name: /^Sign in$/ })).toHaveAttribute("href", "/login?intent=connect-runtime");
+    await expectAuthHref(page.getByRole("link", { name: /^Sign in$/ }), "/login", { intent: "connect-runtime" });
   });
 
   test("auth pages preserve runtime intent and ignore it for desktop next paths", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Journey-aware auth handoffs require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/signup?wizard=1");
     await expect(page.getByText("Create your account, then connect this computer's runtime")).toBeVisible();
-    await expect(page.getByRole("link", { name: /^Sign in$/ })).toHaveAttribute("href", "/login?intent=connect-runtime");
+    await expectAuthHref(page.getByRole("link", { name: /^Sign in$/ }), "/login", { intent: "connect-runtime" });
 
     await page.goto("/login?intent=connect-runtime");
-    await expect(page.getByRole("link", { name: /^Sign up$/ })).toHaveAttribute("href", "/signup?intent=connect-runtime");
+    await expectAuthHref(page.getByRole("link", { name: /^Sign up$/ }), "/signup", { intent: "connect-runtime" });
 
     await page.goto("/verify-email?error=TOKEN_EXPIRED&intent=connect-runtime&email=dai%40live.cn");
-    await expect(page.getByRole("link", { name: /^Sign in$/ })).toHaveAttribute("href", "/login?intent=connect-runtime");
+    await expectAuthHref(page.getByRole("link", { name: /^Sign in$/ }), "/login", { intent: "connect-runtime" });
 
     await page.goto("/login?client=desktop&next=%2Fdesktop%2Flaunch&intent=connect-runtime");
-    await expect(page.getByRole("link", { name: /^Sign up$/ })).toHaveAttribute("href", "/signup?client=desktop&next=%2Fdesktop%2Flaunch");
+    await expectAuthHref(page.getByRole("link", { name: /^Sign up$/ }), "/signup", {
+      client: "desktop",
+      next: "/desktop/launch",
+    });
     await expect(page.getByText(/connect this computer to your workspace/i)).toBeVisible();
+  });
+
+  test("workflow signup keeps acquisition intent through the sign-in handoff", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Workflow acquisition handoff requires the current bundle, not the pre-deploy production bundle.",
+    );
+    await page.goto(`/signup?workflow=launch-readiness&journey=${JOURNEY_ID}`);
+
+    await expect(page.getByText("Launch readiness", { exact: true })).toBeVisible();
+    await expect(page.getByText(/First proof:.*checklist.*owner map/i)).toBeVisible();
+    await expectAuthHref(page.getByRole("link", { name: /^Sign in$/ }), "/login", {
+      workflow: "launch-readiness",
+      journey: JOURNEY_ID,
+    });
+    const robots = await page.locator("meta[name='robots']").getAttribute("content");
+    expect(robots).toContain("noindex");
   });
 
   test("signed-in runtime intent opens the personal workspace setup wizard", async ({ page, context }) => {
@@ -211,12 +332,8 @@ test.describe("homepage top navigation", () => {
   for (const { name, path } of [
     { name: "Workflows", path: "/workflows" },
     { name: "Runtimes", path: "/runtimes" },
-    { name: "Connectors", path: "/connectors" },
     { name: "Security", path: "/security" },
     { name: "Sign in", path: "/login" },
-    // Top-nav primary kept as generic "Get started" for compactness
-    // even though the hero primary uses the more specific
-    // "Start in 3 minutes" copy. (Keeps the nav from getting too wide.)
     { name: "Get started", path: "/signup" },
   ]) {
     test(`${name} link navigates to ${path}`, async ({ page }) => {
@@ -228,12 +345,16 @@ test.describe("homepage top navigation", () => {
   }
 
   test("mobile navigation exposes product, audience, auth, and signup links", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised mobile acquisition navigation requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
 
     const menuButton = page.getByRole("button", { name: "Open marketing navigation" });
     await expect(menuButton).toBeVisible();
-    await expect(page.getByRole("link", { name: /^Start$/ })).toHaveAttribute("href", "/signup");
+    await expect(page.getByRole("link", { name: /^Start$/ })).toHaveAttribute("href", "/signup?workflow=launch-readiness");
 
     await menuButton.click();
     const menu = page.locator("[data-slot=\"dropdown-menu\"]");
@@ -242,7 +363,6 @@ test.describe("homepage top navigation", () => {
     for (const label of [
       "Workflows",
       "Runtimes",
-      "Connectors",
       "Desktop beta",
       "Security",
       "For indie devs",

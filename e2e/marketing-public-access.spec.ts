@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { INDEXNOW_ENDPOINT, INDEXNOW_KEY, INDEXNOW_KEY_LOCATION } from "../apps/web/src/lib/indexnow";
 import { contrast, parseRgb } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 type MarketingRoute = {
   path: string;
@@ -31,7 +32,7 @@ const marketingRoutes: MarketingRoute[] = [
   },
   {
     path: "/workflows/code-review",
-    heading: /Local AI code review workflow/i,
+    heading: /Local-runtime AI code review/i,
     headingSelector: "h1",
   },
   {
@@ -96,6 +97,10 @@ const marketingRoutes: MarketingRoute[] = [
 test.describe("marketing public access", () => {
   for (const route of marketingRoutes) {
     test(`${route.path} is reachable anonymously and renders marketing chrome`, async ({ page }) => {
+      test.skip(
+        isPreDeployProductionTarget() && route.path === "/workflows/code-review",
+        "The revised code-review landing page requires the current bundle, not the pre-deploy production bundle.",
+      );
       const response = await page.goto(route.path, { waitUntil: "domcontentloaded" });
 
       expect(response?.status(), `${route.path} should return 200`).toBe(200);
@@ -260,6 +265,10 @@ test.describe("marketing public access", () => {
   });
 
   test("SEO discovery files expose indexable workflow pages and AI crawler guidance", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised sitemap and LLM discovery files require the current bundle, not the pre-deploy production bundle.",
+    );
     const sitemap = await request.get("/sitemap.xml");
     expect(sitemap.status()).toBe(200);
     const sitemapText = await sitemap.text();
@@ -273,6 +282,9 @@ test.describe("marketing public access", () => {
       expect(sitemapText).toContain(`https://raltic.com${path}`);
     }
     expect(sitemapText).not.toContain("https://raltic.com/teams");
+    expect(sitemapText).not.toContain("https://raltic.com/signup");
+    expect(sitemapText).not.toContain("https://raltic.com/login");
+    expect(sitemapText).not.toContain("https://raltic.com/forgot-password");
     expect(sitemapText).not.toContain("https://raltic.com/runtimes/openclaw");
     expect(sitemapText).not.toContain("https://raltic.com/runtimes/hermes");
 
@@ -338,18 +350,24 @@ test.describe("marketing public access", () => {
   });
 
   test("workflow detail pages expose signup CTA, structured data, and mobile-safe layout", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised workflow proof and CTA require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/workflows/code-review", { waitUntil: "domcontentloaded" });
 
-    await expect(page.getByRole("link", { name: /Start this workflow free/i }).first()).toHaveAttribute("href", "/signup");
+    await expect(page.getByRole("link", { name: /Start this workflow free/i }).first()).toHaveAttribute("href", "/signup?workflow=code-review");
     await expect(page.locator("#step-1")).toBeVisible();
+    await expect(page.getByText("Illustrative example", { exact: true })).toBeVisible();
+    await expect(page.getByText(/not customer data or a promised result/i)).toBeVisible();
     const jsonLd = await page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
       scripts.map((script) => script.textContent ?? "").join("\n"),
     );
     expect(jsonLd).toContain("FAQPage");
     expect(jsonLd).toContain("HowTo");
     expect(jsonLd).toContain("HowToStep");
-    expect(jsonLd).toContain("Local AI code review workflow");
+    expect(jsonLd).toContain("Local AI Code Review Workflow Room");
     expect(jsonLd).toContain("https://raltic.com/opengraph-image");
     expect(jsonLd).toContain("https://raltic.com/workflows/code-review#step-1");
     expect(jsonLd).toContain("dateModified");
@@ -362,6 +380,33 @@ test.describe("marketing public access", () => {
     }));
     expect(metrics.bodyOverflowX).toBe(false);
     expect(metrics.documentOverflowX).toBe(false);
+  });
+
+  test("comparison pages disclose current official sources", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The researched comparison sources require the current bundle, not the pre-deploy production bundle.",
+    );
+    await page.goto("/compare/chatgpt-for-work", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByRole("heading", { name: "Raltic vs ChatGPT Business." })).toBeVisible();
+    await expect(page.getByRole("link", { name: /OpenAI: Projects in ChatGPT/ })).toHaveAttribute(
+      "href",
+      "https://help.openai.com/en/articles/10169521-projects-in-chatgpt",
+    );
+    await expect(page.getByText(/Capability-fit review updated July 26, 2026/i)).toBeVisible();
+  });
+
+  test("privacy copy discloses intentional posts and model-provider routing", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised privacy disclosure requires the current bundle, not the pre-deploy production bundle.",
+    );
+    await page.goto("/privacy", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText(/Raltic receives a code excerpt or file only when a user or agent deliberately posts it/i)).toBeVisible();
+    await expect(page.getByText(/The AI CLI may separately send context to its model provider/i)).toBeVisible();
+    await expect(page.getByText(/only the room reply crosses the network/i)).toHaveCount(0);
   });
 
   test("marketing pages emit page-specific structured data and entity signals", async ({ page }) => {

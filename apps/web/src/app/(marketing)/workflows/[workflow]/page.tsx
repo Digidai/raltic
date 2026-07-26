@@ -7,6 +7,7 @@ import { JsonLdScript } from "@/components/marketing/json-ld";
 import { MarketingButton } from "@/components/marketing/marketing-button";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { WorkflowIntentSaver } from "@/components/marketing/workflow-intent-saver";
+import { workflowSignupHref } from "@/lib/workflow-intent";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
@@ -74,7 +75,7 @@ export default async function WorkflowDetailPage({ params }: WorkflowPageProps):
               {page.intro}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <MarketingButton href="/signup" ctaTarget={`workflow_${page.starter.key}_signup`}>
+              <MarketingButton href={workflowSignupHref(page.starter.key)} ctaTarget={`workflow_${page.starter.key}_signup`}>
                 Start this workflow free <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </MarketingButton>
               <MarketingButton href="/workflows" variant="secondary" ctaTarget={`workflow_${page.starter.key}_browse`}>
@@ -93,6 +94,45 @@ export default async function WorkflowDetailPage({ params }: WorkflowPageProps):
           </div>
         </CardPanel>
       </Card>
+
+      <section className="border-b border-black/[0.07] bg-white px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
+            <div>
+              <p className="text-[10.5px] font-medium uppercase tracking-[0.18em] text-[#2563eb]">
+                Illustrative example
+              </p>
+              <h2 className="mt-4 text-3xl font-medium tracking-[-0.01em] text-zinc-900 sm:text-4xl">
+                A concrete first output.
+              </h2>
+              <p className="mt-4 text-sm leading-relaxed text-zinc-600">
+                This is an illustrative example, not customer data or a promised result. Actual output depends on the evidence supplied to the room and the runtime used.
+              </p>
+            </div>
+            <div className="border-y border-zinc-200">
+              <div className="py-5">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">Draft conclusion</span>
+                <h3 className="mt-2 text-xl font-medium leading-snug text-zinc-900">{page.exampleOutput.title}</h3>
+              </div>
+              <div className="border-t border-zinc-200 py-5">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">Evidence and gaps</span>
+                <ul className="mt-3 grid gap-3">
+                  {page.exampleOutput.findings.map((finding) => (
+                    <li key={finding} className="flex gap-3 text-sm leading-relaxed text-zinc-600">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#2563eb]" aria-hidden="true" />
+                      {finding}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="border-t border-zinc-200 py-5">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">Approval boundary</span>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-700">{page.exampleOutput.decision}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <Card
         render={<section className="bg-white text-zinc-900" />}
@@ -188,7 +228,7 @@ export default async function WorkflowDetailPage({ params }: WorkflowPageProps):
               The starter will be selected when you enter your workspace, so the first trial begins from this exact workflow intent.
             </p>
             <div className="mt-7 flex justify-center">
-              <MarketingButton href="/signup" ctaTarget={`workflow_${page.starter.key}_footer_signup`}>
+              <MarketingButton href={workflowSignupHref(page.starter.key)} ctaTarget={`workflow_${page.starter.key}_footer_signup`}>
                 Start free beta <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </MarketingButton>
             </div>

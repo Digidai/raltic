@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { contrast, parseRgb } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 async function gotoHome(page: Page) {
   const response = await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -18,26 +19,34 @@ test.describe("homepage full section render", () => {
   });
 
   test("Hero is visible with the core positioning copy", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised positioning copy requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const hero = page.locator("section", { hasText: /Launch your first/i }).first();
     await expect(hero.getByRole("heading", { name: /Launch your first.*agent workflow/i })).toBeVisible();
-    await expect(hero.getByText(/turns one business process into a workflow room/i)).toBeVisible();
+    await expect(hero.getByText(/Turn launch readiness or code review into one accountable room/i)).toBeVisible();
     await expect(hero.getByText(/no local install to start/i)).toBeVisible();
     await expect(hero.getByTestId("workflow-preview")).toBeVisible();
   });
 
   test("Workflow preview switches examples without leaving the hero", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised workflow preview requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const preview = page.getByTestId("workflow-preview");
-    await expect(preview.getByRole("button", { name: /Customer risk/i })).toHaveAttribute("aria-pressed", "true");
-    await expect(preview.getByText("15 min to account plan")).toBeVisible();
+    await expect(preview.getByRole("button", { name: /Launch room/i })).toHaveAttribute("aria-pressed", "true");
+    await expect(preview.getByText("Proof gaps + owner decision")).toBeVisible();
 
     await preview.getByRole("button", { name: /Code review/i }).click();
     await expect(preview.getByRole("button", { name: /Code review/i })).toHaveAttribute("aria-pressed", "true");
-    await expect(preview.getByText(/Review a PR without uploading repo context/i)).toBeVisible();
-    await expect(preview.getByText("code stays local")).toBeVisible();
+    await expect(preview.getByText(/Review a PR locally while sharing only selected findings/i)).toBeVisible();
+    await expect(preview.getByText("Raltic gets selected output")).toBeVisible();
   });
 
   test("TwoWaysToRun shows workflow-first cards and CTAs", async ({ page }) => {
@@ -78,14 +87,18 @@ test.describe("homepage full section render", () => {
     await expect(section.getByText("What stays out of the workspace", { exact: true })).toBeVisible();
   });
 
-  test("UseCases renders revenue, launch, research, and engineering workflow cards", async ({ page }) => {
+  test("UseCases renders launch, engineering, research, and customer-success workflow cards", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised use-case ordering requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const section = page.locator("section#use-cases");
-    await expect(section.getByText("revenue", { exact: true })).toBeVisible();
     await expect(section.getByText("launch", { exact: true })).toBeVisible();
-    await expect(section.getByText("research", { exact: true })).toBeVisible();
     await expect(section.getByText("engineering", { exact: true })).toBeVisible();
+    await expect(section.getByText("research", { exact: true })).toBeVisible();
+    await expect(section.getByText("customer success", { exact: true })).toBeVisible();
     await expect(section.locator("h3")).toHaveCount(4);
     for (const href of ["/workflows/customer-risk", "/workflows/launch-readiness", "/workflows/research-synthesis", "/workflows/code-review"]) {
       await expect(section.locator(`a[href="${href}"]`)).toBeVisible();
@@ -103,6 +116,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("homepage positioning does not regress to chat-app-first copy", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised positioning guard requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const bodyText = await page.locator("body").innerText();
@@ -115,7 +132,7 @@ test.describe("homepage full section render", () => {
       expect(bodyText).not.toContain(oldCopy);
     }
     await expect(page.getByText("One room turns agent output into accountable work.")).toBeVisible();
-    await expect(page.getByText("Evaluate local daemon integrations (OpenClaw / Hermes)")).toBeVisible();
+    await expect(page.getByText("Verified Claude + Codex · Experimental daemon integrations")).toBeVisible();
   });
 
   test("marketing icon chips keep readable icon contrast", async ({ page }) => {
@@ -152,17 +169,21 @@ test.describe("homepage full section render", () => {
     }
   });
 
-  test("Comparison renders the product table with at least eight rows", async ({ page }) => {
+  test("Comparison renders the evidence-oriented product fit table", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The evidence-oriented comparison requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const table = page.getByRole("table");
-    await expect(table.getByRole("columnheader", { name: "ChatGPT for Work" })).toBeVisible();
+    await expect(table.getByRole("columnheader", { name: "ChatGPT Business" })).toBeVisible();
     await expect(table.getByRole("columnheader", { name: /Cursor/i })).toBeVisible();
     await expect(table.getByRole("columnheader", { name: /Slack/i })).toBeVisible();
     await expect(table.getByRole("columnheader", { name: "Raltic" })).toBeVisible();
-    await expect(table.getByRole("rowheader", { name: "Workflow outputs reach the whole team" })).toBeVisible();
-    await expect(table.getByRole("rowheader", { name: "Multiple specialist agents in one workflow" })).toBeVisible();
-    expect(await table.locator("tbody tr").count()).toBeGreaterThanOrEqual(8);
+    await expect(table.getByRole("rowheader", { name: "Workflow room with task and run evidence" })).toBeVisible();
+    await expect(table.getByRole("rowheader", { name: "Repo read locally; selected outputs sent to Raltic" })).toBeVisible();
+    expect(await table.locator("tbody tr").count()).toBeGreaterThanOrEqual(5);
   });
 
   test("Pricing renders cards and the free private beta message", async ({ page }) => {
@@ -195,6 +216,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("FinalCta shows the workflow conversion headline and HomeCta", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised conversion CTA requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const footer = page.locator("footer");
@@ -202,7 +227,7 @@ test.describe("homepage full section render", () => {
     await expect(lead.getByRole("heading", { name: /Turn useful agents/i })).toBeVisible();
     // Primary CTA follows the authenticated Start page language.
     // (signed-out branch); signed-in branch is "Open Raltic".
-    await expect(lead.getByRole("link", { name: /Start in 3 minutes|Open Raltic/i })).toBeVisible();
+    await expect(lead.getByRole("link", { name: /Start a launch workflow|Open Raltic/i })).toBeVisible();
     const metrics = await footer.evaluate((el) => {
       const footerRect = el.getBoundingClientRect();
       const lead = el.querySelector<HTMLElement>("[data-raltic-footer-lead]");

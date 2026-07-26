@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext, type APIResponse } from "@playwright/test";
 import { INDEXNOW_KEY_PATH } from "../apps/web/src/lib/indexnow";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 const SECURITY_HEADERS = [
   "content-security-policy",
@@ -75,17 +76,35 @@ test.describe("public routing and crawler files", () => {
   });
 
   test("sitemap contains only indexable public routes", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised indexing boundary requires the current bundle, not the pre-deploy production bundle.",
+    );
     const res = await getWithRetry(request, "/sitemap.xml");
     expect(res.status()).toBe(200);
     const body = await res.text();
 
-    for (const path of ["/", "/runtimes", "/runtimes/claude", "/runtimes/codex", "/indie", "/connectors", "/security", "/privacy", "/terms", "/signup", "/login", "/forgot-password"]) {
+    for (const path of ["/", "/runtimes", "/runtimes/claude", "/runtimes/codex", "/indie", "/connectors", "/security", "/privacy", "/terms"]) {
       expect(body, `sitemap should include ${path}`).toContain(`https://raltic.com${path === "/" ? "/" : path}`);
     }
-    for (const path of ["/teams", "/runtimes/openclaw", "/runtimes/hermes", "/s/"]) {
+    for (const path of ["/teams", "/runtimes/openclaw", "/runtimes/hermes", "/signup", "/login", "/forgot-password", "/s/"]) {
       expect(body, `sitemap should exclude ${path}`).not.toContain(`https://raltic.com${path}`);
     }
   });
+
+  for (const path of ["/signup", "/login", "/forgot-password", "/verify-email"]) {
+    test(`${path} is usable but noindex`, async ({ page }) => {
+      test.skip(
+        isPreDeployProductionTarget(),
+        "The auth noindex metadata requires the current bundle, not the pre-deploy production bundle.",
+      );
+      const response = await page.goto(path, { waitUntil: "domcontentloaded" });
+      expect(response?.status()).toBe(200);
+      const robots = await page.locator("meta[name='robots']").getAttribute("content");
+      expect(robots).toContain("noindex");
+      expect(robots).toContain("nofollow");
+    });
+  }
 
   test("robots disallows non-indexable public and private surfaces", async ({ request }) => {
     const res = await getWithRetry(request, "/robots.txt");

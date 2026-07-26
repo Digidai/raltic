@@ -1,5 +1,7 @@
 import { WORKFLOW_STARTERS, type WorkflowStarterKey } from "@/lib/workflow-starters";
 
+export type { WorkflowStarterKey } from "@/lib/workflow-starters";
+
 export const WORKFLOW_INTENT_STORAGE_KEY = "raltic:workflow:intent";
 export const WORKFLOW_INTENT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const WORKFLOW_KEYS = new Set<WorkflowStarterKey>(WORKFLOW_STARTERS.map((starter) => starter.key));
@@ -9,8 +11,33 @@ type StoredWorkflowIntent = {
   expiresAt: number;
 };
 
+type SearchReader = Pick<URLSearchParams, "get">;
+
 export function isWorkflowStarterKey(value: string | null | undefined): value is WorkflowStarterKey {
   return Boolean(value && WORKFLOW_KEYS.has(value as WorkflowStarterKey));
+}
+
+export function readWorkflowStarterIntentFromSearch(search: SearchReader): WorkflowStarterKey | null {
+  const value = search.get("workflow");
+  return isWorkflowStarterKey(value) ? value : null;
+}
+
+export function addWorkflowStarterIntentToPath(
+  path: string,
+  key: WorkflowStarterKey | null,
+): string {
+  if (!key) return path;
+  try {
+    const url = new URL(path, "https://raltic.local");
+    url.searchParams.set("workflow", key);
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return path;
+  }
+}
+
+export function workflowSignupHref(key: WorkflowStarterKey): string {
+  return addWorkflowStarterIntentToPath("/signup", key);
 }
 
 export function persistWorkflowStarterIntent(key: WorkflowStarterKey): void {

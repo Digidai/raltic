@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/heroui-pro/button";
@@ -11,7 +11,11 @@ import { SetupWizard } from "@/components/setup-wizard";
 import { BrandMonogram } from "@/components/brand";
 import { notifyError, notifyThrown } from "@/lib/notify";
 import { trackProductEvent } from "@/lib/product-tracking";
-import { clearStoredWorkflowStarterIntent, readStoredWorkflowStarterIntent } from "@/lib/workflow-intent";
+import {
+  clearStoredWorkflowStarterIntent,
+  readStoredWorkflowStarterIntent,
+  readWorkflowStarterIntentFromSearch,
+} from "@/lib/workflow-intent";
 import { WORKFLOW_STARTERS, type WorkflowStarterKey, type WorkflowStarterTemplate } from "@/lib/workflow-starters";
 import {
   ArrowRight,
@@ -28,6 +32,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -90,6 +95,7 @@ export default function ServerHomePage() {
   // from the banner, etc.) even after the bridge has connected.
   const forceWizard = sp.get("wizard") === "1";
   const skipBridgeSetup = sp.get("skipBridgeSetup") === "1";
+  const requestedStarter = readWorkflowStarterIntentFromSearch(sp);
   const [stats, setStats] = useState<ServerStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -109,7 +115,8 @@ export default function ServerHomePage() {
   const [personal, setPersonal] = useState<PersonalRef | null>(null);
   const [startingWorkflow, setStartingWorkflow] = useState<WorkflowStarterKey | null>(null);
   const [pendingStarterAfterRuntime, setPendingStarterAfterRuntime] = useState<WorkflowStarterKey | null>(null);
-  const [selectedStarterKey, setSelectedStarterKey] = useState<WorkflowStarterKey>("launch-readiness");
+  const [selectedStarterKey, setSelectedStarterKey] = useState<WorkflowStarterKey>(requestedStarter ?? "launch-readiness");
+  const workspaceOpenTracked = useRef(false);
   const [tasks, setTasks] = useState<TaskRow[] | null>(null);
   const [agentRuns, setAgentRuns] = useState<AgentRun[] | null>(null);
   const [workLoadError, setWorkLoadError] = useState<string | null>(null);
@@ -118,11 +125,17 @@ export default function ServerHomePage() {
   const onPersonalWorkspace = stats != null && personal != null && stats.id === personal.id;
 
   useEffect(() => {
-    const storedStarter = readStoredWorkflowStarterIntent();
+    const storedStarter = requestedStarter ?? readStoredWorkflowStarterIntent();
     if (!storedStarter) return;
     setSelectedStarterKey(storedStarter);
     clearStoredWorkflowStarterIntent();
-  }, []);
+  }, [requestedStarter]);
+
+  useEffect(() => {
+    if (!userId || !stats || workspaceOpenTracked.current) return;
+    workspaceOpenTracked.current = true;
+    trackProductEvent("workspace_opened", requestedStarter ?? selectedStarterKey);
+  }, [requestedStarter, selectedStarterKey, stats, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -416,7 +429,7 @@ export default function ServerHomePage() {
                 <BrandMonogram letter={stats.name} size="lg" className="mt-0.5 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <Chip size="sm" variant="soft" color="accent" className="font-mono text-[10px] uppercase tracking-wider">
-                    Start in 3 minutes
+                    Pick · Send · Prove
                   </Chip>
                   <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                     Pick one workflow and make the agent work visible.
@@ -464,6 +477,13 @@ export default function ServerHomePage() {
               <WorkflowStep icon={<Sparkles className="h-4 w-4" />} label="2. Send" body="Use the starter brief and send the first message." />
               <WorkflowStep icon={<ShieldCheck className="h-4 w-4" />} label="3. Prove" body="Review the first proof before the workflow becomes repeatable." />
             </div>
+            <Link
+              href={`/s/${slug}/settings/members`}
+              className="mt-3 inline-flex min-h-9 items-center gap-2 border-t border-border pt-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+              Invite teammates after the first proof
+            </Link>
           </div>
         </header>
 

@@ -17,6 +17,20 @@ import { Button } from "@/components/heroui-pro/button";
 import { Input } from "@/components/heroui-pro/input";
 import { Field, FieldLabel } from "@/components/heroui-pro/field";
 import { Alert, AlertDescription } from "@/components/heroui-pro/alert";
+import {
+  addTrackingJourneyToPath,
+  getOrCreateJourneyId,
+  persistJourneyId,
+  trackingJourneyFromSearch,
+} from "@/lib/funnel-analytics";
+import {
+  addWorkflowStarterIntentToPath,
+  persistWorkflowStarterIntent,
+  readStoredWorkflowStarterIntent,
+  readWorkflowStarterIntentFromSearch,
+  type WorkflowStarterKey,
+} from "@/lib/workflow-intent";
+import { WORKFLOW_STARTERS } from "@/lib/workflow-starters";
 
 const HAS_GOOGLE = !!process.env.NEXT_PUBLIC_GOOGLE_ENABLED;
 
@@ -58,7 +72,18 @@ function LoginInner() {
   const sp = useSearchParams();
   const nextBasePath = safeNext(sp.get("next")) ?? "/";
   const onboardingIntent = readAllowedOnboardingIntent(sp, nextBasePath);
-  const nextPath = addOnboardingIntentToPath(nextBasePath, onboardingIntent);
+  const queryWorkflowIntent = readWorkflowStarterIntentFromSearch(sp);
+  const queryJourneyId = trackingJourneyFromSearch(sp);
+  const [workflowIntent, setWorkflowIntent] = useState<WorkflowStarterKey | null>(queryWorkflowIntent);
+  const [journeyId, setJourneyId] = useState<string | null>(queryJourneyId);
+  const selectedWorkflow = WORKFLOW_STARTERS.find((starter) => starter.key === workflowIntent) ?? null;
+  const nextPath = addTrackingJourneyToPath(
+    addWorkflowStarterIntentToPath(
+      addOnboardingIntentToPath(nextBasePath, onboardingIntent),
+      workflowIntent,
+    ),
+    journeyId,
+  );
   const desktopClient = sp.get("client") === "desktop" || nextBasePath.startsWith("/desktop");
   const [justReset, setJustReset] = useState(sp.get("reset") === "ok");
   const emailFromUrl = sp.get("email") ?? "";
@@ -75,6 +100,8 @@ function LoginInner() {
     client: desktopClient ? "desktop" : null,
     next: nextBasePath !== "/" ? nextBasePath : null,
     intent: onboardingIntent,
+    workflow: workflowIntent,
+    journey: journeyId,
   });
 
   useEffect(() => {
@@ -84,6 +111,18 @@ function LoginInner() {
       clearStoredOnboardingIntent();
     }
   }, [onboardingIntent]);
+
+  useEffect(() => {
+    const resolvedWorkflow = queryWorkflowIntent ?? readStoredWorkflowStarterIntent();
+    if (resolvedWorkflow) {
+      persistWorkflowStarterIntent(resolvedWorkflow);
+      setWorkflowIntent(resolvedWorkflow);
+    }
+    const resolvedJourney = queryJourneyId
+      ? persistJourneyId(queryJourneyId)
+      : getOrCreateJourneyId();
+    setJourneyId(resolvedJourney);
+  }, [queryJourneyId, queryWorkflowIntent]);
 
   useEffect(() => {
     if (!emailFromUrl) return;
@@ -122,6 +161,7 @@ function LoginInner() {
       } else {
         clearStoredOnboardingIntent();
       }
+      if (workflowIntent) persistWorkflowStarterIntent(workflowIntent);
       router.push(nextPath);
       router.refresh();
     } catch (e) {
@@ -140,6 +180,8 @@ function LoginInner() {
         callbackURL: buildAuthPath("/verify-email", {
           next: nextBasePath !== "/" ? nextBasePath : null,
           intent: onboardingIntent,
+          workflow: workflowIntent,
+          journey: journeyId,
         }),
       });
       if (error) {
@@ -161,6 +203,7 @@ function LoginInner() {
       } else {
         clearStoredOnboardingIntent();
       }
+      if (workflowIntent) persistWorkflowStarterIntent(workflowIntent);
       await authClient.signIn.social({ provider: "google", callbackURL: nextPath });
     } finally {
       // OAuth navigates away on success; only resets if it errored locally.
@@ -188,6 +231,15 @@ function LoginInner() {
           <form onSubmit={handleLogin} onKeyDown={dismissResetBanner}>
             <CardPanel>
               <div className="space-y-4">
+                {selectedWorkflow && !desktopClient && (
+                  <div className="border-y border-border py-3 text-left">
+                    <p className="text-[10px] font-medium uppercase text-muted-foreground">Continue workflow</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">{selectedWorkflow.title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      First proof: {selectedWorkflow.firstProof}
+                    </p>
+                  </div>
+                )}
                 {justReset && (
                   <Alert>
                     <AlertDescription>Password updated. Sign in below.</AlertDescription>

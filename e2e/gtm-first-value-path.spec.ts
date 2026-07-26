@@ -6,6 +6,7 @@ import {
   mockTasks,
   setupMockWorkspace,
 } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 function decodeWsPayload(payload: string | Buffer | ArrayBuffer): Record<string, unknown> {
   if (typeof payload === "string") return JSON.parse(payload) as Record<string, unknown>;
@@ -28,6 +29,10 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 
 test.describe("GTM first-value path", () => {
   test("connects the public promise to a signed-in starter room and proof surfaces", async ({ page, context }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The acquisition-to-first-value assertion requires the current bundle, not the pre-deploy production bundle.",
+    );
     const tasks = [...mockTasks];
     const agentRuns = [...mockAgentRuns];
     const inboxResponse: { items: Array<Record<string, unknown>>; count: number; totalCount: number } = {
@@ -158,12 +163,12 @@ test.describe("GTM first-value path", () => {
 
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /Launch your first\s+agent workflow/i })).toBeVisible();
-    await expect(page.getByText(/turns one business process into a workflow room/i)).toBeVisible();
-    await expect(page.locator("section").first().getByRole("link", { name: /^Start in 3 minutes$/ })).toHaveAttribute("href", "/signup");
+    await expect(page.getByText(/Turn launch readiness or code review into one accountable room/i)).toBeVisible();
+    await expect(page.locator("section").first().getByRole("link", { name: /^Start a launch workflow$/ })).toHaveAttribute("href", "/signup?workflow=launch-readiness");
 
     await setupMockWorkspace(page, context, { tasks, agentRuns, inboxResponse });
 
-    await page.goto("/s/demo", { waitUntil: "domcontentloaded" });
+    await page.goto("/s/demo?workflow=launch-readiness", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Pick one workflow and make the agent work visible." })).toBeVisible();
     await expect(page.getByText("1. Pick", { exact: true })).toBeVisible();
     await expect(page.getByText("2. Send", { exact: true })).toBeVisible();

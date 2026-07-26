@@ -112,6 +112,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
   const [uploadingCount, setUploadingCount] = useState(0);
   const [composerText, setComposerText] = useState("");
   const [starterDismissed, setStarterDismissed] = useState(false);
+  const pendingStarterBriefRef = useRef<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MessageRow | null>(null);
 
   // Only mark messages as read when this tab is actually visible.
@@ -511,6 +512,10 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     setStarterDismissed(false);
   }, [channelId, starterTemplate?.key]);
 
+  useEffect(() => {
+    pendingStarterBriefRef.current = null;
+  }, [channelId]);
+
   const clearStarterParam = useCallback(() => {
     if (!channelId || !serverSlug || !starterTemplate) return;
     router.replace(`/s/${serverSlug}/channel/${channelId}`, { scroll: false });
@@ -529,6 +534,7 @@ export function MessageArea({ channelId }: MessageAreaProps) {
     inputRef.current?.setText(draft);
     setComposerText(draft);
     setStarterDismissed(true);
+    pendingStarterBriefRef.current = starterTemplate.key;
     clearStarterParam();
     trackProductEvent("workflow_starter_draft_used", starterTemplate.key);
     bringComposerIntoView();
@@ -605,6 +611,10 @@ export function MessageArea({ channelId }: MessageAreaProps) {
         ok = await send(content, replyTo ? { threadParentId: replyTo.id } : undefined);
       }
       if (ok) {
+        if (pendingStarterBriefRef.current && content.trim()) {
+          trackProductEvent("workflow_starter_brief_sent", pendingStarterBriefRef.current);
+        }
+        pendingStarterBriefRef.current = null;
         setReplyTo(null);
         setComposerText("");
         requestAnimationFrame(() => scrollToBottom());
