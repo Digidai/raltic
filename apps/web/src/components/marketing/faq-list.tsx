@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Key } from "@heroui/react";
 import { cn } from "@/lib/utils";
 import {
   Accordion,
@@ -52,28 +53,19 @@ const THEME = {
 }>;
 
 export function MarketingFaqList({ items, idPrefix, theme = "light" }: MarketingFaqListProps) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [expandedKeys, setExpandedKeys] = useState<Set<Key>>(new Set());
   const palette = THEME[theme];
-
-  function handleToggle(indexOrNull: number | null) {
-    setOpenIndex((current) => (indexOrNull === null ? null : current === indexOrNull ? null : indexOrNull));
-  }
-
-  const expandedKeys = openIndex === null ? new Set<string>() : new Set([`${idPrefix}-faq-${openIndex}`]);
 
   return (
     <Accordion
       selectionMode="single"
       expandedKeys={expandedKeys}
-      onExpandedChange={(keys) => {
-        const next = Array.from(keys ?? [])[0];
-        handleToggle(next ? Number(String(next).replace(`${idPrefix}-faq-`, "")) : null);
-      }}
+      onExpandedChange={setExpandedKeys}
       className={cn("mt-10 overflow-hidden rounded-lg border", palette.container)}
     >
       {items.map((item, index) => {
         const itemId = `${idPrefix}-faq-${index}`;
-        const isOpen = openIndex === index;
+        const isOpen = expandedKeys.has(itemId);
 
         return (
           <AccordionItem
