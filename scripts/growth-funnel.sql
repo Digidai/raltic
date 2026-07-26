@@ -1,7 +1,17 @@
 -- Raltic acquisition and activation report.
 -- No email, IP address, raw message, or other direct identifier is returned.
+-- Events before this boundary are retained for audit but excluded because
+-- deployment verification traffic was not yet filtered from the dataset.
+
+SELECT
+  'measurement' AS report,
+  'trusted_funnel_data_since_utc' AS dimension,
+  '2026-07-26 18:00:00' AS value;
 
 WITH
+measurement_baseline(started_at) AS (
+  VALUES (unixepoch('2026-07-26 18:00:00') * 1000)
+),
 stage_order(stage, position) AS (
   VALUES
     ('landing_view', 1),
@@ -16,14 +26,21 @@ event_counts AS (
   SELECT
     event AS stage,
     COUNT(DISTINCT CASE
-      WHEN occurred_at >= unixepoch('now', '-7 days') * 1000
+      WHEN occurred_at >= MAX(
+        measurement_baseline.started_at,
+        unixepoch('now', '-7 days') * 1000
+      )
       THEN COALESCE(user_id, journey_id)
     END) AS actors_7d,
     COUNT(DISTINCT CASE
-      WHEN occurred_at >= unixepoch('now', '-30 days') * 1000
+      WHEN occurred_at >= MAX(
+        measurement_baseline.started_at,
+        unixepoch('now', '-30 days') * 1000
+      )
       THEN COALESCE(user_id, journey_id)
     END) AS actors_30d
   FROM marketing_events
+  CROSS JOIN measurement_baseline
   GROUP BY event
 ),
 landing AS (
@@ -53,7 +70,10 @@ SELECT
   COUNT(*) AS attributed_users,
   COUNT(DISTINCT utm_campaign) AS campaigns
 FROM user_attributions
-WHERE created_at >= unixepoch('now', '-30 days') * 1000
+WHERE created_at >= MAX(
+  unixepoch('2026-07-26 18:00:00') * 1000,
+  unixepoch('now', '-30 days') * 1000
+)
 GROUP BY COALESCE(NULLIF(utm_source, ''), '(direct or unknown)')
 ORDER BY attributed_users DESC, dimension ASC;
 

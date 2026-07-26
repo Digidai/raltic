@@ -18,7 +18,7 @@
     "indexnow:submit": "node scripts/submit-indexnow.mjs",
     "indexnow:dry-run": "node scripts/submit-indexnow.mjs --dry-run",
     "test:indexnow": "node --test scripts/indexnow-changes.test.mjs",
-    "analytics:funnel": "pnpm --filter @raltic/api exec wrangler d1 execute raltic-staging --remote --file=../../scripts/growth-funnel.sql"
+    "analytics:funnel": "node scripts/run-growth-funnel.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
