@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { INDEXNOW_ENDPOINT, INDEXNOW_KEY, INDEXNOW_KEY_LOCATION } from "../apps/web/src/lib/indexnow";
 import { contrast, parseRgb } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 type MarketingRoute = {
   path: string;
@@ -96,6 +97,10 @@ const marketingRoutes: MarketingRoute[] = [
 test.describe("marketing public access", () => {
   for (const route of marketingRoutes) {
     test(`${route.path} is reachable anonymously and renders marketing chrome`, async ({ page }) => {
+      test.skip(
+        isPreDeployProductionTarget() && route.path === "/workflows/code-review",
+        "The revised code-review landing page requires the current bundle, not the pre-deploy production bundle.",
+      );
       const response = await page.goto(route.path, { waitUntil: "domcontentloaded" });
 
       expect(response?.status(), `${route.path} should return 200`).toBe(200);
@@ -260,6 +265,10 @@ test.describe("marketing public access", () => {
   });
 
   test("SEO discovery files expose indexable workflow pages and AI crawler guidance", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised sitemap and LLM discovery files require the current bundle, not the pre-deploy production bundle.",
+    );
     const sitemap = await request.get("/sitemap.xml");
     expect(sitemap.status()).toBe(200);
     const sitemapText = await sitemap.text();
@@ -341,6 +350,10 @@ test.describe("marketing public access", () => {
   });
 
   test("workflow detail pages expose signup CTA, structured data, and mobile-safe layout", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised workflow proof and CTA require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/workflows/code-review", { waitUntil: "domcontentloaded" });
 
@@ -370,6 +383,10 @@ test.describe("marketing public access", () => {
   });
 
   test("comparison pages disclose current official sources", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The researched comparison sources require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/compare/chatgpt-for-work", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByRole("heading", { name: "Raltic vs ChatGPT Business." })).toBeVisible();
@@ -381,6 +398,10 @@ test.describe("marketing public access", () => {
   });
 
   test("privacy copy discloses intentional posts and model-provider routing", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised privacy disclosure requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/privacy", { waitUntil: "domcontentloaded" });
 
     await expect(page.getByText(/Raltic receives a code excerpt or file only when a user or agent deliberately posts it/i)).toBeVisible();

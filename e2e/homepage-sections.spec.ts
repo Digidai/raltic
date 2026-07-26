@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { contrast, parseRgb } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 async function gotoHome(page: Page) {
   const response = await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -18,6 +19,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("Hero is visible with the core positioning copy", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised positioning copy requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const hero = page.locator("section", { hasText: /Launch your first/i }).first();
@@ -28,6 +33,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("Workflow preview switches examples without leaving the hero", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised workflow preview requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const preview = page.getByTestId("workflow-preview");
@@ -79,6 +88,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("UseCases renders launch, engineering, research, and customer-success workflow cards", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised use-case ordering requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const section = page.locator("section#use-cases");
@@ -103,6 +116,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("homepage positioning does not regress to chat-app-first copy", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised positioning guard requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const bodyText = await page.locator("body").innerText();
@@ -153,6 +170,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("Comparison renders the evidence-oriented product fit table", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The evidence-oriented comparison requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const table = page.getByRole("table");
@@ -195,6 +216,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("FinalCta shows the workflow conversion headline and HomeCta", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised conversion CTA requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const footer = page.locator("footer");

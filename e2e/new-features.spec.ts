@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 const API_URL = process.env.E2E_API_URL;
 if (!API_URL) throw new Error("E2E_API_URL must be set; do not default API smoke tests to production.");
@@ -51,6 +52,10 @@ test.describe("error surfaces — auth-gated not-found", () => {
 
 test.describe("landing — workflow-room framing (post-rewrite)", () => {
   test("hero lands the agent-workflow workspace choice", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised hero positioning requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
     const heroSection = page.locator("section").first();
     await expect(page.getByRole("heading", { name: /Launch your first\s+agent workflow/i })).toBeVisible();

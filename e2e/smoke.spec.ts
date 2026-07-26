@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 const API_URL = process.env.E2E_API_URL;
 if (!API_URL) throw new Error("E2E_API_URL must be set; do not default API smoke tests to production.");
@@ -37,6 +38,10 @@ test.describe("public pages render", () => {
 
 test.describe("homepage", () => {
   test("/ renders the public marketing landing for unauthenticated visitors", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised homepage CTA requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("heading", { name: /Launch your first\s+agent workflow/i })).toBeVisible();

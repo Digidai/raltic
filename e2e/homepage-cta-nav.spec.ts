@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { setupMockWorkspace } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 type Rgb = {
   r: number;
@@ -144,6 +145,10 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 
 test.describe("homepage CTAs", () => {
   test("marketing endpoint accepts workspace PLG funnel events", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The funnel event schema requires the current bundle, not the pre-deploy production bundle.",
+    );
     for (const event of ["workflow_starter_match_selected", "workflow_starter_runtime_gate_opened", "workflow_room_opened"]) {
       const res = await request.post("/api/marketing/event", {
         data: {
@@ -162,6 +167,10 @@ test.describe("homepage CTAs", () => {
   });
 
   test("marketing endpoint rejects unsupported and malformed payloads", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The funnel event validation contract requires the current bundle, not the pre-deploy production bundle.",
+    );
     const unsupportedType = await request.post("/api/marketing/event", {
       headers: { "content-type": "text/plain" },
       data: "landing_view",
@@ -193,6 +202,10 @@ test.describe("homepage CTAs", () => {
   });
 
   test("anonymous hero CTA points at the first-value signup flow", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The first-value CTA assertion requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
 
     const primaryCta = hero(page).getByRole("link", { name: /^Start a launch workflow$/ });
@@ -232,6 +245,10 @@ test.describe("homepage CTAs", () => {
   });
 
   test("marketing route transitions record separate landing views", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Route-transition tracking requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "sendBeacon", { value: undefined, configurable: true });
     });
@@ -250,6 +267,10 @@ test.describe("homepage CTAs", () => {
   });
 
   test("runtime path CTA still navigates to the bridge wizard", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Journey-aware auth links require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
 
     await page.getByRole("link", { name: /^Connect a local runtime$/ }).first().click();
@@ -258,6 +279,10 @@ test.describe("homepage CTAs", () => {
   });
 
   test("auth pages preserve runtime intent and ignore it for desktop next paths", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Journey-aware auth handoffs require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/signup?wizard=1");
     await expect(page.getByText("Create your account, then connect this computer's runtime")).toBeVisible();
     await expectAuthHref(page.getByRole("link", { name: /^Sign in$/ }), "/login", { intent: "connect-runtime" });
@@ -277,6 +302,10 @@ test.describe("homepage CTAs", () => {
   });
 
   test("workflow signup keeps acquisition intent through the sign-in handoff", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Workflow acquisition handoff requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto(`/signup?workflow=launch-readiness&journey=${JOURNEY_ID}`);
 
     await expect(page.getByText("Launch readiness", { exact: true })).toBeVisible();
@@ -316,6 +345,10 @@ test.describe("homepage top navigation", () => {
   }
 
   test("mobile navigation exposes product, audience, auth, and signup links", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised mobile acquisition navigation requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
 

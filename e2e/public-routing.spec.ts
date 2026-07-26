@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext, type APIResponse } from "@playwright/test";
 import { INDEXNOW_KEY_PATH } from "../apps/web/src/lib/indexnow";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 const SECURITY_HEADERS = [
   "content-security-policy",
@@ -75,6 +76,10 @@ test.describe("public routing and crawler files", () => {
   });
 
   test("sitemap contains only indexable public routes", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised indexing boundary requires the current bundle, not the pre-deploy production bundle.",
+    );
     const res = await getWithRetry(request, "/sitemap.xml");
     expect(res.status()).toBe(200);
     const body = await res.text();
@@ -89,6 +94,10 @@ test.describe("public routing and crawler files", () => {
 
   for (const path of ["/signup", "/login", "/forgot-password", "/verify-email"]) {
     test(`${path} is usable but noindex`, async ({ page }) => {
+      test.skip(
+        isPreDeployProductionTarget(),
+        "The auth noindex metadata requires the current bundle, not the pre-deploy production bundle.",
+      );
       const response = await page.goto(path, { waitUntil: "domcontentloaded" });
       expect(response?.status()).toBe(200);
       const robots = await page.locator("meta[name='robots']").getAttribute("content");

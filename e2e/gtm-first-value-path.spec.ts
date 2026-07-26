@@ -6,6 +6,7 @@ import {
   mockTasks,
   setupMockWorkspace,
 } from "./helpers/heroui-workspace";
+import { isPreDeployProductionTarget } from "./helpers/env";
 
 function decodeWsPayload(payload: string | Buffer | ArrayBuffer): Record<string, unknown> {
   if (typeof payload === "string") return JSON.parse(payload) as Record<string, unknown>;
@@ -28,6 +29,10 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 
 test.describe("GTM first-value path", () => {
   test("connects the public promise to a signed-in starter room and proof surfaces", async ({ page, context }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The acquisition-to-first-value assertion requires the current bundle, not the pre-deploy production bundle.",
+    );
     const tasks = [...mockTasks];
     const agentRuns = [...mockAgentRuns];
     const inboxResponse: { items: Array<Record<string, unknown>>; count: number; totalCount: number } = {
