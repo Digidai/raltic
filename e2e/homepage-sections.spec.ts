@@ -196,6 +196,10 @@ test.describe("homepage full section render", () => {
   });
 
   test("FAQ renders accordion and expands a question", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The FAQ interaction fix requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const faqSection = page.locator("section#faq");

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const SECURITY_HEADERS = [
   "content-security-policy",
@@ -16,6 +16,28 @@ const TARGET_WORKSPACE = {
 
 function apiUrl(path: string): string {
   return `${API_BASE}${path}`;
+}
+
+async function expectDesktopAuthHref(locator: Locator, pathname: "/login" | "/signup") {
+  await expect.poll(async () => {
+    const href = await locator.getAttribute("href");
+    if (!href) return null;
+
+    const url = new URL(href, "https://raltic.com");
+    return {
+      pathname: url.pathname,
+      client: url.searchParams.get("client"),
+      next: url.searchParams.get("next"),
+      hasJourneyId: /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        url.searchParams.get("journey") ?? "",
+      ),
+    };
+  }).toEqual({
+    pathname,
+    client: "desktop",
+    next: "/desktop/launch",
+    hasJourneyId: true,
+  });
 }
 
 function corsHeaders(baseURL: string | undefined): Record<string, string> {
@@ -273,7 +295,7 @@ test.describe("desktop launch surface", () => {
     await expect(page.locator('[data-slot="card-title"]').filter({ hasText: "Raltic Desktop" })).toBeVisible();
     await expect(page.getByText("Sign in to connect this computer to your workspace")).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign in to desktop" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/signup?client=desktop&next=%2Fdesktop%2Flaunch");
+    await expectDesktopAuthHref(page.getByRole("link", { name: "Sign up" }), "/signup");
   });
 
   test("desktop signup copy preserves desktop intent", async ({ page }) => {
@@ -282,7 +304,7 @@ test.describe("desktop launch surface", () => {
     await expect(page.locator('[data-slot="card-title"]').filter({ hasText: "Raltic Desktop" })).toBeVisible();
     await expect(page.getByText("Create an account to connect this computer")).toBeVisible();
     await expect(page.getByRole("button", { name: "Create desktop account" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?client=desktop&next=%2Fdesktop%2Flaunch");
+    await expectDesktopAuthHref(page.getByRole("link", { name: "Sign in" }), "/login");
   });
 
   test("connects the current computer with a workspace-scoped runtime key", async ({ page, baseURL }) => {

@@ -536,10 +536,10 @@ test("setup wizard resume keeps the selected runtime and still runs runtime setu
   });
 
   await page.goto("/s/demo?wizard=1", { waitUntil: "domcontentloaded" });
-  const dialog = setupWizardDialog(page, "fresh");
+  const dialog = setupWizardDialog(page);
   await expect(dialog).toBeVisible({ timeout: 15_000 });
 
-  await expect(setupWizardDialog(page).getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
+  await expect(dialog.getByText("Your bridge is connected. Local agents can now join workflows from this machine.")).toBeVisible({ timeout: 10_000 });
   expect(agentPatches).toContainEqual({
     agentId: "agent-onboard",
     patch: {

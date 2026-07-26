@@ -228,7 +228,7 @@ test.describe("marketing public access", () => {
 
     const installHint = page.getByText(/This integration is visible for evaluation/i);
     await expect(installHint).toBeVisible();
-    const hintMetrics = await installHint.evaluate((el) => {
+    const getHintMetrics = () => installHint.evaluate((el) => {
       const hintStyle = getComputedStyle(el);
       let backgroundElement: HTMLElement | null = el.closest("section");
       let backgroundColor = "";
@@ -241,14 +241,21 @@ test.describe("marketing public access", () => {
         backgroundElement = backgroundElement.parentElement;
       }
       return {
+        connected: el.isConnected,
         hintText: el.textContent ?? "",
         hintColor: hintStyle.color,
         sectionBackground: backgroundColor,
       };
     });
+    await expect.poll(getHintMetrics).toMatchObject({
+      connected: true,
+      hintText: expect.stringContaining("agent creation is locked"),
+      hintColor: expect.stringMatching(/^rgb/),
+      sectionBackground: expect.stringMatching(/^rgb/),
+    });
+    const hintMetrics = await getHintMetrics();
     const foreground = parseRgb(hintMetrics.hintColor);
     const background = parseRgb(hintMetrics.sectionBackground);
-    expect(hintMetrics.hintText).toContain("agent creation is locked");
     expect(
       foreground && background ? contrast(foreground, background) : 0,
       `install hint contrast ${JSON.stringify(hintMetrics)}`,
