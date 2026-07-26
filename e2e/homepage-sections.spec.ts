@@ -43,8 +43,10 @@ test.describe("homepage full section render", () => {
     await expect(preview.getByRole("button", { name: /Launch room/i })).toHaveAttribute("aria-pressed", "true");
     await expect(preview.getByText("Proof gaps + owner decision")).toBeVisible();
 
-    await preview.getByRole("button", { name: /Code review/i }).click();
-    await expect(preview.getByRole("button", { name: /Code review/i })).toHaveAttribute("aria-pressed", "true");
+    const codeReviewButton = preview.getByRole("button", { name: /Code review/i });
+    await expect(codeReviewButton).toBeEnabled();
+    await codeReviewButton.click();
+    await expect(codeReviewButton).toHaveAttribute("aria-pressed", "true");
     await expect(preview.getByText(/Review a PR locally while sharing only selected findings/i)).toBeVisible();
     await expect(preview.getByText("Raltic gets selected output")).toBeVisible();
   });
