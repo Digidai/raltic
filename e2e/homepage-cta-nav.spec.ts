@@ -32,6 +32,15 @@ function topNav(page: Page) {
   return page.getByRole("navigation").first();
 }
 
+async function enableAnalyticsInAutomation(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "__RALTIC_ANALYTICS_TEST__", {
+      value: true,
+      configurable: true,
+    });
+  });
+}
+
 function parseColor(value: string): Rgb {
   const rgbMatch = value.match(/rgba?\(([^)]+)\)/);
   if (rgbMatch) {
@@ -144,6 +153,22 @@ async function expectNoHorizontalOverflow(page: Page, label: string) {
 }
 
 test.describe("homepage CTAs", () => {
+  test("automated browser sessions do not emit default funnel events", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "Automation filtering requires the current bundle, not the pre-deploy production bundle.",
+    );
+    const events: string[] = [];
+    page.on("request", (request) => {
+      if (request.method() !== "POST" || new URL(request.url()).pathname !== "/api/marketing/event") return;
+      events.push(request.postData() ?? "");
+    });
+
+    await page.goto("/");
+    await page.waitForTimeout(250);
+    expect(events).toEqual([]);
+  });
+
   test("marketing endpoint accepts workspace PLG funnel events", async ({ request }) => {
     test.skip(
       isPreDeployProductionTarget(),
@@ -206,6 +231,7 @@ test.describe("homepage CTAs", () => {
       isPreDeployProductionTarget(),
       "The first-value CTA assertion requires the current bundle, not the pre-deploy production bundle.",
     );
+    await enableAnalyticsInAutomation(page);
     await page.goto("/");
 
     const primaryCta = hero(page).getByRole("link", { name: /^Start a launch workflow$/ });
@@ -249,6 +275,7 @@ test.describe("homepage CTAs", () => {
       isPreDeployProductionTarget(),
       "Route-transition tracking requires the current bundle, not the pre-deploy production bundle.",
     );
+    await enableAnalyticsInAutomation(page);
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "sendBeacon", { value: undefined, configurable: true });
     });

@@ -12,6 +12,7 @@ const MAX_BODY = 4096;
 const MAX_UTM_VALUE_LEN = 64;
 const MAX_EVENTS_PER_MINUTE = 120;
 const EVENT_TIME_DRIFT_MS = 7 * 24 * 60 * 60 * 1000;
+const AUTOMATION_USER_AGENT_MARKERS = ["headlesschrome", "playwright"];
 
 type AnalyticsEnv = {
   DB?: D1Database;
@@ -38,6 +39,11 @@ function isBodyTooLarge(req: Request): boolean {
   if (!contentLength) return false;
   const size = Number(contentLength);
   return Number.isFinite(size) && size > MAX_BODY;
+}
+
+function isAutomatedRequest(req: Request): boolean {
+  const userAgent = req.headers.get("user-agent")?.toLowerCase() ?? "";
+  return AUTOMATION_USER_AGENT_MARKERS.some((marker) => userAgent.includes(marker));
 }
 
 function cleanPath(value: unknown): string | null {
@@ -253,6 +259,7 @@ export async function POST(req: Request): Promise<Response> {
     return new NextResponse(null, { status: 400 });
   }
   if (!event) return new NextResponse(null, { status: 400 });
+  if (isAutomatedRequest(req)) return new NextResponse(null, { status: 204 });
 
   let env: AnalyticsEnv;
   try {

@@ -48,6 +48,10 @@ type TrackOptions = {
   journeyId?: string | null;
 };
 
+type AnalyticsWindow = Window & {
+  __RALTIC_ANALYTICS_TEST__?: boolean;
+};
+
 export function isFunnelEvent(value: unknown): value is FunnelEvent {
   return typeof value === "string" && FUNNEL_EVENT_SET.has(value);
 }
@@ -134,6 +138,7 @@ export function addTrackingJourneyToPath(path: string, journeyId: string | null)
 
 export function trackFunnelEvent(event: FunnelEvent, options: TrackOptions = {}): void {
   if (typeof window === "undefined") return;
+  if (navigator.webdriver && !(window as AnalyticsWindow).__RALTIC_ANALYTICS_TEST__) return;
   const journeyId = isTrackingId(options.journeyId)
     ? persistJourneyId(options.journeyId)
     : getOrCreateJourneyId();
