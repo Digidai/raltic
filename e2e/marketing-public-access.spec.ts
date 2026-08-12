@@ -622,7 +622,7 @@ test.describe("marketing public access", () => {
     ];
     await page.setViewportSize({ width: 390, height: 844 });
     for (const item of cases) {
-      await page.goto(item.path, { waitUntil: "domcontentloaded" });
+      await page.goto(item.path, { waitUntil: "load" });
       await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://raltic.com${item.path}`);
       const jsonLd = await page.locator('script[type="application/ld+json"]').allTextContents();

@@ -208,6 +208,7 @@ test.describe("homepage full section render", () => {
       "The FAQ interaction fix requires the current bundle, not the pre-deploy production bundle.",
     );
     await gotoHome(page);
+    await page.waitForLoadState("load");
 
     const faqSection = page.locator("section#faq");
     const firstQuestion = faqSection.getByRole("button").first();
