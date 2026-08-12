@@ -70,21 +70,20 @@ export function MarketingNav() {
           <span>Raltic</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+        <nav className="hidden items-center gap-5 text-[13px] text-muted-foreground lg:flex">
+          <Link href="/features" className={linkClass}>Features</Link>
           <Link href="/workflows" className={linkClass}>Workflows</Link>
-          <Link href="/runtimes" className={linkClass}>Runtimes</Link>
-          <Link href="/desktop" className={linkClass}>Desktop beta</Link>
-          <Link href="/security" className={linkClass}>Security</Link>
-          {/* Audience dropdown — surfaces /indie + /teams without
-              crowding the top nav. */}
-          <ForDropdown />
+          <BuiltForDropdown />
+          <Link href="/blog" className={linkClass}>Blog</Link>
+          <Link href="/pricing" className={linkClass}>Pricing</Link>
+          <ResourcesDropdown />
           <Link href="/login" className={linkClass}>Sign in</Link>
           <MarketingButton href={PRIMARY_SIGNUP_HREF} variant="light-nav-primary">
             Get started <ArrowRight className="h-3.5 w-3.5" />
           </MarketingButton>
         </nav>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
           <MobileNavDropdown />
           <MarketingButton href={PRIMARY_SIGNUP_HREF} variant="light-nav-primary">
             Start
@@ -111,10 +110,16 @@ function MobileNavDropdown() {
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-64 !border-[color-mix(in_srgb,var(--foreground)_10%,transparent)] !bg-[var(--overlay)] !text-[var(--overlay-foreground)] !shadow-overlay"
+        className="max-h-[70vh] w-72 overflow-y-auto !border-[color-mix(in_srgb,var(--foreground)_10%,transparent)] !bg-[var(--overlay)] !text-[var(--overlay-foreground)] !shadow-overlay"
       >
+        <MobileNavItem href="/features" label="Features" />
         <MobileNavItem href="/workflows" label="Workflows" />
         <MobileNavItem href="/runtimes" label="Runtimes" />
+        <MobileNavItem href="/built-for" label="Built for teams" />
+        <MobileNavItem href="/blog" label="Blog" />
+        <MobileNavItem href="/answers" label="Answers" />
+        <MobileNavItem href="/compare" label="Comparisons" />
+        <MobileNavItem href="/pricing" label="Pricing" />
         <MobileNavItem href="/desktop" label="Desktop beta" />
         <MobileNavItem href="/security" label="Security" />
         <MobileNavItem href="/indie" label="For indie devs" description="Solo dev / AI tinkerer" />
@@ -172,7 +177,7 @@ function MobileNavItem({
  * "For" / Audiences dropdown. Click-only — click opens, click again or
  * click-outside or Escape closes.
  */
-function ForDropdown() {
+function BuiltForDropdown() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -182,13 +187,16 @@ function ForDropdown() {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        For <ChevronDown className="h-3 w-3 transition-transform" style={{ transform: open ? "rotate(180deg)" : undefined }} />
+        Built for <ChevronDown className="h-3 w-3 transition-transform" style={{ transform: open ? "rotate(180deg)" : undefined }} />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
         sideOffset={6}
         className="w-56 !border-[color-mix(in_srgb,var(--foreground)_10%,transparent)] !bg-[var(--overlay)] !text-[var(--overlay-foreground)] !shadow-overlay"
       >
+        <DropdownMenuItem href="/built-for/product-teams" className="!px-3 !py-2 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)]"><div><div className="font-medium text-[var(--overlay-foreground)]">Product teams</div><div className="mt-0.5 text-[11.5px] text-muted-foreground">Research, launches, decisions</div></div></DropdownMenuItem>
+        <DropdownMenuItem href="/built-for/engineering-teams" className="!px-3 !py-2 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)]"><div><div className="font-medium text-[var(--overlay-foreground)]">Engineering teams</div><div className="mt-0.5 text-[11.5px] text-muted-foreground">Local agents and review</div></div></DropdownMenuItem>
+        <DropdownMenuItem href="/built-for/founders" className="!px-3 !py-2 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)]"><div><div className="font-medium text-[var(--overlay-foreground)]">Founders</div><div className="mt-0.5 text-[11.5px] text-muted-foreground">Small teams, many agents</div></div></DropdownMenuItem>
         <DropdownMenuItem
           href="/indie"
           className="!px-3 !py-2 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)]"
@@ -217,6 +225,28 @@ function ForDropdown() {
             <div className="mt-0.5 text-[11.5px] text-muted-foreground">Mid-market eng orgs</div>
           </div>
         </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ResourcesDropdown() {
+  const [open, setOpen] = useState(false);
+  const items = [
+    { href: "/runtimes", label: "Runtimes", description: "Local and cloud execution" },
+    { href: "/compare", label: "Comparisons", description: "Evidence-linked alternatives" },
+    { href: "/answers", label: "Answers", description: "Direct GEO responses" },
+    { href: "/connectors", label: "Connectors", description: "GitHub, Linear, Notion" },
+    { href: "/security", label: "Security", description: "Current product boundaries" },
+    { href: "/about", label: "About", description: "Mission and research standard" },
+  ];
+  return (
+    <DropdownMenu onOpenChange={setOpen}>
+      <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-muted-foreground transition-colors hover:bg-[color-mix(in_srgb,var(--foreground)_4%,transparent)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]" aria-haspopup="menu" aria-expanded={open}>
+        Resources <ChevronDown className="h-3 w-3 transition-transform" style={{ transform: open ? "rotate(180deg)" : undefined }} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={6} className="w-60 !border-[color-mix(in_srgb,var(--foreground)_10%,transparent)] !bg-[var(--overlay)] !text-[var(--overlay-foreground)] !shadow-overlay">
+        {items.map((item) => <DropdownMenuItem key={item.href} href={item.href} textValue={item.label} className="!px-3 !py-2 !text-[var(--overlay-foreground)] hover:!bg-[color-mix(in_srgb,var(--foreground)_6%,transparent)] focus-visible:!bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)]"><div><div className="font-medium text-[var(--overlay-foreground)]">{item.label}</div><div className="mt-0.5 text-[11.5px] text-muted-foreground">{item.description}</div></div></DropdownMenuItem>)}
       </DropdownMenuContent>
     </DropdownMenu>
   );

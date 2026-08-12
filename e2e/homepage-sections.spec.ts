@@ -9,13 +9,18 @@ async function gotoHome(page: Page) {
 
 test.describe("homepage full section render", () => {
   test("/ returns 200 and shows the marketing nav header", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised marketing navigation requires the current bundle, not the pre-deploy production bundle.",
+    );
     await gotoHome(page);
 
     const header = page.locator("header");
     await expect(header).toBeVisible();
     await expect(header.getByRole("link", { name: "Raltic" })).toBeVisible();
+    await expect(header.getByRole("link", { name: "Features" })).toBeVisible();
     await expect(header.getByRole("link", { name: "Workflows" })).toBeVisible();
-    await expect(header.getByRole("link", { name: "Runtimes" })).toBeVisible();
+    await expect(header.getByRole("button", { name: "Resources" })).toBeVisible();
   });
 
   test("Hero is visible with the core positioning copy", async ({ page }) => {

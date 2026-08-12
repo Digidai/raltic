@@ -4,6 +4,12 @@ const STATIC_PAGE_FILES = new Map([
   ["apps/web/src/app/(marketing)/workflows/page.tsx", ["/workflows"]],
   ["apps/web/src/app/(marketing)/runtimes/page.tsx", ["/runtimes"]],
   ["apps/web/src/app/(marketing)/compare/page.tsx", ["/compare"]],
+  ["apps/web/src/app/(marketing)/features/page.tsx", ["/features"]],
+  ["apps/web/src/app/(marketing)/built-for/page.tsx", ["/built-for"]],
+  ["apps/web/src/app/(marketing)/blog/page.tsx", ["/blog"]],
+  ["apps/web/src/app/(marketing)/answers/page.tsx", ["/answers"]],
+  ["apps/web/src/app/(marketing)/about/page.tsx", ["/about"]],
+  ["apps/web/src/app/(marketing)/pricing/page.tsx", ["/pricing"]],
   ["apps/web/src/app/(marketing)/connectors/page.tsx", ["/connectors"]],
   ["apps/web/src/app/(marketing)/glossary/page.tsx", ["/glossary"]],
   ["apps/web/src/app/(marketing)/indie/page.tsx", ["/indie"]],
@@ -69,6 +75,24 @@ export function changedIndexableUrls(changedFiles, sitemapUrls) {
     }
     if (file.includes("/connectors/[connector]/") || file.endsWith("/lib/connector-seo.ts")) {
       includePrefix("/connectors");
+      continue;
+    }
+    if (file.includes("/features/[feature]/") || file.endsWith("/lib/growth-content.ts")) {
+      includePrefix("/features");
+      if (file.endsWith("/lib/growth-content.ts")) includePrefix("/built-for");
+      continue;
+    }
+    if (file.includes("/built-for/[audience]/")) {
+      includePrefix("/built-for");
+      continue;
+    }
+    if (file.includes("/blog/[article]/") || file.endsWith("/lib/editorial-content.ts")) {
+      includePrefix("/blog");
+      if (file.endsWith("/lib/editorial-content.ts")) includePrefix("/answers");
+      continue;
+    }
+    if (file.includes("/answers/[answer]/")) {
+      includePrefix("/answers");
       continue;
     }
     if (file.includes("/runtimes/") || file.endsWith("/components/marketing/runtime-data.ts") || file.endsWith("/components/marketing/runtime-page.tsx")) {

@@ -217,6 +217,167 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
       },
     ],
   },
+  {
+    slug: "microsoft-365-copilot",
+    competitor: "Microsoft 365 Copilot",
+    category: "Suite-native AI and agents",
+    metaTitle: "Raltic vs Microsoft 365 Copilot Agents",
+    metaDescription:
+      "Compare Microsoft 365 Copilot agents in Teams with Raltic workflow rooms for mixed runtimes, local agents, tasks, run evidence, and review.",
+    keywords: ["Microsoft 365 Copilot alternative", "Copilot agents comparison", "Teams AI agents", "AI workflow room"],
+    eyebrow: "Raltic vs Microsoft 365 Copilot",
+    h1: "Raltic vs Microsoft 365 Copilot agents.",
+    intro:
+      "Microsoft 365 Copilot brings agents into the Microsoft 365 and Teams environment with access governed by organizational data and permissions. Raltic is a smaller, runtime-neutral workflow layer: it coordinates verified local Claude Code and Codex agents with managed cloud agents, tasks, evidence, and human review in one bounded room.",
+    rows: [
+      { need: "Native Microsoft 365 and Teams experience", them: "yes", raltic: "no" },
+      { need: "Agents grounded in Microsoft 365 organizational data", them: "yes", raltic: "partial" },
+      { need: "Verified local Claude Code and Codex bridge runtimes", them: "no", raltic: "yes" },
+      { need: "Provider-neutral agents in one workflow room", them: "partial", raltic: "yes" },
+      { need: "Tasks, run evidence, and review tied to one process", them: "partial", raltic: "yes" },
+      { need: "Lightweight start outside a Microsoft tenant", them: "no", raltic: "yes" },
+    ],
+    whereTheyStop: [
+      "Microsoft 365 Copilot is optimized for the Microsoft 365 data, identity, and collaboration ecosystem rather than acting as a neutral coordination layer around local developer runtimes.",
+      "Teams chats and channels can include Copilot agents, but Raltic makes the bounded workflow, task state, run evidence, and human-owned decision its primary organizing model.",
+      "Raltic's verified bridge path lets Claude Code and Codex work from their local runtime machines and post selected outputs into the shared room.",
+    ],
+    whenThemBetter: [
+      "Your organization is standardized on Microsoft 365 and wants agents deeply grounded in that tenant's data and permission model.",
+      "The main use case is assistance inside Teams, Outlook, Word, Excel, or other Microsoft 365 applications.",
+      "You do not need local Claude Code or Codex runtimes coordinated with a provider-neutral workflow room.",
+    ],
+    sourceLinks: [
+      { label: "Microsoft: Agents overview", href: "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/agents-overview" },
+      { label: "Microsoft: Add Copilot agents to Teams chats", href: "https://support.microsoft.com/en-us/teams/chat-channels/find-and-add-copilot-agents-to-group-chats-in-microsoft-teams" },
+    ],
+    faqs: [
+      { q: "Does Raltic replace Microsoft Teams?", a: "No. Teams is a broad communication and Microsoft 365 collaboration platform. Raltic is a bounded workflow room for agent-assisted work and review." },
+      { q: "When is Microsoft 365 Copilot the stronger choice?", a: "Choose it when Microsoft 365 data, identity, and in-app assistance are the center of the workflow." },
+      { q: "Can Raltic coordinate local coding agents?", a: "Yes. Claude Code and OpenAI Codex are verified Raltic bridge runtimes." },
+    ],
+  },
+  {
+    slug: "asana-ai-studio",
+    competitor: "Asana AI Studio",
+    category: "No-code AI workflow builder",
+    metaTitle: "Raltic vs Asana AI Studio: Agent Workflows",
+    metaDescription:
+      "Compare Asana AI Studio no-code workflows with Raltic rooms for local and cloud agents, shared evidence, task handoffs, and human review.",
+    keywords: ["Asana AI Studio alternative", "Asana AI workflows", "AI workflow platform comparison", "agent workflow room"],
+    eyebrow: "Raltic vs Asana AI Studio",
+    h1: "Raltic vs Asana AI Studio.",
+    intro:
+      "Asana AI Studio lets teams design no-code smart workflows around Asana work, including triggers, classification, routing, and review steps. Raltic starts from a shared room where local and cloud agents participate directly, post evidence and artifacts, claim tasks, and bring a bounded result to human review.",
+    rows: [
+      { need: "No-code triggers and workflow configuration", them: "yes", raltic: "partial" },
+      { need: "Portfolio and project management system", them: "yes", raltic: "no" },
+      { need: "Verified local Claude Code and Codex runtimes", them: "no", raltic: "yes" },
+      { need: "Human and agents sharing one workflow conversation", them: "partial", raltic: "yes" },
+      { need: "Posted evidence and run state beside the decision", them: "partial", raltic: "yes" },
+      { need: "Start from a guided workflow room", them: "partial", raltic: "yes" },
+    ],
+    whereTheyStop: [
+      "Asana AI Studio is centered on constructing smart workflows inside Asana's work-management model; Raltic is centered on a room where agent work and human review unfold together.",
+      "Raltic supports verified local CLI runtimes as first-class participants rather than limiting execution to an in-product AI workflow builder.",
+      "Raltic is not a portfolio-management replacement; teams can keep broader project planning in Asana or Linear and use Raltic for the agent-assisted operating record.",
+    ],
+    whenThemBetter: [
+      "Asana is already your system of record and the main goal is adding no-code AI steps to existing projects and rules.",
+      "You need portfolio, project, goal, and workload management in the same product.",
+      "You prioritize trigger-driven automation over coordinating local AI runtimes and conversational evidence review.",
+    ],
+    sourceLinks: [
+      { label: "Asana: AI Studio", href: "https://asana.com/product/ai/ai-studio" },
+      { label: "Asana: AI Studio smart workflows", href: "https://help.asana.com/s/article/ai-studio-smart-workflows" },
+      { label: "Asana: Human-in-the-loop workflows", href: "https://help.asana.com/s/article/ai-studio-human-in-the-loop" },
+    ],
+    faqs: [
+      { q: "Does Raltic replace Asana?", a: "No. Asana is a comprehensive work-management platform. Raltic focuses on the shared workflow and review record around AI agent work." },
+      { q: "Does Raltic support event-trigger automation?", a: "Raltic does not currently claim a shipped no-code trigger builder comparable to Asana AI Studio." },
+      { q: "Which is better for local coding agents?", a: "Raltic is designed to coordinate verified Claude Code and Codex bridge runtimes with team-visible outputs." },
+    ],
+  },
+  {
+    slug: "notion-ai-agent",
+    competitor: "Notion AI and Notion Agent",
+    category: "Workspace-native AI",
+    metaTitle: "Raltic vs Notion AI Agent: Workflow Comparison",
+    metaDescription:
+      "Compare Notion Agent's workspace-native creation and research with Raltic rooms for mixed runtimes, task state, run evidence, and approvals.",
+    keywords: ["Notion AI alternative", "Notion Agent comparison", "AI workspace agents", "agent workflow platform"],
+    eyebrow: "Raltic vs Notion AI and Notion Agent",
+    h1: "Raltic vs Notion AI and Notion Agent.",
+    intro:
+      "Notion Agent can create and edit pages and databases, perform multi-step work, and use context from a user's Notion workspace and connected apps within that user's permissions. Raltic focuses on coordinating multiple local and cloud agent participants through a visible workflow, task, run, evidence, and review model.",
+    rows: [
+      { need: "Create and edit rich workspace documents", them: "yes", raltic: "partial" },
+      { need: "Search and act across Notion workspace context", them: "yes", raltic: "partial" },
+      { need: "Verified local Claude Code and Codex runtimes", them: "no", raltic: "yes" },
+      { need: "Multiple runtime agents as visible participants", them: "partial", raltic: "yes" },
+      { need: "Task and run state tied to human review", them: "partial", raltic: "yes" },
+      { need: "Bounded workflow room rather than document workspace", them: "no", raltic: "yes" },
+    ],
+    whereTheyStop: [
+      "Notion Agent is strongest inside Notion's document, database, and enterprise-search environment; Raltic is organized around an agent-assisted process and its review state.",
+      "Raltic treats local bridge runtimes and managed cloud agents as workflow participants with attributed messages, tasks, and run status.",
+      "The Raltic Notion connector can keep Notion in the toolchain with encrypted credentials and per-agent grants, but does not duplicate all of Notion Agent's native workspace editing experience.",
+    ],
+    whenThemBetter: [
+      "Your team's source of truth is Notion and the core need is creating, editing, or searching pages and databases in place.",
+      "You want an AI agent that inherits the current user's Notion permissions and works primarily within that workspace.",
+      "You do not need local coding agents or a separate task-and-run record around multi-runtime work.",
+    ],
+    sourceLinks: [
+      { label: "Notion: Notion Agent", href: "https://www.notion.com/help/notion-agent" },
+      { label: "Notion: AI security and privacy", href: "https://www.notion.com/help/enterprise-search-security-and-privacy-practices" },
+    ],
+    faqs: [
+      { q: "Does Raltic replace Notion?", a: "No. Notion can remain the document and knowledge workspace. Raltic coordinates the agent-assisted workflow and can connect to Notion through a scoped connector." },
+      { q: "Which product is better for editing Notion databases?", a: "Notion Agent is the better native choice for work centered on Notion pages and databases." },
+      { q: "Which product supports Claude Code and Codex as local participants?", a: "Raltic verifies both through its local bridge runtime." },
+    ],
+  },
+  {
+    slug: "n8n-ai",
+    competitor: "n8n AI workflows",
+    category: "Automation and integration platform",
+    metaTitle: "Raltic vs n8n AI: Agent Workflow Comparison",
+    metaDescription:
+      "Compare n8n's AI workflow automation with Raltic's collaborative rooms for local and cloud agents, shared evidence, tasks, and human decisions.",
+    keywords: ["n8n AI alternative", "n8n vs agent workspace", "AI workflow automation comparison", "human in the loop agents"],
+    eyebrow: "Raltic vs n8n AI workflows",
+    h1: "Raltic vs n8n AI workflows.",
+    intro:
+      "n8n is a workflow automation platform that combines integrations, AI steps, human-in-the-loop checks, and inspectable executions. Raltic is collaboration-first: humans and local or cloud agents share a room where the brief, messages, tasks, posted artifacts, review state, and final decision remain together.",
+    rows: [
+      { need: "Visual automation builder and event triggers", them: "yes", raltic: "no" },
+      { need: "Broad integration and API workflow catalog", them: "yes", raltic: "partial" },
+      { need: "Execution inspection and human checks", them: "yes", raltic: "yes" },
+      { need: "Human and agents sharing one conversational room", them: "partial", raltic: "yes" },
+      { need: "Verified local Claude Code and Codex participation", them: "partial", raltic: "yes" },
+      { need: "Reusable decision and task record as primary surface", them: "partial", raltic: "yes" },
+    ],
+    whereTheyStop: [
+      "n8n is optimized for building and running automations across systems; Raltic is optimized for people and agents coordinating a bounded workflow and reviewing its evidence.",
+      "Raltic's bridge provides a supported participant model for Claude Code and Codex rather than asking teams to build custom automation nodes around each local runtime.",
+      "Raltic does not match n8n's breadth of event triggers or integrations and should not be chosen as a general automation replacement.",
+    ],
+    whenThemBetter: [
+      "You need a visual automation builder with many integrations, triggers, branches, and deterministic system-to-system steps.",
+      "The workflow should run mostly unattended and can be represented as an execution graph.",
+      "Your primary need is integration automation rather than a shared operating room for human and agent participants.",
+    ],
+    sourceLinks: [
+      { label: "n8n: AI workflow automation", href: "https://n8n.io/ai/" },
+      { label: "n8n: Human-in-the-loop for tool calls", href: "https://docs.n8n.io/advanced-ai/human-in-the-loop-tools/" },
+    ],
+    faqs: [
+      { q: "Does Raltic replace n8n?", a: "No. n8n is stronger for trigger-driven integration automation. Raltic is designed for shared agent work, evidence, tasks, and human decisions." },
+      { q: "Can n8n support human review?", a: "Yes. n8n documents human-in-the-loop checks for AI tool calls and provides execution inspection." },
+      { q: "When is Raltic the better fit?", a: "Choose Raltic when local and cloud agents need to collaborate with people in a workflow room and the reviewable decision record is the primary product surface." },
+    ],
+  },
 ];
 
 export function getComparisonPage(slug: string | null | undefined): ComparisonPage | null {

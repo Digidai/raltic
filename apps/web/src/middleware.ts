@@ -34,6 +34,12 @@ const PUBLIC_MARKETING = [
   "/teams",                   // mid-market waitlist (noindex but still public)
   "/connectors",              // connector overview + /connectors/{github,linear,notion}
   "/compare",                 // comparison hub + /compare/{competitor}
+  "/features",                // product capability hub + detail pages
+  "/built-for",               // audience hub + role-specific pages
+  "/blog",                    // research-backed guides + RSS route
+  "/answers",                 // answer-first GEO pages
+  "/about",                   // entity and editorial transparency
+  "/pricing",                 // current private-beta commercial terms
   "/glossary",                // AI agent workflow glossary
   "/security",                // security/privacy disclosures
   "/privacy",                 // privacy policy
@@ -50,7 +56,7 @@ const PUBLIC_MARKETING = [
 // Keep the IndexNow key path in sync with `lib/indexnow.config.json`
 // and `app/{key}.txt/route.ts`; public-routing tests exercise this exact path.
 const INDEXNOW_KEY_FILE = "/c1e8ec78e51750267774ae08ab902ec6.txt";
-const PUBLIC_FILES = new Set(["/sitemap.xml", "/robots.txt", "/llms.txt", "/llms-full.txt", INDEXNOW_KEY_FILE, "/favicon.ico"]);
+const PUBLIC_FILES = new Set(["/sitemap.xml", "/robots.txt", "/llms.txt", "/llms-full.txt", "/ai-index.json", "/blog/feed.xml", INDEXNOW_KEY_FILE, "/favicon.ico"]);
 
 // Next.js App Router icon / OG conventions. Each of these is generated
 // by a co-located file (icon.tsx, apple-icon.tsx, opengraph-image.tsx)

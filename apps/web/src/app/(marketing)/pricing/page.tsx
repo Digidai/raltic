@@ -1,0 +1,29 @@
+import type { Metadata } from "next";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { Breadcrumbs } from "@/components/marketing/breadcrumbs";
+import { MarketingFaqList } from "@/components/marketing/faq-list";
+import { MarketingFooter } from "@/components/marketing/footer";
+import { JsonLdScript } from "@/components/marketing/json-ld";
+import { MarketingButton } from "@/components/marketing/marketing-button";
+import { SITE_CONTENT_UPDATED, breadcrumbJsonLd, faqPageJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from "@/lib/seo";
+
+const FAQS = [
+  { q: "How much does Raltic cost during private beta?", a: "Raltic is free during private beta. There is no Raltic subscription charge and no credit card is required to start." },
+  { q: "Are AI model costs included?", a: "No. For bridge runtimes, you use your own Anthropic or OpenAI subscription or key and pay the provider directly. Raltic does not mark up that usage." },
+  { q: "Will private beta always remain free?", a: "No permanent pricing commitment is being made. Any future paid plan, limits, and migration terms will be published before they apply." },
+  { q: "Are all features and runtimes production-ready?", a: "Claude Code and OpenAI Codex are verified bridge runtimes. OpenClaw and Hermes are experimental. Connector and workflow limitations are documented on their public pages." },
+];
+
+export const metadata: Metadata = marketingMetadata({ title: "Raltic Pricing: Free During Private Beta", description: "Raltic is free during private beta. Bring your own Claude or OpenAI provider subscription for bridge runtimes with no Raltic usage markup.", path: "/pricing", keywords: ["Raltic pricing", "AI agent workflow pricing", "free AI agent workspace"] });
+
+export default function PricingPage() {
+  return (
+    <>
+      <JsonLdScript data={jsonLdGraph([webPageJsonLd({ path: "/pricing", name: "Raltic pricing", description: metadata.description as string, dateModified: SITE_CONTENT_UPDATED }), faqPageJsonLd(FAQS, "/pricing"), breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }])])} />
+      <section className="border-b border-black/[0.07] bg-[#fafaf8] pt-28 pb-20 sm:pt-32"><Breadcrumbs items={[{ name: "Home", href: "/" }, { name: "Pricing", href: "/pricing" }]} /><div className="mx-auto mt-8 max-w-3xl px-6 text-center"><p className="text-xs font-medium uppercase text-blue-700">Private beta pricing</p><h1 className="mt-5 text-balance text-5xl font-medium leading-[1.05] text-zinc-900 sm:text-6xl">Start free. Pay your AI provider directly.</h1><p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-zinc-600">Raltic has no subscription charge during private beta. Bring your existing provider subscription or key for Claude Code and Codex bridge runtimes. We do not meter or mark up that usage.</p></div></section>
+      <section className="bg-white px-6 py-20"><div className="mx-auto max-w-4xl"><div className="rounded-lg border border-blue-200 bg-blue-50 p-7 sm:p-10"><div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start"><div><p className="text-sm font-medium text-blue-700">Private beta</p><p className="mt-3 text-5xl font-medium text-zinc-900">$0</p><p className="mt-2 text-sm text-zinc-600">No credit card required</p></div><MarketingButton href="/signup?workflow=launch-readiness" ctaTarget="pricing_signup">Start free beta <ArrowRight className="h-4 w-4" aria-hidden="true" /></MarketingButton></div><div className="mt-8 grid gap-3 border-t border-blue-200 pt-7 sm:grid-cols-2">{["Workflow rooms for humans and agents", "Managed cloud agent path", "Verified Claude Code and Codex bridge runtimes", "Tasks, review state, run status, and workspace memory", "GitHub, Linear, and Notion connectors", "Public workflow starters and product support"].map((item) => <div key={item} className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-700" aria-hidden="true" /><p className="text-sm leading-relaxed text-zinc-700">{item}</p></div>)}</div></div><div className="mt-8 grid gap-4 md:grid-cols-2"><div className="rounded-lg border border-zinc-200 p-6"><h2 className="text-lg font-medium text-zinc-900">Paid directly to providers</h2><p className="mt-3 text-sm leading-relaxed text-zinc-600">Anthropic or OpenAI subscription and API costs remain between you and the provider for bridge-hosted runtimes. Their terms, retention, and limits apply to their processing.</p></div><div className="rounded-lg border border-zinc-200 p-6"><h2 className="text-lg font-medium text-zinc-900">Future pricing</h2><p className="mt-3 text-sm leading-relaxed text-zinc-600">We are not publishing an invented post-beta plan. Any future price, usage limit, or migration term will be disclosed before it applies.</p></div></div></div></section>
+      <section id="faq" className="border-y border-black/[0.07] bg-[#fafaf8] px-6 py-20"><div className="mx-auto max-w-4xl"><p className="text-xs font-medium uppercase text-blue-700">Pricing FAQ</p><h2 className="mt-4 text-3xl font-medium text-zinc-900 sm:text-4xl">Clear costs and current limits.</h2><MarketingFaqList idPrefix="pricing" items={FAQS} theme="light" /></div></section>
+      <MarketingFooter lead={<div className="mx-auto max-w-3xl text-center"><h2 className="text-balance text-3xl font-medium text-zinc-900 sm:text-4xl">Start with one workflow at no Raltic cost.</h2><p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-zinc-600">Choose a starter, review the first proof, and decide whether the operating model fits.</p><div className="mt-7 flex justify-center"><MarketingButton href="/signup?workflow=launch-readiness" ctaTarget="pricing_footer_signup">Start free beta <ArrowRight className="h-4 w-4" aria-hidden="true" /></MarketingButton></div></div>} />
+    </>
+  );
+}

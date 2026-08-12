@@ -8,6 +8,14 @@ const urls = [
   "https://raltic.com/workflows/launch-readiness",
   "https://raltic.com/runtimes",
   "https://raltic.com/runtimes/claude",
+  "https://raltic.com/features",
+  "https://raltic.com/features/workflow-rooms",
+  "https://raltic.com/built-for",
+  "https://raltic.com/built-for/product-teams",
+  "https://raltic.com/blog",
+  "https://raltic.com/blog/what-is-an-agent-workflow",
+  "https://raltic.com/answers",
+  "https://raltic.com/answers/what-is-an-ai-workflow-room",
   "https://raltic.com/privacy",
 ];
 
@@ -41,6 +49,30 @@ test("runtime detail changes include the runtime index and verified details", ()
     [
       "https://raltic.com/runtimes",
       "https://raltic.com/runtimes/claude",
+    ],
+  );
+});
+
+test("growth registries notify only their feature and audience collections", () => {
+  assert.deepEqual(
+    changedIndexableUrls(["apps/web/src/lib/growth-content.ts"], urls),
+    [
+      "https://raltic.com/built-for",
+      "https://raltic.com/built-for/product-teams",
+      "https://raltic.com/features",
+      "https://raltic.com/features/workflow-rooms",
+    ],
+  );
+});
+
+test("editorial registry changes notify blog and answer collections", () => {
+  assert.deepEqual(
+    changedIndexableUrls(["apps/web/src/lib/editorial-content.ts"], urls),
+    [
+      "https://raltic.com/answers",
+      "https://raltic.com/answers/what-is-an-ai-workflow-room",
+      "https://raltic.com/blog",
+      "https://raltic.com/blog/what-is-an-agent-workflow",
     ],
   );
 });

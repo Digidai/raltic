@@ -34,8 +34,12 @@ async function getWithRetry(
 }
 
 test.describe("public routing and crawler files", () => {
-  for (const path of ["/sitemap.xml", INDEXNOW_KEY_PATH, "/icon", "/apple-icon", "/opengraph-image"]) {
+  for (const path of ["/sitemap.xml", "/ai-index.json", "/blog/feed.xml", INDEXNOW_KEY_PATH, "/icon", "/apple-icon", "/opengraph-image"]) {
     test(`${path} is public and carries security headers`, async ({ request }) => {
+      test.skip(
+        isPreDeployProductionTarget() && ["/ai-index.json", "/blog/feed.xml"].includes(path),
+        "This discovery file requires the current bundle, not the pre-deploy production bundle.",
+      );
       const res = await getWithRetry(request, path, { maxRedirects: 0 });
 
       expect(res.status(), `${path} should not redirect to /login`).toBe(200);
@@ -84,7 +88,7 @@ test.describe("public routing and crawler files", () => {
     expect(res.status()).toBe(200);
     const body = await res.text();
 
-    for (const path of ["/", "/runtimes", "/runtimes/claude", "/runtimes/codex", "/indie", "/connectors", "/security", "/privacy", "/terms"]) {
+    for (const path of ["/", "/features", "/built-for", "/blog", "/answers", "/about", "/pricing", "/runtimes", "/runtimes/claude", "/runtimes/codex", "/indie", "/connectors", "/security", "/privacy", "/terms"]) {
       expect(body, `sitemap should include ${path}`).toContain(`https://raltic.com${path === "/" ? "/" : path}`);
     }
     for (const path of ["/teams", "/runtimes/openclaw", "/runtimes/hermes", "/signup", "/login", "/forgot-password", "/s/"]) {

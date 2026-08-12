@@ -575,7 +575,7 @@ function Comparison(): React.ReactElement {
           </Link>
         </div>
         <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-zinc-500">
-          Capability fit, not a feature score. Reviewed against mainstream public offerings on July 26, 2026.
+          Capability fit, not a feature score. Reviewed against mainstream public offerings on August 13, 2026.
           Detailed pages explain when the other product is the better choice.
         </p>
       </div>

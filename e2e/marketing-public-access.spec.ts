@@ -2,6 +2,9 @@ import { expect, test } from "@playwright/test";
 import { INDEXNOW_ENDPOINT, INDEXNOW_KEY, INDEXNOW_KEY_LOCATION } from "../apps/web/src/lib/indexnow";
 import { contrast, parseRgb } from "./helpers/heroui-workspace";
 import { isPreDeployProductionTarget } from "./helpers/env";
+import { ANSWER_PAGES, BLOG_ARTICLES } from "../apps/web/src/lib/editorial-content";
+import { AUDIENCE_PAGES, FEATURE_PAGES } from "../apps/web/src/lib/growth-content";
+import { COMPARISON_PAGES } from "../apps/web/src/lib/comparison-seo";
 
 type MarketingRoute = {
   path: string;
@@ -9,6 +12,10 @@ type MarketingRoute = {
   headingSelector?: "h1" | "h1, h2";
   robots?: "noindex,nofollow";
 };
+
+function exactText(value: string): RegExp {
+  return new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+}
 
 const marketingRoutes: MarketingRoute[] = [
   {
@@ -94,12 +101,45 @@ const marketingRoutes: MarketingRoute[] = [
   },
 ];
 
+marketingRoutes.push(
+  { path: "/compare", heading: /How Raltic compares/i, headingSelector: "h1" },
+  ...COMPARISON_PAGES.map((page) => ({ path: `/compare/${page.slug}`, heading: exactText(page.h1), headingSelector: "h1" as const })),
+  { path: "/connectors/github", heading: /GitHub/i, headingSelector: "h1" },
+  { path: "/connectors/linear", heading: /Linear/i, headingSelector: "h1" },
+  { path: "/connectors/notion", heading: /Notion/i, headingSelector: "h1" },
+  { path: "/glossary", heading: /AI agent workflow glossary/i, headingSelector: "h1" },
+  { path: "/features", heading: /operating layer around agent work/i, headingSelector: "h1" },
+  ...FEATURE_PAGES.map((page) => ({ path: `/features/${page.slug}`, heading: exactText(page.h1), headingSelector: "h1" as const })),
+  { path: "/built-for", heading: /built for teams that own the outcome/i, headingSelector: "h1" },
+  ...AUDIENCE_PAGES.map((page) => ({ path: `/built-for/${page.slug}`, heading: exactText(page.h1), headingSelector: "h1" as const })),
+  { path: "/blog", heading: /field guides for accountable agent work/i, headingSelector: "h1" },
+  ...BLOG_ARTICLES.map((article) => ({ path: `/blog/${article.slug}`, heading: exactText(article.title), headingSelector: "h1" as const })),
+  { path: "/answers", heading: /AI agent workflow questions, answered/i, headingSelector: "h1" },
+  ...ANSWER_PAGES.map((answer) => ({ path: `/answers/${answer.slug}`, heading: exactText(answer.question), headingSelector: "h1" as const })),
+  { path: "/about", heading: /Agent work should be as reviewable as human work/i, headingSelector: "h1" },
+  { path: "/pricing", heading: /Start free\. Pay your AI provider directly/i, headingSelector: "h1" },
+);
+
+const currentBundleOnlyMarketingRoutes = new Set([
+  ...["microsoft-365-copilot", "asana-ai-studio", "notion-ai-agent", "n8n-ai"].map((slug) => `/compare/${slug}`),
+  "/features",
+  ...FEATURE_PAGES.map((page) => `/features/${page.slug}`),
+  "/built-for",
+  ...AUDIENCE_PAGES.map((page) => `/built-for/${page.slug}`),
+  "/blog",
+  ...BLOG_ARTICLES.map((article) => `/blog/${article.slug}`),
+  "/answers",
+  ...ANSWER_PAGES.map((answer) => `/answers/${answer.slug}`),
+  "/about",
+  "/pricing",
+]);
+
 test.describe("marketing public access", () => {
   for (const route of marketingRoutes) {
     test(`${route.path} is reachable anonymously and renders marketing chrome`, async ({ page }) => {
       test.skip(
-        isPreDeployProductionTarget() && route.path === "/workflows/code-review",
-        "The revised code-review landing page requires the current bundle, not the pre-deploy production bundle.",
+        isPreDeployProductionTarget() && (route.path === "/workflows/code-review" || currentBundleOnlyMarketingRoutes.has(route.path)),
+        "This landing page requires the current bundle, not the pre-deploy production bundle.",
       );
       const response = await page.goto(route.path, { waitUntil: "domcontentloaded" });
 
@@ -401,7 +441,7 @@ test.describe("marketing public access", () => {
       "href",
       "https://help.openai.com/en/articles/10169521-projects-in-chatgpt",
     );
-    await expect(page.getByText(/Capability-fit review updated July 26, 2026/i)).toBeVisible();
+    await expect(page.getByText(/Capability-fit review updated August 13, 2026/i)).toBeVisible();
   });
 
   test("privacy copy discloses intentional posts and model-provider routing", async ({ page }) => {
@@ -499,6 +539,103 @@ test.describe("marketing public access", () => {
     const llmsFullText = await llmsFull.text();
     expect(llmsFullText).toContain("Raltic vs");
     expect(llmsFullText).toContain("Bridge runtime");
+  });
+
+  test("growth content registries have unique routes, metadata, and complete editorial fields", () => {
+    const pages = [
+      ...FEATURE_PAGES.map((page) => ({ slug: `features/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
+      ...AUDIENCE_PAGES.map((page) => ({ slug: `built-for/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
+      ...BLOG_ARTICLES.map((page) => ({ slug: `blog/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
+      ...ANSWER_PAGES.map((page) => ({ slug: `answers/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
+    ];
+    expect(new Set(pages.map((page) => page.slug)).size).toBe(pages.length);
+    expect(new Set(pages.map((page) => page.title)).size).toBe(pages.length);
+    expect(new Set(pages.map((page) => page.description)).size).toBe(pages.length);
+    for (const page of pages) {
+      expect(page.title.length, page.slug).toBeGreaterThanOrEqual(20);
+      expect(page.description.length, page.slug).toBeGreaterThanOrEqual(100);
+      expect(page.description.length, page.slug).toBeLessThanOrEqual(180);
+      expect(page.faqCount, page.slug).toBeGreaterThanOrEqual(2);
+      expect(page.relatedCount, page.slug).toBeGreaterThanOrEqual(3);
+    }
+    for (const article of BLOG_ARTICLES) {
+      expect(article.sections.length, article.slug).toBeGreaterThanOrEqual(4);
+      expect(article.sources.length, article.slug).toBeGreaterThanOrEqual(3);
+      expect(article.sources.every((source) => source.href.startsWith("https://")), article.slug).toBe(true);
+    }
+    expect(COMPARISON_PAGES).toHaveLength(7);
+    expect(COMPARISON_PAGES.every((page) => page.sourceLinks.length >= 2)).toBe(true);
+  });
+
+  test("new SEO and GEO collections are fully discoverable", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The new discovery collections require the current bundle, not the pre-deploy production bundle.",
+    );
+    const sitemap = await (await request.get("/sitemap.xml")).text();
+    const expectedPaths = [
+      "/features", "/built-for", "/blog", "/answers", "/about", "/pricing",
+      ...FEATURE_PAGES.map((page) => `/features/${page.slug}`),
+      ...AUDIENCE_PAGES.map((page) => `/built-for/${page.slug}`),
+      ...BLOG_ARTICLES.map((article) => `/blog/${article.slug}`),
+      ...ANSWER_PAGES.map((answer) => `/answers/${answer.slug}`),
+      ...COMPARISON_PAGES.map((page) => `/compare/${page.slug}`),
+    ];
+    for (const path of expectedPaths) expect(sitemap, path).toContain(`https://raltic.com${path}`);
+
+    const aiIndexResponse = await request.get("/ai-index.json");
+    expect(aiIndexResponse.status()).toBe(200);
+    expect(aiIndexResponse.headers()["content-type"]).toContain("application/json");
+    const aiIndex = await aiIndexResponse.json() as { pages: Array<{ url: string }>; current_limitations: string[] };
+    const indexedUrls = new Set(aiIndex.pages.map((page) => page.url));
+    for (const path of expectedPaths) expect(indexedUrls.has(`https://raltic.com${path}`), path).toBe(true);
+    expect(aiIndex.current_limitations.join(" ")).toContain("OpenClaw and Hermes are experimental");
+
+    const rss = await request.get("/blog/feed.xml");
+    expect(rss.status()).toBe(200);
+    expect(rss.headers()["content-type"]).toContain("application/rss+xml");
+    const rssText = await rss.text();
+    for (const article of BLOG_ARTICLES) expect(rssText, article.slug).toContain(`https://raltic.com/blog/${article.slug}`);
+
+    for (const discoveryFile of ["/llms.txt", "/llms-full.txt"]) {
+      const text = await (await request.get(discoveryFile)).text();
+      expect(text).toContain("https://raltic.com/features/workflow-rooms");
+      expect(text).toContain("https://raltic.com/built-for/product-teams");
+      expect(text).toContain("https://raltic.com/blog/what-is-an-agent-workflow");
+      expect(text).toContain("https://raltic.com/answers/what-is-an-ai-workflow-room");
+    }
+    const llmsFullText = await (await request.get("/llms-full.txt")).text();
+    const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+    for (const url of sitemapUrls) expect(llmsFullText, url).toContain(url);
+  });
+
+  test("representative growth pages expose canonical data, structured data, CTA, FAQ interaction, and mobile-safe layout", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The growth page templates require the current bundle, not the pre-deploy production bundle.",
+    );
+    const cases = [
+      { path: "/features/human-review", schema: "FAQPage" },
+      { path: "/built-for/product-teams", schema: "FAQPage" },
+      { path: "/blog/what-is-an-agent-workflow", schema: "Article" },
+      { path: "/answers/what-is-an-ai-workflow-room", schema: "FAQPage" },
+    ];
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const item of cases) {
+      await page.goto(item.path, { waitUntil: "domcontentloaded" });
+      await expect(page.locator("h1")).toHaveCount(1);
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://raltic.com${item.path}`);
+      const jsonLd = await page.locator('script[type="application/ld+json"]').allTextContents();
+      expect(jsonLd.join("\n"), item.path).toContain(item.schema);
+      await expect(page.getByRole("link", { name: /Start free beta/i }).first()).toBeVisible();
+      const faqTrigger = page.locator("#faq [data-slot='accordion-trigger']").first();
+      await expect(faqTrigger).toBeVisible();
+      await faqTrigger.click();
+      await expect(faqTrigger).toHaveAttribute("aria-expanded", "true");
+      const overflow = await page.evaluate(() => ({ body: document.body.scrollWidth > innerWidth + 1, html: document.documentElement.scrollWidth > innerWidth + 1 }));
+      expect(overflow.body, item.path).toBe(false);
+      expect(overflow.html, item.path).toBe(false);
+    }
   });
 
   test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {
