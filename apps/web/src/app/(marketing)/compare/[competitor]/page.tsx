@@ -123,7 +123,7 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
             </div>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-zinc-500">
-            Capability-fit review updated July 26, 2026. &quot;Partial&quot; means the capability exists but is not the product&apos;s primary workflow model. Tell us at <span className="text-zinc-800">hello@raltic.com</span> if a source has changed.
+            Capability-fit review updated August 13, 2026. &quot;Partial&quot; means the capability exists but is not the product&apos;s primary workflow model. Tell us at <span className="text-zinc-800">hello@raltic.com</span> if a source has changed.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
             {page.sourceLinks.map((source) => (

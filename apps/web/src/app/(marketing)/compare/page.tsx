@@ -19,9 +19,9 @@ import {
 } from "@/lib/seo";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Raltic Compared: ChatGPT Business, Cursor & Slack AI",
+  title: "Raltic Compared: 7 AI Workflow Alternatives",
   description:
-    "Evidence-linked comparisons of Raltic with ChatGPT Business, Cursor, and Slack AI, including where each product is the better fit.",
+    "Evidence-linked comparisons of Raltic with seven AI assistants, workspaces, and automation tools, including where each product is the better fit.",
   path: "/compare",
   keywords: [
     "AI workflow platform comparison",
@@ -38,9 +38,9 @@ export default function CompareIndexPage(): React.ReactElement {
         data={jsonLdGraph([
           webPageJsonLd({
             path: "/compare",
-            name: "Raltic Compared to ChatGPT Business, Cursor, and Slack AI",
+            name: "Raltic compared to AI assistants, workspaces, and automation tools",
             description:
-              "Evidence-linked comparisons of Raltic against ChatGPT Business, Cursor, and Slack AI.",
+              "Evidence-linked comparisons of Raltic against seven AI assistants, workspaces, and automation tools.",
             type: "CollectionPage",
             dateModified: SITE_CONTENT_UPDATED,
             mainEntity: { "@id": `${absoluteUrl("/compare")}#itemlist` },
@@ -72,13 +72,13 @@ export default function CompareIndexPage(): React.ReactElement {
             How Raltic compares.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-zinc-600">
-            If your team has tried ChatGPT Business, Cursor, or Slack AI, compare the products by operating model: shared context, runtimes, run evidence, tasks, and approval boundaries. Each page links to current first-party sources and explains when the other product is the better fit.
+            Compare products by operating model: shared context, runtimes, integration depth, run evidence, tasks, and approval boundaries. Every page links to current first-party sources and explains when the other product is the better fit.
           </p>
         </div>
       </section>
 
       <section className="bg-white px-6 py-20 sm:py-24">
-        <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-4 md:grid-cols-2 lg:grid-cols-3">
           {COMPARISON_PAGES.map((p) => (
             <Link
               key={p.slug}

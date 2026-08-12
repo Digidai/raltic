@@ -10,7 +10,7 @@ export const SITE_PUBLISHED_AT = new Date("2026-06-01T00:00:00.000Z");
 // Freshness date for the SEO/GEO content batch (comparison, integration,
 // glossary pages). Bump this when those pages get a real content update —
 // it's the `dateModified` signal search + AI engines read.
-export const SITE_CONTENT_UPDATED = new Date("2026-07-26T00:00:00.000Z");
+export const SITE_CONTENT_UPDATED = new Date("2026-08-13T00:00:00.000Z");
 
 function toIso(value: string | Date | undefined, fallback: Date): string {
   if (!value) return fallback.toISOString();
@@ -34,12 +34,18 @@ export function marketingMetadata({
   path,
   keywords,
   robots,
+  type = "website",
+  publishedTime,
+  modifiedTime,
 }: {
   title: string;
   description: string;
   path: string;
   keywords?: string[];
   robots?: Metadata["robots"];
+  type?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
 }): Metadata {
   const url = absoluteUrl(path);
   const imageUrl = absoluteUrl(SITE_OG_IMAGE_PATH);
@@ -49,7 +55,7 @@ export function marketingMetadata({
     keywords,
     alternates: { canonical: url },
     openGraph: {
-      type: "website",
+      type,
       siteName: SITE_NAME,
       title,
       description,
@@ -62,6 +68,12 @@ export function marketingMetadata({
           alt: `${title} - ${SITE_NAME}`,
         },
       ],
+      ...(type === "article" ? {
+        publishedTime,
+        modifiedTime,
+        authors: [SITE_NAME],
+        section: "AI agent workflows",
+      } : {}),
     },
     twitter: {
       card: "summary_large_image",
@@ -143,7 +155,7 @@ export function softwareApplicationJsonLd(): Record<string, unknown> {
       "Workflow rooms where humans and AI agents share one accountable space",
       "Verified Claude Code and OpenAI Codex bridge runtimes",
       "Cloud agents that run with zero local install",
-      "Human approval gates before agent output reaches customers",
+      "Visible human review state and decision records for agent-assisted work",
       "Bridge runtimes read repositories locally while Raltic receives only posted messages, artifacts, and run status",
       "GitHub, Linear, and Notion connectors with per-agent grants",
     ],
@@ -188,6 +200,35 @@ export function webPageJsonLd({
     mainEntity,
     datePublished: toIso(datePublished, SITE_PUBLISHED_AT),
     dateModified: toIso(dateModified, SITE_LAST_MODIFIED),
+    isAccessibleForFree: true,
+    inLanguage: "en-US",
+  };
+}
+
+export function articleJsonLd({
+  path,
+  headline,
+  description,
+  datePublished,
+  dateModified,
+}: {
+  path: string;
+  headline: string;
+  description: string;
+  datePublished: string | Date;
+  dateModified: string | Date;
+}): Record<string, unknown> {
+  return {
+    "@type": "Article",
+    "@id": `${absoluteUrl(path)}#article`,
+    mainEntityOfPage: { "@id": `${absoluteUrl(path)}#webpage` },
+    headline,
+    description,
+    image: [absoluteUrl(SITE_OG_IMAGE_PATH)],
+    datePublished: toIso(datePublished, SITE_PUBLISHED_AT),
+    dateModified: toIso(dateModified, SITE_CONTENT_UPDATED),
+    author: { "@id": absoluteUrl("/#organization") },
+    publisher: { "@id": absoluteUrl("/#organization") },
     isAccessibleForFree: true,
     inLanguage: "en-US",
   };

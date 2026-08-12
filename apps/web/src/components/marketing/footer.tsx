@@ -71,20 +71,30 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
           </p>
         </div>
         <FooterCol isLight={isLight} label="Product" links={[
-          { label: "Home", href: "/" },
+          { label: "Features", href: "/features" },
           { label: "Workflows", href: "/workflows" },
           { label: "Runtimes", href: "/runtimes" },
           { label: "Connectors", href: "/connectors" },
-          { label: "Compare", href: "/compare" },
-          { label: "Glossary", href: "/glossary" },
-          { label: "Desktop beta", href: "/desktop" },
-          { label: "Security", href: "/security" },
         ]} />
-        <FooterCol isLight={isLight} label="Audiences" links={[
+        <FooterCol isLight={isLight} label="Built for" links={[
+          { label: "Product teams", href: "/built-for/product-teams" },
+          { label: "Engineering teams", href: "/built-for/engineering-teams" },
+          { label: "Founders", href: "/built-for/founders" },
+          { label: "GTM teams", href: "/built-for/gtm-teams" },
+          { label: "Research teams", href: "/built-for/research-teams" },
+          { label: "AI-native teams", href: "/built-for/ai-native-teams" },
           { label: "For indie devs", href: "/indie" },
-          { label: "For teams (waitlist)", href: "/teams" },
+          { label: "Teams waitlist", href: "/teams" },
         ]} />
-        <FooterCol isLight={isLight} label="Get started" links={[
+        <FooterCol isLight={isLight} label="Resources" links={[
+          { label: "Blog", href: "/blog" },
+          { label: "Answers", href: "/answers" },
+          { label: "Comparisons", href: "/compare" },
+          { label: "Glossary", href: "/glossary" },
+          { label: "Pricing", href: "/pricing" },
+          { label: "About", href: "/about" },
+          { label: "Security", href: "/security" },
+          { label: "Desktop beta", href: "/desktop" },
           { label: "Sign up", href: "/signup" },
           { label: "Sign in", href: "/login" },
           { label: "Privacy policy", href: "/privacy" },

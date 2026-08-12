@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { WORKFLOW_SEO_PAGES } from "@/lib/workflow-seo";
 import { COMPARISON_PAGES } from "@/lib/comparison-seo";
 import { CONNECTOR_PAGES } from "@/lib/connector-seo";
+import { AUDIENCE_PAGES, FEATURE_PAGES } from "@/lib/growth-content";
+import { ANSWER_PAGES, BLOG_ARTICLES } from "@/lib/editorial-content";
 import { SITE_CONTENT_UPDATED, SITE_LAST_MODIFIED, SITE_URL } from "@/lib/seo";
 
 /**
@@ -22,7 +24,7 @@ import { SITE_CONTENT_UPDATED, SITE_LAST_MODIFIED, SITE_URL } from "@/lib/seo";
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = SITE_URL;
   const publicPages: MetadataRoute.Sitemap = [
-    { url: `${base}/`,                lastModified: SITE_LAST_MODIFIED, changeFrequency: "weekly",  priority: 1.0 },
+    { url: `${base}/`,                lastModified: SITE_CONTENT_UPDATED, changeFrequency: "weekly",  priority: 1.0 },
     { url: `${base}/workflows`,       lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.9 },
     ...WORKFLOW_SEO_PAGES.map((page) => ({
       url: `${base}${page.path}`,
@@ -40,6 +42,34 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
+    { url: `${base}/features`,        lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.9 },
+    ...FEATURE_PAGES.map((page) => ({
+      url: `${base}/features/${page.slug}`,
+      lastModified: SITE_CONTENT_UPDATED,
+      changeFrequency: "monthly" as const,
+      priority: 0.82,
+    })),
+    { url: `${base}/built-for`,       lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.85 },
+    ...AUDIENCE_PAGES.map((page) => ({
+      url: `${base}/built-for/${page.slug}`,
+      lastModified: SITE_CONTENT_UPDATED,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
+    { url: `${base}/blog`,            lastModified: SITE_CONTENT_UPDATED, changeFrequency: "weekly", priority: 0.8 },
+    ...BLOG_ARTICLES.map((article) => ({
+      url: `${base}/blog/${article.slug}`,
+      lastModified: new Date(`${article.updated}T00:00:00.000Z`),
+      changeFrequency: "monthly" as const,
+      priority: 0.74,
+    })),
+    { url: `${base}/answers`,         lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.75 },
+    ...ANSWER_PAGES.map((answer) => ({
+      url: `${base}/answers/${answer.slug}`,
+      lastModified: SITE_CONTENT_UPDATED,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     { url: `${base}/connectors`,      lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.7 },
     ...CONNECTOR_PAGES.map((page) => ({
       url: `${base}/connectors/${page.slug}`,
@@ -48,6 +78,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     })),
     { url: `${base}/glossary`,        lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/pricing`,         lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${base}/about`,           lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/indie`,           lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.75 },
     { url: `${base}/security`,        lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/privacy`,         lastModified: SITE_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.4 },

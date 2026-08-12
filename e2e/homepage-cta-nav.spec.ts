@@ -9,9 +9,16 @@ type Rgb = {
 };
 
 const MINIMUM_FOOTER_PATHS = [
+  "/features",
   "/workflows",
   "/runtimes",
   "/connectors",
+  "/built-for/product-teams",
+  "/blog",
+  "/answers",
+  "/compare",
+  "/pricing",
+  "/about",
   "/security",
   "/indie",
   "/teams",
@@ -20,6 +27,7 @@ const MINIMUM_FOOTER_PATHS = [
   "/signup",
   "/login",
 ];
+const CURRENT_BUNDLE_NAV_PATHS = new Set(["/features", "/blog", "/pricing"]);
 const ANONYMOUS_ID = "11111111-1111-4111-8111-111111111111";
 const SESSION_ID = "22222222-2222-4222-8222-222222222222";
 const JOURNEY_ID = "33333333-3333-4333-8333-333333333333";
@@ -357,13 +365,18 @@ test.describe("homepage CTAs", () => {
 
 test.describe("homepage top navigation", () => {
   for (const { name, path } of [
+    { name: "Features", path: "/features" },
     { name: "Workflows", path: "/workflows" },
-    { name: "Runtimes", path: "/runtimes" },
-    { name: "Security", path: "/security" },
+    { name: "Blog", path: "/blog" },
+    { name: "Pricing", path: "/pricing" },
     { name: "Sign in", path: "/login" },
     { name: "Get started", path: "/signup" },
   ]) {
     test(`${name} link navigates to ${path}`, async ({ page }) => {
+      test.skip(
+        isPreDeployProductionTarget() && CURRENT_BUNDLE_NAV_PATHS.has(path),
+        "The revised acquisition navigation requires the current bundle, not the pre-deploy production bundle.",
+      );
       await page.goto("/");
 
       await topNav(page).getByRole("link", { name: new RegExp(`^${name}$`) }).click();
@@ -388,8 +401,14 @@ test.describe("homepage top navigation", () => {
     await expect(menu).toBeVisible();
 
     for (const label of [
+      "Features",
       "Workflows",
       "Runtimes",
+      "Built for teams",
+      "Blog",
+      "Answers",
+      "Comparisons",
+      "Pricing",
       "Desktop beta",
       "Security",
       "For indie devs",
@@ -407,11 +426,15 @@ test.describe("homepage top navigation", () => {
   });
 });
 
-test.describe("homepage ForDropdown audience menu", () => {
+test.describe("homepage Built for audience menu", () => {
   test("opens, navigates to audience pages, and closes on outside click", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised audience navigation requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
 
-    await topNav(page).getByRole("button", { name: /^For$/ }).click();
+    await topNav(page).getByRole("button", { name: /^Built for$/ }).click();
     const menu = page.locator("[data-slot=\"dropdown-menu\"]");
     await expect(menu).toBeVisible();
     const popover = menu.locator("xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' dropdown__popover ')]");
@@ -419,6 +442,8 @@ test.describe("homepage ForDropdown audience menu", () => {
 
     const indieItem = menu.locator("[data-slot=\"menu-item\"]", { hasText: /Indie devs/ });
     const teamsItem = menu.locator("[data-slot=\"menu-item\"]", { hasText: /Teams/ });
+    const productItem = menu.locator("[data-slot=\"menu-item\"]", { hasText: /Product teams/ });
+    await expect(productItem).toBeVisible();
     await expect(indieItem).toBeVisible();
     await expect(teamsItem).toBeVisible();
     await expect(teamsItem.getByText("Waitlist")).toBeVisible();
@@ -439,15 +464,34 @@ test.describe("homepage ForDropdown audience menu", () => {
     await page.goto("/teams");
     await expectPathname(page, "/teams");
 
-    await topNav(page).getByRole("button", { name: /^For$/ }).click();
+    await topNav(page).getByRole("button", { name: /^Built for$/ }).click();
     await expect(menu).toBeVisible();
     await page.mouse.click(10, 10);
     await expect(menu).toBeHidden();
+  });
+
+  test("resources menu exposes evaluation and trust paths", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised resources navigation requires the current bundle, not the pre-deploy production bundle.",
+    );
+    await page.goto("/");
+    await topNav(page).getByRole("button", { name: /^Resources$/ }).click();
+    const menu = page.locator("[data-slot=\"dropdown-menu\"]");
+    for (const label of ["Runtimes", "Comparisons", "Answers", "Connectors", "Security", "About"]) {
+      await expect(menu.getByRole("menuitem", { name: new RegExp(label) })).toBeVisible();
+    }
+    await menu.getByRole("menuitem", { name: /Comparisons/ }).click();
+    await expectPathname(page, "/compare");
   });
 });
 
 test.describe("homepage footer", () => {
   test("internal footer links return public 200 responses", async ({ page, request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The revised marketing footer requires the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/");
 
     const footer = page.getByRole("contentinfo");

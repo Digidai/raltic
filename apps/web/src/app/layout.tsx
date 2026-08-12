@@ -67,6 +67,12 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
+  alternates: {
+    types: {
+      "application/rss+xml": absoluteUrl("/blog/feed.xml"),
+      "text/plain": absoluteUrl("/llms.txt"),
+    },
+  },
 };
 
 export const viewport = {
