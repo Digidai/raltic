@@ -4,6 +4,7 @@ import { CONNECTOR_PAGES } from "@/lib/connector-seo";
 import { ANSWER_PAGES, BLOG_ARTICLES } from "@/lib/editorial-content";
 import { AUDIENCE_PAGES, FEATURE_PAGES } from "@/lib/growth-content";
 import { SITE_CONTENT_UPDATED, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { BUYER_GUIDES } from "@/lib/buyer-guide-content";
 
 export const dynamic = "force-static";
 
@@ -34,6 +35,9 @@ export function GET(): Response {
   ).join("\n\n");
   const answers = ANSWER_PAGES.map((p) =>
     `### ${p.question} — ${SITE_URL}/answers/${p.slug}\n${p.shortAnswer}`,
+  ).join("\n\n");
+  const buyerGuides = BUYER_GUIDES.map((guide) =>
+    `### ${guide.title} — ${SITE_URL}/best/${guide.slug}\nUpdated ${guide.updated}. ${guide.directAnswer}\nMethod: ${guide.method.join(" ")}\nProducts covered: ${guide.picks.map((pick) => pick.name).join(", ")}.`,
   ).join("\n\n");
 
   const body = `# ${SITE_NAME} — Full Reference for AI Engines
@@ -82,6 +86,12 @@ ${workflows}
 
 ${comparisons}
 
+## Buyer's Guides
+
+These guides are published by Raltic, and Raltic may appear in them. No company paid for inclusion. Products are matched to specific jobs using current official documentation; the guides do not assign universal scores.
+
+${buyerGuides}
+
 ## Connectors
 
 ${connectors}
@@ -125,6 +135,7 @@ ${answers}
 - Homepage: ${SITE_URL}/
 - Workflow templates: ${SITE_URL}/workflows
 - Comparisons: ${SITE_URL}/compare
+- Buyer's guides: ${SITE_URL}/best
 - Connectors: ${SITE_URL}/connectors
 - Runtimes: ${SITE_URL}/runtimes
 - Features: ${SITE_URL}/features

@@ -63,11 +63,11 @@ test.describe("marketing visual snapshots", () => {
     });
   });
 
-  test("two ways to run section", async ({ page }) => {
+  test("workflow entry paths section", async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT);
     await gotoStable(page, "/");
 
-    const section = page.locator("section", { hasText: /Two ways to run/i });
+    const section = page.locator("section", { hasText: /One room turns agent output into accountable work/i });
     await expect(section).toBeVisible();
     await expect(section).toHaveScreenshot("two-ways-to-run-section.png", {
       maxDiffPixelRatio: 0.05,
@@ -96,18 +96,18 @@ test.describe("marketing visual snapshots", () => {
     });
   });
 
-  test("home page background is nearly black", async ({ page }) => {
+  test("home hero uses the warm light product surface", async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT);
     await gotoStable(page, "/");
 
-    const background = await page.locator("body > div.dark.bg-black").first().evaluate((element) => {
+    const background = await page.locator("section").first().evaluate((element) => {
       return getComputedStyle(element).backgroundColor;
     });
     const [red, green, blue] = rgbChannels(background);
 
-    expect(red, `red channel for ${background}`).toBeLessThanOrEqual(3);
-    expect(green, `green channel for ${background}`).toBeLessThanOrEqual(3);
-    expect(blue, `blue channel for ${background}`).toBeLessThanOrEqual(3);
+    expect(red, `red channel for ${background}`).toBeGreaterThanOrEqual(245);
+    expect(green, `green channel for ${background}`).toBeGreaterThanOrEqual(245);
+    expect(blue, `blue channel for ${background}`).toBeGreaterThanOrEqual(240);
   });
 });
 

@@ -7,6 +7,7 @@ import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { JsonLdScript } from "@/components/marketing/json-ld";
 import { MarketingButton } from "@/components/marketing/marketing-button";
+import { ContentRouteMap } from "@/components/marketing/content-visuals";
 import { FEATURE_PAGES, getFeaturePage } from "@/lib/growth-content";
 import { SITE_CONTENT_UPDATED, breadcrumbJsonLd, faqPageJsonLd, jsonLdGraph, marketingMetadata, webPageJsonLd } from "@/lib/seo";
 
@@ -39,6 +40,8 @@ export default async function FeatureDetailPage({ params }: Props) {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"><MarketingButton href="/signup?workflow=launch-readiness" ctaTarget={`feature_${page.slug}_signup`}>Start free beta <ArrowRight className="h-4 w-4" aria-hidden="true" /></MarketingButton><MarketingButton href="/workflows" variant="secondary" ctaTarget={`feature_${page.slug}_workflows`}>See workflows</MarketingButton></div>
         </div>
       </section>
+
+      <ContentRouteMap eyebrow="Operating path" title="The feature becomes useful when the brief, work, review, and decision stay connected." items={page.steps.map((step, index) => ({ label: step.title, href: `#step-${index + 1}` }))} tone="blue" />
 
       <section className="bg-white px-6 py-20 sm:py-24"><div className="mx-auto max-w-6xl"><div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr]"><div><p className="text-xs font-medium uppercase text-blue-700">Outcome</p><h2 className="mt-4 text-3xl font-medium text-zinc-900 sm:text-4xl">What changes for the team.</h2><p className="mt-5 text-base leading-relaxed text-zinc-600">{page.outcome}</p></div><div className="grid gap-4 sm:grid-cols-2">{page.capabilities.map((item) => <div key={item.title} className="rounded-lg border border-zinc-200 bg-zinc-50 p-5"><h3 className="font-medium text-zinc-900">{item.title}</h3><p className="mt-2 text-sm leading-relaxed text-zinc-600">{item.body}</p></div>)}</div></div></div></section>
 

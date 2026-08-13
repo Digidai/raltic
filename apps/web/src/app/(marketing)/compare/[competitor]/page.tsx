@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import type React from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, CheckCircle2, ExternalLink, Minus, X, Scale, ThumbsUp } from "lucide-react";
 import { JsonLdScript } from "@/components/marketing/json-ld";
 import { MarketingButton } from "@/components/marketing/marketing-button";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
+import { ComparisonFitMap } from "@/components/marketing/content-visuals";
 import { Breadcrumbs } from "@/components/marketing/breadcrumbs";
 import { Chip } from "@/components/heroui-pro/chip";
 import { COMPARISON_PAGES, getComparisonPage, type Verdict } from "@/lib/comparison-seo";
@@ -41,6 +43,9 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
   const page = getComparisonPage(competitor);
   if (!page) notFound();
   const path = `/compare/${page.slug}`;
+  const ralticFits = page.rows
+    .filter((row) => row.raltic === "yes" && row.them !== "yes")
+    .map((row) => row.need);
 
   return (
     <>
@@ -142,6 +147,12 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
         </div>
       </section>
 
+      <ComparisonFitMap
+        competitor={page.competitor}
+        competitorFits={page.whenThemBetter}
+        ralticFits={ralticFits.length >= 3 ? ralticFits : page.rows.filter((row) => row.raltic === "yes").map((row) => row.need)}
+      />
+
       {/* Where they stop + when they're better */}
       <section className="border-y border-black/[0.07] bg-[#faf9f6] px-6 py-20">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-start">
@@ -185,6 +196,23 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
           </h2>
           <div className="mx-auto max-w-3xl">
             <MarketingFaqList idPrefix={`compare-${page.slug}`} items={page.faqs} theme="light" />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-zinc-200 bg-[#fafaf8] px-6 py-14">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-xl font-medium text-zinc-900">Continue the evaluation</h2>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {[
+              { href: "/best/ai-agent-orchestration-platforms", label: "Orchestration platform shortlist" },
+              { href: "/blog/how-to-evaluate-ai-agent-platforms", label: "Platform evaluation method" },
+              { href: "/answers/how-do-you-compare-ai-agent-platforms", label: "Nine comparison dimensions" },
+            ].map((item) => (
+              <Link key={item.href} href={item.href} className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4 text-sm font-medium text-zinc-800 hover:border-blue-300 hover:text-blue-700">
+                {item.label}<ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+              </Link>
+            ))}
           </div>
         </div>
       </section>

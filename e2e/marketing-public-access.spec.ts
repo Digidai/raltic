@@ -5,6 +5,7 @@ import { isPreDeployProductionTarget } from "./helpers/env";
 import { ANSWER_PAGES, BLOG_ARTICLES } from "../apps/web/src/lib/editorial-content";
 import { AUDIENCE_PAGES, FEATURE_PAGES } from "../apps/web/src/lib/growth-content";
 import { COMPARISON_PAGES } from "../apps/web/src/lib/comparison-seo";
+import { BUYER_GUIDES } from "../apps/web/src/lib/buyer-guide-content";
 
 type MarketingRoute = {
   path: string;
@@ -104,6 +105,8 @@ const marketingRoutes: MarketingRoute[] = [
 marketingRoutes.push(
   { path: "/compare", heading: /How Raltic compares/i, headingSelector: "h1" },
   ...COMPARISON_PAGES.map((page) => ({ path: `/compare/${page.slug}`, heading: exactText(page.h1), headingSelector: "h1" as const })),
+  { path: "/best", heading: /best AI agent platforms/i, headingSelector: "h1" },
+  ...BUYER_GUIDES.map((guide) => ({ path: `/best/${guide.slug}`, heading: exactText(guide.title), headingSelector: "h1" as const })),
   { path: "/connectors/github", heading: /GitHub/i, headingSelector: "h1" },
   { path: "/connectors/linear", heading: /Linear/i, headingSelector: "h1" },
   { path: "/connectors/notion", heading: /Notion/i, headingSelector: "h1" },
@@ -130,6 +133,8 @@ const currentBundleOnlyMarketingRoutes = new Set([
   ...BLOG_ARTICLES.map((article) => `/blog/${article.slug}`),
   "/answers",
   ...ANSWER_PAGES.map((answer) => `/answers/${answer.slug}`),
+  "/best",
+  ...BUYER_GUIDES.map((guide) => `/best/${guide.slug}`),
   "/about",
   "/pricing",
 ]);
@@ -512,6 +517,16 @@ test.describe("marketing public access", () => {
     expect(compareDetail).toContain("BreadcrumbList");
     expect(compareDetail).toContain("https://raltic.com/compare/cursor#webpage");
 
+    // Buyer guide hub + detail: collection, ranked items, article, FAQ, and breadcrumb.
+    const buyerHub = await ldFor("/best");
+    expect(buyerHub).toContain("CollectionPage");
+    expect(buyerHub).toContain("ItemList");
+    expect(buyerHub).toContain("https://raltic.com/best/ai-agent-orchestration-platforms");
+    const buyerDetail = await ldFor("/best/ai-agent-orchestration-platforms");
+    expect(buyerDetail).toContain("Article");
+    expect(buyerDetail).toContain("ItemList");
+    expect(buyerDetail).toContain("FAQPage");
+
     // Connector detail: webpage + HowTo setup + FAQ.
     const connectorDetail = await ldFor("/connectors/github");
     expect(connectorDetail).toContain("HowTo");
@@ -547,6 +562,7 @@ test.describe("marketing public access", () => {
       ...AUDIENCE_PAGES.map((page) => ({ slug: `built-for/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
       ...BLOG_ARTICLES.map((page) => ({ slug: `blog/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
       ...ANSWER_PAGES.map((page) => ({ slug: `answers/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
+      ...BUYER_GUIDES.map((page) => ({ slug: `best/${page.slug}`, title: page.metaTitle, description: page.metaDescription, faqCount: page.faqs.length, relatedCount: page.related.length })),
     ];
     expect(new Set(pages.map((page) => page.slug)).size).toBe(pages.length);
     expect(new Set(pages.map((page) => page.title)).size).toBe(pages.length);
@@ -563,7 +579,12 @@ test.describe("marketing public access", () => {
       expect(article.sources.length, article.slug).toBeGreaterThanOrEqual(3);
       expect(article.sources.every((source) => source.href.startsWith("https://")), article.slug).toBe(true);
     }
-    expect(COMPARISON_PAGES).toHaveLength(7);
+    for (const guide of BUYER_GUIDES) {
+      expect(guide.method.length, guide.slug).toBeGreaterThanOrEqual(4);
+      expect(guide.picks.length, guide.slug).toBeGreaterThanOrEqual(5);
+      expect(guide.picks.every((pick) => pick.source.href.startsWith("https://") || pick.source.href.startsWith("/")), guide.slug).toBe(true);
+    }
+    expect(COMPARISON_PAGES).toHaveLength(11);
     expect(COMPARISON_PAGES.every((page) => page.sourceLinks.length >= 2)).toBe(true);
   });
 
@@ -574,12 +595,13 @@ test.describe("marketing public access", () => {
     );
     const sitemap = await (await request.get("/sitemap.xml")).text();
     const expectedPaths = [
-      "/features", "/built-for", "/blog", "/answers", "/about", "/pricing",
+      "/features", "/built-for", "/blog", "/answers", "/best", "/about", "/pricing",
       ...FEATURE_PAGES.map((page) => `/features/${page.slug}`),
       ...AUDIENCE_PAGES.map((page) => `/built-for/${page.slug}`),
       ...BLOG_ARTICLES.map((article) => `/blog/${article.slug}`),
       ...ANSWER_PAGES.map((answer) => `/answers/${answer.slug}`),
       ...COMPARISON_PAGES.map((page) => `/compare/${page.slug}`),
+      ...BUYER_GUIDES.map((guide) => `/best/${guide.slug}`),
     ];
     for (const path of expectedPaths) expect(sitemap, path).toContain(`https://raltic.com${path}`);
 
@@ -603,6 +625,7 @@ test.describe("marketing public access", () => {
       expect(text).toContain("https://raltic.com/built-for/product-teams");
       expect(text).toContain("https://raltic.com/blog/what-is-an-agent-workflow");
       expect(text).toContain("https://raltic.com/answers/what-is-an-ai-workflow-room");
+      expect(text).toContain("https://raltic.com/best/ai-agent-orchestration-platforms");
     }
     const llmsFullText = await (await request.get("/llms-full.txt")).text();
     const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
@@ -619,6 +642,7 @@ test.describe("marketing public access", () => {
       { path: "/built-for/product-teams", schema: "FAQPage" },
       { path: "/blog/what-is-an-agent-workflow", schema: "Article" },
       { path: "/answers/what-is-an-ai-workflow-room", schema: "FAQPage" },
+      { path: "/best/ai-agent-orchestration-platforms", schema: "ItemList" },
     ];
     await page.setViewportSize({ width: 390, height: 844 });
     for (const item of cases) {
@@ -638,6 +662,17 @@ test.describe("marketing public access", () => {
     }
   });
 
+  test("long-form content exposes semantic visuals and contextual internal links", async ({ page }) => {
+    await page.goto("/blog/how-to-evaluate-ai-agent-platforms", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-content-visual="route-map"]')).toBeVisible();
+    await expect(page.locator('[data-content-visual="evidence-board"]').first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Open the orchestration shortlist/i })).toHaveAttribute("href", "/best/ai-agent-orchestration-platforms");
+
+    await page.goto("/compare/langgraph", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-content-visual="fit-map"]')).toBeVisible();
+    await expect(page.getByRole("link", { name: /Orchestration platform shortlist/i })).toHaveAttribute("href", "/best/ai-agent-orchestration-platforms");
+  });
+
   test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 844 });
     await page.route("**/api/v1/marketing/newsletter", (route) => route.fulfill({
@@ -655,14 +690,14 @@ test.describe("marketing public access", () => {
     await page.getByLabel("Your email address").fill("gene@example.com");
     await page.getByRole("button", { name: /Keep me in the loop/ }).click();
 
-    const alert = page.getByText("Newsletter service unavailable");
+    const alert = page.getByRole("alert").filter({ hasText: /Newsletter service unavailable|Failed to fetch/ });
     await expect(alert).toBeVisible();
 
     const metrics = await page.evaluate(() => {
       const button = Array.from(document.querySelectorAll("button"))
         .find((candidate) => candidate.textContent?.includes("Keep me in the loop") || candidate.textContent?.includes("Sending"));
       const alert = Array.from(document.querySelectorAll<HTMLElement>("[role='alert']"))
-        .find((candidate) => candidate.textContent?.includes("Newsletter service unavailable"));
+        .find((candidate) => /Newsletter service unavailable|Failed to fetch/.test(candidate.textContent ?? ""));
       const buttonBox = button?.getBoundingClientRect();
       const alertBox = alert?.getBoundingClientRect();
       return {
@@ -701,14 +736,14 @@ test.describe("marketing public access", () => {
     await page.getByLabel("Work email").fill("gene@example.com");
     await page.getByRole("button", { name: /Request access/ }).click();
 
-    const alert = page.getByText("Waitlist service unavailable");
+    const alert = page.getByRole("alert").filter({ hasText: /Waitlist service unavailable|Failed to fetch/ });
     await expect(alert).toBeVisible();
 
     const metrics = await page.evaluate(() => {
       const button = Array.from(document.querySelectorAll("button"))
         .find((candidate) => candidate.textContent?.includes("Request access") || candidate.textContent?.includes("Sending"));
       const alert = Array.from(document.querySelectorAll<HTMLElement>("[role='alert']"))
-        .find((candidate) => candidate.textContent?.includes("Waitlist service unavailable"));
+        .find((candidate) => /Waitlist service unavailable|Failed to fetch/.test(candidate.textContent ?? ""));
       const buttonBox = button?.getBoundingClientRect();
       const alertBox = alert?.getBoundingClientRect();
       return {

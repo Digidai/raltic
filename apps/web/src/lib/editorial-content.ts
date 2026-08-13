@@ -1,4 +1,5 @@
 import type { AnswerPage, BlogArticle } from "@/lib/growth-content";
+import { EXPANDED_ANSWER_PAGES, EXPANDED_BLOG_ARTICLES } from "@/lib/editorial-content-additions";
 
 const PUBLISHED = "2026-08-13";
 
@@ -271,6 +272,7 @@ export const BLOG_ARTICLES: BlogArticle[] = [
     ],
     related: [{ label: "For product teams", href: "/built-for/product-teams" }, { label: "Launch readiness", href: "/workflows/launch-readiness" }, { label: "Research synthesis", href: "/workflows/research-synthesis" }],
   },
+  ...EXPANDED_BLOG_ARTICLES,
 ];
 
 export const ANSWER_PAGES: AnswerPage[] = [
@@ -394,6 +396,7 @@ export const ANSWER_PAGES: AnswerPage[] = [
     faqs: [{ q: "Can a solo founder benefit from a shared workspace?", a: "Yes, when several agents or recurring workflows need reusable history. It reduces the need to reconstruct prior decisions." }, { q: "Does shared mean every agent sees everything?", a: "No. Shared workflow context should still be combined with per-agent grants and bounded access." }],
     related: [{ label: "Workflow rooms", href: "/features/workflow-rooms" }, { label: "For AI-native teams", href: "/built-for/ai-native-teams" }, { label: "What is a workflow room?", href: "/answers/what-is-an-ai-workflow-room" }],
   },
+  ...EXPANDED_ANSWER_PAGES,
 ];
 
 export function getBlogArticle(slug: string | null | undefined): BlogArticle | null {
