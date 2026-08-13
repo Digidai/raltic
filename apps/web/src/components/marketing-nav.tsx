@@ -21,7 +21,7 @@ const PRIMARY_SIGNUP_HREF = workflowSignupHref("launch-readiness");
 /**
  * Marketing site sticky nav — light (ando.so) treatment across the whole
  * marketing site: dark text on a transparent bar that turns into a
- * white-glass surface on scroll.
+ * solid white surface on scroll so page text never competes with navigation.
  *
  * Dropdown surfaces read HeroUI `--overlay` tokens (light) and use
  * `--foreground` mixes for hover/border so they stay legible.
@@ -57,7 +57,7 @@ export function MarketingNav() {
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         scrolled
-          ? "border-b border-border bg-surface/70 backdrop-blur-xl supports-[backdrop-filter]:bg-surface/60"
+          ? "border-b border-border bg-surface"
           : "bg-transparent",
       )}
     >
@@ -118,6 +118,7 @@ function MobileNavDropdown() {
         <MobileNavItem href="/built-for" label="Built for teams" />
         <MobileNavItem href="/blog" label="Blog" />
         <MobileNavItem href="/answers" label="Answers" />
+        <MobileNavItem href="/best" label="Buyer's guides" />
         <MobileNavItem href="/compare" label="Comparisons" />
         <MobileNavItem href="/pricing" label="Pricing" />
         <MobileNavItem href="/desktop" label="Desktop beta" />
@@ -235,6 +236,7 @@ function ResourcesDropdown() {
   const items = [
     { href: "/runtimes", label: "Runtimes", description: "Local and cloud execution" },
     { href: "/compare", label: "Comparisons", description: "Evidence-linked alternatives" },
+    { href: "/best", label: "Buyer's guides", description: "Transparent platform shortlists" },
     { href: "/answers", label: "Answers", description: "Direct GEO responses" },
     { href: "/connectors", label: "Connectors", description: "GitHub, Linear, Notion" },
     { href: "/security", label: "Security", description: "Current product boundaries" },

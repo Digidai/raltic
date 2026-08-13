@@ -3,6 +3,7 @@ import { CONNECTOR_PAGES } from "@/lib/connector-seo";
 import { ANSWER_PAGES, BLOG_ARTICLES } from "@/lib/editorial-content";
 import { AUDIENCE_PAGES, FEATURE_PAGES } from "@/lib/growth-content";
 import { WORKFLOW_SEO_PAGES } from "@/lib/workflow-seo";
+import { BUYER_GUIDES } from "@/lib/buyer-guide-content";
 import { SITE_CONTENT_UPDATED, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -33,6 +34,8 @@ export function GET(): Response {
     ...AUDIENCE_PAGES.map((item) => page("audience", item.audience, `/built-for/${item.slug}`, item.metaDescription)),
     page("collection", "Raltic comparisons", "/compare", "Evidence-linked capability comparisons using current first-party sources."),
     ...COMPARISON_PAGES.map((item) => page("comparison", `Raltic vs ${item.competitor}`, `/compare/${item.slug}`, item.metaDescription)),
+    page("collection", "AI agent platform buyer's guides", "/best", "Transparent, job-based shortlists for AI agent orchestration, human review, and team workflow platforms."),
+    ...BUYER_GUIDES.map((item) => page("buyer-guide", item.title, `/best/${item.slug}`, item.metaDescription, item.updated)),
     page("collection", "Raltic field guides", "/blog", "Research-backed guides for accountable AI agent work."),
     ...BLOG_ARTICLES.map((item) => page("article", item.title, `/blog/${item.slug}`, item.metaDescription, item.updated)),
     page("collection", "AI agent workflow answers", "/answers", "Direct answers to common AI agent workflow and Raltic product questions."),

@@ -90,6 +90,7 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
           { label: "Blog", href: "/blog" },
           { label: "Answers", href: "/answers" },
           { label: "Comparisons", href: "/compare" },
+          { label: "Buyer's guides", href: "/best" },
           { label: "Glossary", href: "/glossary" },
           { label: "Pricing", href: "/pricing" },
           { label: "About", href: "/about" },

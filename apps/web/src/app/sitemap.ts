@@ -4,6 +4,7 @@ import { COMPARISON_PAGES } from "@/lib/comparison-seo";
 import { CONNECTOR_PAGES } from "@/lib/connector-seo";
 import { AUDIENCE_PAGES, FEATURE_PAGES } from "@/lib/growth-content";
 import { ANSWER_PAGES, BLOG_ARTICLES } from "@/lib/editorial-content";
+import { BUYER_GUIDES } from "@/lib/buyer-guide-content";
 import { SITE_CONTENT_UPDATED, SITE_LAST_MODIFIED, SITE_URL } from "@/lib/seo";
 
 /**
@@ -41,6 +42,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: SITE_CONTENT_UPDATED,
       changeFrequency: "monthly" as const,
       priority: 0.8,
+    })),
+    { url: `${base}/best`,            lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.82 },
+    ...BUYER_GUIDES.map((guide) => ({
+      url: `${base}/best/${guide.slug}`,
+      lastModified: new Date(`${guide.updated}T00:00:00.000Z`),
+      changeFrequency: "monthly" as const,
+      priority: 0.78,
     })),
     { url: `${base}/features`,        lastModified: SITE_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.9 },
     ...FEATURE_PAGES.map((page) => ({

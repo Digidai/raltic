@@ -19,9 +19,9 @@ import {
 } from "@/lib/seo";
 
 export const metadata: Metadata = marketingMetadata({
-  title: "Raltic Compared: 7 AI Workflow Alternatives",
+  title: `Raltic Compared: ${COMPARISON_PAGES.length} AI Workflow Alternatives`,
   description:
-    "Evidence-linked comparisons of Raltic with seven AI assistants, workspaces, and automation tools, including where each product is the better fit.",
+    `Evidence-linked comparisons of Raltic with ${COMPARISON_PAGES.length} AI assistants, frameworks, workspaces, cloud platforms, and automation tools, including where each product is the better fit.`,
   path: "/compare",
   keywords: [
     "AI workflow platform comparison",
@@ -40,7 +40,7 @@ export default function CompareIndexPage(): React.ReactElement {
             path: "/compare",
             name: "Raltic compared to AI assistants, workspaces, and automation tools",
             description:
-              "Evidence-linked comparisons of Raltic against seven AI assistants, workspaces, and automation tools.",
+              `Evidence-linked comparisons of Raltic against ${COMPARISON_PAGES.length} AI assistants, frameworks, workspaces, cloud platforms, and automation tools.`,
             type: "CollectionPage",
             dateModified: SITE_CONTENT_UPDATED,
             mainEntity: { "@id": `${absoluteUrl("/compare")}#itemlist` },

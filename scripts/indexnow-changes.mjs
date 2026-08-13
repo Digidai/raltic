@@ -4,6 +4,7 @@ const STATIC_PAGE_FILES = new Map([
   ["apps/web/src/app/(marketing)/workflows/page.tsx", ["/workflows"]],
   ["apps/web/src/app/(marketing)/runtimes/page.tsx", ["/runtimes"]],
   ["apps/web/src/app/(marketing)/compare/page.tsx", ["/compare"]],
+  ["apps/web/src/app/(marketing)/best/page.tsx", ["/best"]],
   ["apps/web/src/app/(marketing)/features/page.tsx", ["/features"]],
   ["apps/web/src/app/(marketing)/built-for/page.tsx", ["/built-for"]],
   ["apps/web/src/app/(marketing)/blog/page.tsx", ["/blog"]],
@@ -71,6 +72,10 @@ export function changedIndexableUrls(changedFiles, sitemapUrls) {
     }
     if (file.includes("/compare/[competitor]/") || file.endsWith("/lib/comparison-seo.ts")) {
       includePrefix("/compare");
+      continue;
+    }
+    if (file.includes("/best/[guide]/") || file.endsWith("/lib/buyer-guide-content.ts")) {
+      includePrefix("/best");
       continue;
     }
     if (file.includes("/connectors/[connector]/") || file.endsWith("/lib/connector-seo.ts")) {

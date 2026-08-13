@@ -34,6 +34,7 @@ const PUBLIC_MARKETING = [
   "/teams",                   // mid-market waitlist (noindex but still public)
   "/connectors",              // connector overview + /connectors/{github,linear,notion}
   "/compare",                 // comparison hub + /compare/{competitor}
+  "/best",                    // transparent buyer guides + /best/{guide}
   "/features",                // product capability hub + detail pages
   "/built-for",               // audience hub + role-specific pages
   "/blog",                    // research-backed guides + RSS route

@@ -4,6 +4,7 @@ import { CONNECTOR_PAGES } from "@/lib/connector-seo";
 import { ANSWER_PAGES, BLOG_ARTICLES } from "@/lib/editorial-content";
 import { AUDIENCE_PAGES, FEATURE_PAGES } from "@/lib/growth-content";
 import { INDEXNOW_ENDPOINT, INDEXNOW_KEY_LOCATION } from "@/lib/indexnow";
+import { BUYER_GUIDES } from "@/lib/buyer-guide-content";
 import { SITE_CONTENT_UPDATED, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -30,6 +31,9 @@ export function GET(): Response {
   const answerLinks = ANSWER_PAGES
     .map((answer) => `- [${answer.question}](${SITE_URL}/answers/${answer.slug}): ${answer.shortAnswer}`)
     .join("\n");
+  const buyerGuideLinks = BUYER_GUIDES
+    .map((guide) => `- [${guide.title}](${SITE_URL}/best/${guide.slug}): ${guide.directAnswer}`)
+    .join("\n");
 
   const body = `# ${SITE_NAME}
 
@@ -50,8 +54,10 @@ ${featureLinks}
 ${audienceLinks}
 - [Connectors](${SITE_URL}/connectors): GitHub, Linear, and Notion connector overview.
 ${connectorLinks}
-- [Comparisons](${SITE_URL}/compare): evidence-linked comparisons with seven current AI assistants, workspaces, and automation tools.
+- [Comparisons](${SITE_URL}/compare): evidence-linked comparisons with ${COMPARISON_PAGES.length} current AI assistants, frameworks, workspaces, cloud platforms, and automation tools.
 ${comparisonLinks}
+- [Buyer's guides](${SITE_URL}/best): transparent, job-based shortlists with an explicit method, conflict disclosure, official sources, and no paid placement.
+${buyerGuideLinks}
 - [Blog](${SITE_URL}/blog): source-linked, answer-first field guides for agent workflow design.
 ${blogLinks}
 - [Answers](${SITE_URL}/answers): concise answers for AI search and product evaluators.
