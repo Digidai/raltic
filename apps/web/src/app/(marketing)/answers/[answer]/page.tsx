@@ -40,12 +40,12 @@ export default async function AnswerDetailPage({ params }: Props) {
           <div className="mx-auto mt-8 max-w-4xl px-6 text-center">
             <p className="text-xs font-medium uppercase text-violet-700">Direct answer</p>
             <h1 className="mt-5 text-balance text-4xl font-medium leading-[1.08] text-zinc-900 sm:text-6xl">{answer.question}</h1>
-            <p className="mx-auto mt-7 max-w-3xl border-l-2 border-violet-400 bg-violet-50 p-6 text-left text-lg leading-relaxed text-zinc-800">{answer.shortAnswer}</p>
+            <p className="mx-auto mt-7 max-w-3xl border-s-2 border-violet-400 bg-violet-50 p-6 text-left text-lg leading-relaxed text-zinc-800">{answer.shortAnswer}</p>
             <p className="mt-5 text-sm text-zinc-500">Reviewed by Raltic Research · Updated August 13, 2026</p>
           </div>
         </header>
 
-        <ContentRouteMap eyebrow="Answer map" title="The short answer first, followed by the operating details and next decision." items={answer.sections.map((section) => ({ label: section.title, href: `#${section.id}` }))} tone="violet" />
+        <ContentRouteMap eyebrow="Answer map" title="The short answer first, followed by the operating details and next decision." items={answer.sections.map((section) => ({ label: section.title, href: `#${section.id}` }))} emphasis="insight" />
 
         <div className="bg-white px-6 py-16 sm:py-20">
           <div className="mx-auto max-w-3xl">
@@ -57,8 +57,8 @@ export default async function AnswerDetailPage({ params }: Props) {
                   <h2 className="mt-3 text-3xl font-medium leading-tight text-zinc-900">{section.title}</h2>
                   <p className="mt-4 text-lg font-medium leading-relaxed text-zinc-800">{section.answer}</p>
                   {section.paragraphs.map((paragraph) => <p key={paragraph} className="mt-4 text-base leading-8 text-zinc-600">{paragraph}</p>)}
-                  {section.bullets && <EvidenceBoard title="Answer checklist" items={section.bullets} tone={index % 2 === 0 ? "violet" : "emerald"} />}
-                  {related && <ContextLink href={related.href} label={related.label} description="Use this connected page for the deeper method, product boundary, or next workflow step." tone="violet" />}
+                  {section.bullets && <EvidenceBoard title="Answer checklist" items={section.bullets} emphasis={index % 2 === 0 ? "insight" : "evidence"} />}
+                  {related && <ContextLink href={related.href} label={related.label} description="Use this connected page for the deeper method, product boundary, or next workflow step." emphasis="insight" />}
                 </section>
               );
             })}

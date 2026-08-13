@@ -65,7 +65,7 @@ export default async function BlogArticlePage({ params }: Props) {
           eyebrow="Reading path"
           title="Move from the definition to the operating decision without losing the thread."
           items={article.sections.map((section) => ({ label: section.title, href: `#${section.id}` }))}
-          tone="amber"
+          emphasis="attention"
         />
 
         <div className="bg-white px-6 py-16 sm:py-20">
@@ -77,7 +77,7 @@ export default async function BlogArticlePage({ params }: Props) {
               </nav>
             </aside>
             <div className="min-w-0">
-              <section className="border-l-2 border-amber-400 bg-amber-50 px-6 py-6">
+              <section className="border-s-2 border-amber-400 bg-amber-50 px-6 py-6">
                 <p className="text-xs font-medium uppercase text-amber-800">Direct answer</p>
                 <p className="mt-3 text-lg leading-relaxed text-zinc-800">{article.directAnswer}</p>
               </section>
@@ -89,8 +89,8 @@ export default async function BlogArticlePage({ params }: Props) {
                     <h2 className="mt-3 text-3xl font-medium leading-tight text-zinc-900">{section.title}</h2>
                     <p className="mt-4 text-lg font-medium leading-relaxed text-zinc-800">{section.answer}</p>
                     {section.paragraphs.map((paragraph) => <p key={paragraph} className="mt-4 text-base leading-8 text-zinc-600">{paragraph}</p>)}
-                    {section.bullets && <EvidenceBoard title="Working signals" items={section.bullets} tone={index % 2 === 0 ? "amber" : "blue"} />}
-                    {connection && <ContextLink {...connection} tone={index % 2 === 0 ? "amber" : "blue"} />}
+                    {section.bullets && <EvidenceBoard title="Working signals" items={section.bullets} emphasis={index % 2 === 0 ? "attention" : "reference"} />}
+                    {connection && <ContextLink {...connection} emphasis={index % 2 === 0 ? "attention" : "reference"} />}
                   </section>
                 );
               })}

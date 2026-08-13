@@ -124,7 +124,16 @@ marketingRoutes.push(
 );
 
 const currentBundleOnlyMarketingRoutes = new Set([
-  ...["microsoft-365-copilot", "asana-ai-studio", "notion-ai-agent", "n8n-ai"].map((slug) => `/compare/${slug}`),
+  ...[
+    "microsoft-365-copilot",
+    "asana-ai-studio",
+    "notion-ai-agent",
+    "n8n-ai",
+    "langgraph",
+    "crewai",
+    "microsoft-copilot-studio",
+    "gemini-enterprise-agent-platform",
+  ].map((slug) => `/compare/${slug}`),
   "/features",
   ...FEATURE_PAGES.map((page) => `/features/${page.slug}`),
   "/built-for",
@@ -462,6 +471,10 @@ test.describe("marketing public access", () => {
   });
 
   test("marketing pages emit page-specific structured data and entity signals", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The expanded structured-data checks require the current bundle, not the pre-deploy production bundle.",
+    );
     const ldFor = async (path: string) => {
       await page.goto(path, { waitUntil: "domcontentloaded" });
       return page.locator('script[type="application/ld+json"]').evaluateAll((scripts) =>
@@ -663,6 +676,10 @@ test.describe("marketing public access", () => {
   });
 
   test("long-form content exposes semantic visuals and contextual internal links", async ({ page }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The new visual content and contextual links require the current bundle, not the pre-deploy production bundle.",
+    );
     await page.goto("/blog/how-to-evaluate-ai-agent-platforms", { waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-content-visual="route-map"]')).toBeVisible();
     await expect(page.locator('[data-content-visual="evidence-board"]').first()).toBeVisible();

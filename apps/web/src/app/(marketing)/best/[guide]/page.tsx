@@ -53,11 +53,11 @@ export default async function BuyerGuideDetailPage({ params }: Props) {
           </div>
         </header>
 
-        <ContentRouteMap eyebrow="Guide map" title="Start with the method, then choose the product layer that matches the work." items={routeItems} tone="violet" />
+        <ContentRouteMap eyebrow="Guide map" title="Start with the method, then choose the product layer that matches the work." items={routeItems} emphasis="insight" />
 
         <div className="bg-white px-6 py-16 sm:py-20">
           <div className="mx-auto max-w-5xl">
-            <section className="border-l-2 border-rose-400 bg-rose-50 px-6 py-6">
+            <section className="border-s-2 border-rose-400 bg-rose-50 px-6 py-6">
               <p className="text-xs font-medium uppercase text-rose-800">Direct answer</p>
               <p className="mt-3 text-lg leading-relaxed text-zinc-800">{guide.directAnswer}</p>
             </section>
@@ -65,7 +65,7 @@ export default async function BuyerGuideDetailPage({ params }: Props) {
             <section id="method" className="scroll-mt-28 py-14">
               <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr]">
                 <div><p className="text-xs font-medium uppercase text-rose-700">How we chose</p><h2 className="mt-4 text-3xl font-medium text-zinc-900">The method is part of the answer.</h2><p className="mt-4 text-sm leading-relaxed text-zinc-600">Raltic publishes this guide and appears in it. No company paid for inclusion. We checked current official documentation and matched each product to a specific job instead of assigning a universal score.</p></div>
-                <EvidenceBoard title="Selection rules" items={guide.method} tone="violet" />
+                <EvidenceBoard title="Selection rules" items={guide.method} emphasis="insight" />
               </div>
             </section>
 
@@ -93,8 +93,8 @@ export default async function BuyerGuideDetailPage({ params }: Props) {
                       <div>
                         <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-medium uppercase text-zinc-500">{pick.category}</p><h3 className="mt-2 text-3xl font-medium text-zinc-900">{pick.name}</h3></div>{pick.comparisonHref && <Link href={pick.comparisonHref} className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 underline underline-offset-4">Full comparison <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>}</div>
                         <p className="mt-5 text-base leading-8 text-zinc-600">{pick.summary}</p>
-                        <EvidenceBoard title="Where it fits" items={pick.strengths} tone={index % 2 === 0 ? "blue" : "emerald"} />
-                        <div className="mt-6 flex gap-3 border-l-2 border-amber-300 bg-amber-50 px-4 py-3"><Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" aria-hidden="true" /><p className="text-sm leading-relaxed text-zinc-700"><span className="font-medium text-zinc-900">Watch for: </span>{pick.watchFor}</p></div>
+                        <EvidenceBoard title="Where it fits" items={pick.strengths} emphasis={index % 2 === 0 ? "reference" : "evidence"} />
+                        <div className="mt-6 flex gap-3 border-s-2 border-amber-300 bg-amber-50 px-4 py-3"><Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" aria-hidden="true" /><p className="text-sm leading-relaxed text-zinc-700"><span className="font-medium text-zinc-900">Watch for: </span>{pick.watchFor}</p></div>
                         {pick.source.href.startsWith("/") ? <Link href={pick.source.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 underline underline-offset-4">{pick.source.label}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link> : <a href={pick.source.href} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 underline underline-offset-4">Official source: {pick.source.label}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></a>}
                       </div>
                     </div>

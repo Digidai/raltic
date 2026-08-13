@@ -9,33 +9,33 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type VisualTone = "amber" | "blue" | "emerald" | "violet";
+type VisualEmphasis = "attention" | "evidence" | "insight" | "reference";
 
-const toneClasses: Record<VisualTone, {
+const emphasisClasses: Record<VisualEmphasis, {
   accent: string;
   soft: string;
   border: string;
   line: string;
 }> = {
-  amber: {
+  attention: {
     accent: "text-amber-800",
     soft: "bg-amber-50",
     border: "border-amber-200",
     line: "bg-amber-500",
   },
-  blue: {
+  reference: {
     accent: "text-blue-800",
     soft: "bg-blue-50",
     border: "border-blue-200",
     line: "bg-blue-600",
   },
-  emerald: {
-    accent: "text-emerald-800",
+  evidence: {
+    accent: "text-emerald-700",
     soft: "bg-emerald-50",
     border: "border-emerald-200",
     line: "bg-emerald-600",
   },
-  violet: {
+  insight: {
     accent: "text-violet-800",
     soft: "bg-violet-50",
     border: "border-violet-200",
@@ -47,14 +47,14 @@ export function ContentRouteMap({
   eyebrow,
   title,
   items,
-  tone = "blue",
+  emphasis = "reference",
 }: {
   eyebrow: string;
   title: string;
   items: Array<{ label: string; href: string }>;
-  tone?: VisualTone;
+  emphasis?: VisualEmphasis;
 }): ReactElement {
-  const colors = toneClasses[tone];
+  const colors = emphasisClasses[emphasis];
   return (
     <figure
       data-content-visual="route-map"
@@ -91,13 +91,13 @@ export function ContentRouteMap({
 export function EvidenceBoard({
   title,
   items,
-  tone = "blue",
+  emphasis = "reference",
 }: {
   title: string;
   items: string[];
-  tone?: VisualTone;
+  emphasis?: VisualEmphasis;
 }): ReactElement {
-  const colors = toneClasses[tone];
+  const colors = emphasisClasses[emphasis];
   return (
     <figure
       data-content-visual="evidence-board"
@@ -123,16 +123,16 @@ export function ContextLink({
   href,
   label,
   description,
-  tone = "blue",
+  emphasis = "reference",
 }: {
   href: string;
   label: string;
   description: string;
-  tone?: VisualTone;
+  emphasis?: VisualEmphasis;
 }): ReactElement {
-  const colors = toneClasses[tone];
+  const colors = emphasisClasses[emphasis];
   return (
-    <aside className={cn("my-8 border-l-2 py-1 pl-5", colors.border)}>
+    <aside className={cn("my-8 border-s-2 py-1 ps-5", colors.border)}>
       <p className="text-[11px] font-medium uppercase text-zinc-500">Follow the decision</p>
       <Link href={href} className={cn("mt-2 inline-flex items-center gap-2 text-sm font-medium underline-offset-4 hover:underline", colors.accent)}>
         {label}

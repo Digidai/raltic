@@ -41,7 +41,7 @@ export default async function FeatureDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <ContentRouteMap eyebrow="Operating path" title="The feature becomes useful when the brief, work, review, and decision stay connected." items={page.steps.map((step, index) => ({ label: step.title, href: `#step-${index + 1}` }))} tone="blue" />
+      <ContentRouteMap eyebrow="Operating path" title="The feature becomes useful when the brief, work, review, and decision stay connected." items={page.steps.map((step, index) => ({ label: step.title, href: `#step-${index + 1}` }))} emphasis="reference" />
 
       <section className="bg-white px-6 py-20 sm:py-24"><div className="mx-auto max-w-6xl"><div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr]"><div><p className="text-xs font-medium uppercase text-blue-700">Outcome</p><h2 className="mt-4 text-3xl font-medium text-zinc-900 sm:text-4xl">What changes for the team.</h2><p className="mt-5 text-base leading-relaxed text-zinc-600">{page.outcome}</p></div><div className="grid gap-4 sm:grid-cols-2">{page.capabilities.map((item) => <div key={item.title} className="rounded-lg border border-zinc-200 bg-zinc-50 p-5"><h3 className="font-medium text-zinc-900">{item.title}</h3><p className="mt-2 text-sm leading-relaxed text-zinc-600">{item.body}</p></div>)}</div></div></div></section>
 
