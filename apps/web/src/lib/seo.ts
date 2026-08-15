@@ -10,7 +10,7 @@ export const SITE_PUBLISHED_AT = new Date("2026-06-01T00:00:00.000Z");
 // Freshness date for the SEO/GEO content batch (comparison, integration,
 // glossary pages). Bump this when those pages get a real content update —
 // it's the `dateModified` signal search + AI engines read.
-export const SITE_CONTENT_UPDATED = new Date("2026-08-13T00:00:00.000Z");
+export const SITE_CONTENT_UPDATED = new Date("2026-08-15T00:00:00.000Z");
 
 function toIso(value: string | Date | undefined, fallback: Date): string {
   if (!value) return fallback.toISOString();

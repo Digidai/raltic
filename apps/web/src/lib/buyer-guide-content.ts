@@ -1,5 +1,6 @@
-import type { ContentLink } from "@/lib/growth-content";
+import type { ContentLink, DecisionVisual } from "@/lib/growth-content";
 import type { FaqEntry } from "@/lib/seo";
+import { ROUND_TWO_BUYER_GUIDES } from "@/lib/buyer-guide-content-round-two";
 
 export type BuyerGuidePick = {
   name: string;
@@ -26,6 +27,7 @@ export type BuyerGuide = {
   published: string;
   updated: string;
   readTime: string;
+  visual?: DecisionVisual;
   method: string[];
   picks: BuyerGuidePick[];
   decisionSteps: Array<{ title: string; body: string }>;
@@ -390,6 +392,7 @@ export const BUYER_GUIDES: BuyerGuide[] = [
       { label: "All product comparisons", href: "/compare" },
     ],
   },
+  ...ROUND_TWO_BUYER_GUIDES,
 ];
 
 export function getBuyerGuide(slug: string | null | undefined): BuyerGuide | null {

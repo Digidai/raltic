@@ -14,6 +14,32 @@ type MarketingRoute = {
   robots?: "noindex,nofollow";
 };
 
+const roundTwoComparisonSlugs = [
+  "dify",
+  "flowise",
+  "langflow",
+  "openai-agents-sdk",
+  "google-adk",
+  "microsoft-agent-framework",
+];
+const roundTwoBuyerGuideSlugs = [
+  "visual-ai-agent-builders",
+  "ai-agent-observability-evaluation-tools",
+];
+const roundTwoBlogSlugs = [
+  "ai-agent-stack-layers",
+  "ai-agent-evaluation-scorecard",
+  "visual-ai-agent-builder-production-checklist",
+];
+const roundTwoAnswerSlugs = [
+  "what-is-an-ai-agent-builder",
+  "what-is-an-ai-agent-sdk",
+  "what-is-ai-agent-observability",
+  "what-is-an-ai-agent-evaluation",
+  "what-is-multi-agent-orchestration",
+  "what-is-an-ai-agent-control-plane",
+];
+
 function exactText(value: string): RegExp {
   return new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
 }
@@ -133,6 +159,7 @@ const currentBundleOnlyMarketingRoutes = new Set([
     "crewai",
     "microsoft-copilot-studio",
     "gemini-enterprise-agent-platform",
+    ...roundTwoComparisonSlugs,
   ].map((slug) => `/compare/${slug}`),
   "/features",
   ...FEATURE_PAGES.map((page) => `/features/${page.slug}`),
@@ -455,7 +482,7 @@ test.describe("marketing public access", () => {
       "href",
       "https://help.openai.com/en/articles/10169521-projects-in-chatgpt",
     );
-    await expect(page.getByText(/Capability-fit review updated August 13, 2026/i)).toBeVisible();
+    await expect(page.getByText(/Capability-fit review updated August 15, 2026/i)).toBeVisible();
   });
 
   test("privacy copy discloses intentional posts and model-provider routing", async ({ page }) => {
@@ -597,8 +624,61 @@ test.describe("marketing public access", () => {
       expect(guide.picks.length, guide.slug).toBeGreaterThanOrEqual(5);
       expect(guide.picks.every((pick) => pick.source.href.startsWith("https://") || pick.source.href.startsWith("/")), guide.slug).toBe(true);
     }
-    expect(COMPARISON_PAGES).toHaveLength(11);
+    expect(COMPARISON_PAGES).toHaveLength(17);
+    expect(BUYER_GUIDES).toHaveLength(5);
+    expect(BLOG_ARTICLES).toHaveLength(13);
+    expect(ANSWER_PAGES).toHaveLength(20);
     expect(COMPARISON_PAGES.every((page) => page.sourceLinks.length >= 2)).toBe(true);
+
+    for (const slug of roundTwoComparisonSlugs) {
+      const page = COMPARISON_PAGES.find((candidate) => candidate.slug === slug);
+      expect(page, slug).toBeTruthy();
+      expect(page!.related, slug).toHaveLength(3);
+      expect(page!.faqs.length, slug).toBeGreaterThanOrEqual(3);
+    }
+    for (const slug of roundTwoBuyerGuideSlugs) {
+      const guide = BUYER_GUIDES.find((candidate) => candidate.slug === slug);
+      expect(guide, slug).toBeTruthy();
+      expect(guide!.visual, slug).toBeTruthy();
+    }
+    for (const slug of roundTwoBlogSlugs) {
+      const article = BLOG_ARTICLES.find((candidate) => candidate.slug === slug);
+      expect(article, slug).toBeTruthy();
+      expect(article!.visual, slug).toBeTruthy();
+    }
+    for (const slug of roundTwoAnswerSlugs) {
+      const answer = ANSWER_PAGES.find((candidate) => candidate.slug === slug);
+      expect(answer, slug).toBeTruthy();
+      expect(answer!.visual, slug).toBeTruthy();
+    }
+  });
+
+  test("round-two contextual internal links resolve to public pages", async ({ request }) => {
+    test.skip(
+      isPreDeployProductionTarget(),
+      "The round-two content cluster requires the current bundle, not the pre-deploy production bundle.",
+    );
+    const links = new Set<string>();
+    for (const page of COMPARISON_PAGES.filter((candidate) => roundTwoComparisonSlugs.includes(candidate.slug))) {
+      for (const link of page.related ?? []) links.add(link.href);
+    }
+    for (const guide of BUYER_GUIDES.filter((candidate) => roundTwoBuyerGuideSlugs.includes(candidate.slug))) {
+      for (const link of guide.related) links.add(link.href);
+      for (const pick of guide.picks) if (pick.comparisonHref) links.add(pick.comparisonHref);
+    }
+    for (const article of BLOG_ARTICLES.filter((candidate) => roundTwoBlogSlugs.includes(candidate.slug))) {
+      for (const link of article.related) links.add(link.href);
+    }
+    for (const answer of ANSWER_PAGES.filter((candidate) => roundTwoAnswerSlugs.includes(candidate.slug))) {
+      for (const link of answer.related) links.add(link.href);
+    }
+
+    expect(links.size).toBeGreaterThanOrEqual(25);
+    for (const href of links) {
+      expect(href, "contextual links should stay internal").toMatch(/^\//);
+      const response = await request.get(href);
+      expect(response.status(), href).toBe(200);
+    }
   });
 
   test("new SEO and GEO collections are fully discoverable", async ({ request }) => {
@@ -688,6 +768,29 @@ test.describe("marketing public access", () => {
     await page.goto("/compare/langgraph", { waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-content-visual="fit-map"]')).toBeVisible();
     await expect(page.getByRole("link", { name: /Orchestration platform shortlist/i })).toHaveAttribute("href", "/best/ai-agent-orchestration-platforms");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/blog/ai-agent-stack-layers", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-content-visual="decision-stack"]')).toBeVisible();
+    await expect(page.getByRole("link", { name: /Shortlist visual builders/i }).first()).toHaveAttribute("href", "/best/visual-ai-agent-builders");
+
+    await page.goto("/best/ai-agent-observability-evaluation-tools", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-content-visual="decision-loop"]')).toBeVisible();
+    await expect(page.getByRole("link", { name: /Agent evaluation scorecard/i }).first()).toHaveAttribute("href", "/blog/ai-agent-evaluation-scorecard");
+
+    await page.goto("/answers/what-is-an-ai-agent-evaluation", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-content-visual="decision-loop"]')).toBeVisible();
+
+    await page.goto("/compare/dify", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-content-visual="fit-map"]')).toBeVisible();
+    await expect(page.getByRole("link", { name: /Best visual AI agent builders/i })).toHaveAttribute("href", "/best/visual-ai-agent-builders");
+
+    const overflow = await page.evaluate(() => ({
+      body: document.body.scrollWidth > window.innerWidth + 1,
+      html: document.documentElement.scrollWidth > window.innerWidth + 1,
+    }));
+    expect(overflow.body).toBe(false);
+    expect(overflow.html).toBe(false);
   });
 
   test("/indie newsletter error stays in normal flow on desktop widths", async ({ page }) => {

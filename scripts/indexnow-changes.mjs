@@ -35,6 +35,10 @@ function hasPrefix(pathname, prefix) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+function isContentFamilyFile(file, family) {
+  return file.startsWith(`apps/web/src/lib/${family}`) && file.endsWith(".ts");
+}
+
 export function changedIndexableUrls(changedFiles, sitemapUrls) {
   const sitemap = sitemapUrls.map((value) => new URL(value));
   const allUrls = new Set(sitemap.map((url) => url.toString()));
@@ -70,11 +74,11 @@ export function changedIndexableUrls(changedFiles, sitemapUrls) {
       includePrefix("/workflows");
       continue;
     }
-    if (file.includes("/compare/[competitor]/") || file.endsWith("/lib/comparison-seo.ts")) {
+    if (file.includes("/compare/[competitor]/") || isContentFamilyFile(file, "comparison-seo")) {
       includePrefix("/compare");
       continue;
     }
-    if (file.includes("/best/[guide]/") || file.endsWith("/lib/buyer-guide-content.ts")) {
+    if (file.includes("/best/[guide]/") || isContentFamilyFile(file, "buyer-guide-content")) {
       includePrefix("/best");
       continue;
     }
@@ -91,9 +95,9 @@ export function changedIndexableUrls(changedFiles, sitemapUrls) {
       includePrefix("/built-for");
       continue;
     }
-    if (file.includes("/blog/[article]/") || file.endsWith("/lib/editorial-content.ts")) {
+    if (file.includes("/blog/[article]/") || isContentFamilyFile(file, "editorial-content") || file.endsWith("/lib/editorial-connections.ts")) {
       includePrefix("/blog");
-      if (file.endsWith("/lib/editorial-content.ts")) includePrefix("/answers");
+      if (isContentFamilyFile(file, "editorial-content")) includePrefix("/answers");
       continue;
     }
     if (file.includes("/answers/[answer]/")) {

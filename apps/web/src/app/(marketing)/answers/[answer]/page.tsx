@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Breadcrumbs } from "@/components/marketing/breadcrumbs";
-import { ContentRouteMap, ContextLink, EvidenceBoard } from "@/components/marketing/content-visuals";
+import { ContentRouteMap, ContextLink, DecisionPathVisual, EvidenceBoard } from "@/components/marketing/content-visuals";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { JsonLdScript } from "@/components/marketing/json-ld";
@@ -41,7 +41,7 @@ export default async function AnswerDetailPage({ params }: Props) {
             <p className="text-xs font-medium uppercase text-violet-700">Direct answer</p>
             <h1 className="mt-5 text-balance text-4xl font-medium leading-[1.08] text-zinc-900 sm:text-6xl">{answer.question}</h1>
             <p className="mx-auto mt-7 max-w-3xl border-s-2 border-violet-400 bg-violet-50 p-6 text-left text-lg leading-relaxed text-zinc-800">{answer.shortAnswer}</p>
-            <p className="mt-5 text-sm text-zinc-500">Reviewed by Raltic Research · Updated August 13, 2026</p>
+            <p className="mt-5 text-sm text-zinc-500">Reviewed by Raltic Research · Updated August 15, 2026</p>
           </div>
         </header>
 
@@ -49,6 +49,7 @@ export default async function AnswerDetailPage({ params }: Props) {
 
         <div className="bg-white px-6 py-16 sm:py-20">
           <div className="mx-auto max-w-3xl">
+            {answer.visual && <DecisionPathVisual visual={answer.visual} />}
             {answer.sections.map((section, index) => {
               const related = answer.related[index % answer.related.length];
               return (

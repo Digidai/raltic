@@ -1,4 +1,6 @@
+import type { ContentLink } from "@/lib/growth-content";
 import type { FaqEntry } from "@/lib/seo";
+import { ROUND_TWO_COMPARISON_PAGES } from "@/lib/comparison-seo-round-two";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Comparison ("Raltic vs X") landing pages.
@@ -34,6 +36,7 @@ export type ComparisonPage = {
   whenThemBetter: string[];
   sourceLinks: Array<{ label: string; href: string }>;
   faqs: FaqEntry[];
+  related?: ContentLink[];
 };
 
 export const COMPARISON_PAGES: ComparisonPage[] = [
@@ -532,6 +535,7 @@ export const COMPARISON_PAGES: ComparisonPage[] = [
       { q: "Which is faster for one team workflow?", a: "Raltic has the lower-lift path when the goal is a shared room and reviewed artifact. Google's platform is stronger when the organization needs custom applications, managed infrastructure, and enterprise governance." },
     ],
   },
+  ...ROUND_TWO_COMPARISON_PAGES,
 ];
 
 export function getComparisonPage(slug: string | null | undefined): ComparisonPage | null {

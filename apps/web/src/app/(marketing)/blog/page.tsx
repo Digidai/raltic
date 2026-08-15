@@ -31,15 +31,17 @@ export default function BlogPage() {
       <section className="border-y border-rose-200 bg-rose-50 px-6 py-14">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div><p className="text-xs font-medium uppercase text-rose-700">Buying research</p><h2 className="mt-3 text-3xl font-medium text-zinc-900">Match the platform to the job.</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600">Transparent shortlists for orchestration, human review, and team workflow software. Each guide states the method, sources, tradeoffs, and Raltic&apos;s conflict of interest.</p></div>
+            <div><p className="text-xs font-medium uppercase text-rose-700">Buying research</p><h2 className="mt-3 text-3xl font-medium text-zinc-900">Match the platform to the job.</h2><p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600">Transparent shortlists for orchestration, visual building, observability, human review, and team workflow software. Each guide states the method, sources, tradeoffs, and Raltic&apos;s conflict of interest.</p></div>
             <Link href="/best" className="inline-flex items-center gap-2 text-sm font-medium text-rose-800 underline underline-offset-4">Browse all buyer&apos;s guides <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
           </div>
-          <div className="mt-8 grid border-y border-rose-200 md:grid-cols-3">
+          <div className="mt-8 grid border-y border-rose-200 sm:grid-cols-2 lg:grid-cols-5">
             {[
               { href: "/best/ai-agent-orchestration-platforms", label: "Agent orchestration" },
               { href: "/best/human-in-the-loop-ai-platforms", label: "Human-in-the-loop review" },
+              { href: "/best/visual-ai-agent-builders", label: "Visual agent builders" },
+              { href: "/best/ai-agent-observability-evaluation-tools", label: "Observability and evals" },
               { href: "/best/ai-agent-workflow-platforms", label: "Team agent workflows" },
-            ].map((item, index) => <Link key={item.href} href={item.href} className="flex items-center justify-between border-b border-rose-200 py-5 text-sm font-medium text-zinc-800 md:border-r md:border-b-0 md:px-5 first:md:pl-0 last:border-r-0 last:md:pr-0"><span><span className="mr-3 font-mono text-xs text-rose-700">0{index + 1}</span>{item.label}</span><ArrowRight className="h-4 w-4 text-rose-700" aria-hidden="true" /></Link>)}
+            ].map((item, index) => <Link key={item.href} href={item.href} className="flex min-h-20 items-center justify-between border-b border-rose-200 py-5 text-sm font-medium text-zinc-800 sm:odd:border-r sm:px-5 lg:border-r lg:border-b-0 lg:odd:border-r first:pl-0 last:border-r-0 last:pr-0"><span><span className="mr-3 font-mono text-xs text-rose-700">0{index + 1}</span>{item.label}</span><ArrowRight className="h-4 w-4 shrink-0 text-rose-700" aria-hidden="true" /></Link>)}
           </div>
         </div>
       </section>

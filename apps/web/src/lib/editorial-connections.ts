@@ -21,7 +21,7 @@ const CONNECTIONS: Record<string, EditorialConnection[]> = {
     { label: "Compare Raltic and LangGraph", href: "/compare/langgraph", description: "Separate a low-level orchestration runtime from a shared room for people and runtime agents." },
     { label: "Compare Raltic and CrewAI", href: "/compare/crewai", description: "See where code-defined crews and flows differ from team-visible workflow operations." },
     { label: "Browse the 2026 orchestration shortlist", href: "/best/ai-agent-orchestration-platforms", description: "Choose by build surface, runtime model, review needs, and implementation lift." },
-    { label: "Define the platform category", href: "/answers/what-is-an-ai-agent-orchestration-platform", description: "Use the answer page for a concise, citation-ready definition." },
+    { label: "Map the full agent stack", href: "/blog/ai-agent-stack-layers", description: "Separate framework, builder, runtime, observability, and team-workflow responsibilities before comparing vendors." },
   ],
   "local-vs-cloud-ai-agents": [
     { label: "See the local bridge", href: "/features/local-agent-bridge", description: "Understand what runs on the local machine and what Raltic receives." },
@@ -37,9 +37,9 @@ const CONNECTIONS: Record<string, EditorialConnection[]> = {
   ],
   "ai-agent-observability": [
     { label: "See run evidence in Raltic", href: "/features/agent-run-observability", description: "Inspect the run state, posted evidence, tasks, and human decision in context." },
-    { label: "Define an agent audit trail", href: "/answers/what-should-an-ai-agent-audit-trail-include", description: "Use the direct checklist for runs, tools, evidence, review, and outcomes." },
-    { label: "Compare Raltic and LangGraph", href: "/compare/langgraph", description: "Choose between application-level traces and the shared operating record around agent work." },
-    { label: "Evaluate platforms before buying", href: "/blog/how-to-evaluate-ai-agent-platforms", description: "Test failure recovery and reviewability with a real workflow, not a scripted demo." },
+    { label: "Compare observability and eval tools", href: "/best/ai-agent-observability-evaluation-tools", description: "Choose among tracing, datasets, evaluation, framework-native telemetry, and human workflow evidence by layer." },
+    { label: "Build an evaluation scorecard", href: "/blog/ai-agent-evaluation-scorecard", description: "Turn observed failures into explicit criteria and repeatable regression cases." },
+    { label: "Define agent observability", href: "/answers/what-is-ai-agent-observability", description: "Separate technical traces, evaluation judgments, and the team-facing decision record." },
   ],
   "multi-agent-workflow-patterns": [
     { label: "See tasks and handoffs", href: "/features/tasks-and-handoffs", description: "Keep ownership and review state attached to the evidence that created the work." },
@@ -56,14 +56,32 @@ const CONNECTIONS: Record<string, EditorialConnection[]> = {
   "how-to-evaluate-ai-agent-platforms": [
     { label: "Open the orchestration shortlist", href: "/best/ai-agent-orchestration-platforms", description: "Apply the evaluation criteria to current frameworks, cloud platforms, automation tools, and Raltic." },
     { label: "Compare every Raltic alternative", href: "/compare", description: "Use first-party-sourced, one-to-one comparisons for the products on your shortlist." },
-    { label: "Check Raltic's current boundaries", href: "/security", description: "Verify data, runtime, connector, and review claims before starting a trial." },
-    { label: "Answer: how should platforms be compared?", href: "/answers/how-do-you-compare-ai-agent-platforms", description: "Use the concise seven-dimension comparison method." },
+    { label: "Use the agent evaluation scorecard", href: "/blog/ai-agent-evaluation-scorecard", description: "Grade outcome, evidence, tools, trajectory, policy, efficiency, and reviewer correction separately." },
+    { label: "Compare observability and eval tools", href: "/best/ai-agent-observability-evaluation-tools", description: "Find the telemetry and regression layer that matches the framework you are testing." },
   ],
   "build-vs-buy-ai-agent-orchestration": [
     { label: "Compare Raltic and LangGraph", href: "/compare/langgraph", description: "See the practical difference between building an orchestration runtime and adopting a shared operating surface." },
     { label: "Compare Raltic and Gemini Agent Platform", href: "/compare/gemini-enterprise-agent-platform", description: "Contrast a full cloud lifecycle platform with a narrower workflow-room product." },
-    { label: "Browse orchestration platforms", href: "/best/ai-agent-orchestration-platforms", description: "Choose the layer you need before choosing a vendor." },
+    { label: "Map the agent stack", href: "/blog/ai-agent-stack-layers", description: "Identify which responsibilities belong to a framework, builder, runtime, observability tool, or workflow room." },
     { label: "Start with one bounded workflow", href: "/workflows", description: "A real workflow trial exposes integration, review, and recovery costs faster than a feature checklist." },
+  ],
+  "ai-agent-stack-layers": [
+    { label: "Shortlist orchestration platforms", href: "/best/ai-agent-orchestration-platforms", description: "Compare frameworks, automation products, cloud platforms, and team workflow rooms only after naming the layer." },
+    { label: "Shortlist visual builders", href: "/best/visual-ai-agent-builders", description: "Use the builder guide when the required artifact is a visual application or automation graph." },
+    { label: "Compare Raltic and OpenAI Agents SDK", href: "/compare/openai-agents-sdk", description: "See the concrete boundary between code-first agent primitives and a finished team workflow surface." },
+    { label: "Define an agent control plane", href: "/answers/what-is-an-ai-agent-control-plane", description: "Use the direct answer when fleet identity, policy, deployment, and lifecycle are the real requirements." },
+  ],
+  "ai-agent-evaluation-scorecard": [
+    { label: "Compare observability and eval tools", href: "/best/ai-agent-observability-evaluation-tools", description: "Match trace, dataset, evaluation, and workflow-evidence products to the quality loop you need." },
+    { label: "Define agent evaluation", href: "/answers/what-is-an-ai-agent-evaluation", description: "Use the concise definition for outcome, trajectory, tools, evidence, policy, and correction." },
+    { label: "See Raltic run evidence", href: "/features/agent-run-observability", description: "Inspect what Raltic exposes to the team and where technical tracing still belongs in the runtime stack." },
+    { label: "Compare Raltic and Google ADK", href: "/compare/google-adk", description: "Contrast framework-native trajectory evaluation with a human-facing workflow record." },
+  ],
+  "visual-ai-agent-builder-production-checklist": [
+    { label: "Open the visual builder shortlist", href: "/best/visual-ai-agent-builders", description: "Apply the production checks to Dify, Flowise, Langflow, n8n, and Copilot Studio." },
+    { label: "Compare Raltic and Dify", href: "/compare/dify", description: "Separate an application-oriented workflow canvas from the shared room around team decisions." },
+    { label: "Compare Raltic and Flowise", href: "/compare/flowise", description: "Review how resumable application checkpoints differ from broader task and decision history." },
+    { label: "Place a meaningful approval gate", href: "/blog/ai-agent-approval-workflow", description: "Use impact, reversibility, evidence, and authority to decide where a human should intervene." },
   ],
 };
 

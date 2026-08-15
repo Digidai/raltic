@@ -8,16 +8,21 @@ const urls = [
   "https://raltic.com/workflows/launch-readiness",
   "https://raltic.com/runtimes",
   "https://raltic.com/runtimes/claude",
+  "https://raltic.com/compare",
+  "https://raltic.com/compare/dify",
   "https://raltic.com/features",
   "https://raltic.com/features/workflow-rooms",
   "https://raltic.com/built-for",
   "https://raltic.com/built-for/product-teams",
   "https://raltic.com/blog",
   "https://raltic.com/blog/what-is-an-agent-workflow",
+  "https://raltic.com/blog/ai-agent-stack-layers",
   "https://raltic.com/answers",
   "https://raltic.com/answers/what-is-an-ai-workflow-room",
+  "https://raltic.com/answers/what-is-an-ai-agent-builder",
   "https://raltic.com/best",
   "https://raltic.com/best/ai-agent-orchestration-platforms",
+  "https://raltic.com/best/visual-ai-agent-builders",
   "https://raltic.com/privacy",
 ];
 
@@ -72,8 +77,10 @@ test("editorial registry changes notify blog and answer collections", () => {
     changedIndexableUrls(["apps/web/src/lib/editorial-content.ts"], urls),
     [
       "https://raltic.com/answers",
+      "https://raltic.com/answers/what-is-an-ai-agent-builder",
       "https://raltic.com/answers/what-is-an-ai-workflow-room",
       "https://raltic.com/blog",
+      "https://raltic.com/blog/ai-agent-stack-layers",
       "https://raltic.com/blog/what-is-an-agent-workflow",
     ],
   );
@@ -85,6 +92,36 @@ test("buyer guide changes notify the complete buyer guide collection", () => {
     [
       "https://raltic.com/best",
       "https://raltic.com/best/ai-agent-orchestration-platforms",
+      "https://raltic.com/best/visual-ai-agent-builders",
+    ],
+  );
+});
+
+test("split content files keep future IndexNow updates automatic", () => {
+  assert.deepEqual(
+    changedIndexableUrls(["apps/web/src/lib/comparison-seo-round-two.ts"], urls),
+    [
+      "https://raltic.com/compare",
+      "https://raltic.com/compare/dify",
+    ],
+  );
+  assert.deepEqual(
+    changedIndexableUrls(["apps/web/src/lib/buyer-guide-content-round-two.ts"], urls),
+    [
+      "https://raltic.com/best",
+      "https://raltic.com/best/ai-agent-orchestration-platforms",
+      "https://raltic.com/best/visual-ai-agent-builders",
+    ],
+  );
+  assert.deepEqual(
+    changedIndexableUrls(["apps/web/src/lib/editorial-content-round-two.ts"], urls),
+    [
+      "https://raltic.com/answers",
+      "https://raltic.com/answers/what-is-an-ai-agent-builder",
+      "https://raltic.com/answers/what-is-an-ai-workflow-room",
+      "https://raltic.com/blog",
+      "https://raltic.com/blog/ai-agent-stack-layers",
+      "https://raltic.com/blog/what-is-an-agent-workflow",
     ],
   );
 });
