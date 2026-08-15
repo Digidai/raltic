@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ArrowRight, ShieldCheck, KeyRound, Users } from "lucide-react";
 import { Card, CardPanel } from "@/components/heroui-pro/card";
 import { Chip } from "@/components/heroui-pro/chip";
@@ -55,7 +54,7 @@ export default function TeamsPage() {
             </MarketingButton>
           </div>
           <p className="mt-5 text-[12px] text-zinc-500">
-            Each teammate can already <Link href="/signup" className="underline underline-offset-4 hover:text-zinc-900">sign up for the free indie tier</Link>; team-level features land with P4 billing.
+            Each teammate can already <a href="/signup" className="underline underline-offset-4 hover:text-zinc-900">sign up for the free indie tier</a>; team-level features land with P4 billing.
           </p>
         </CardPanel>
       </Card>

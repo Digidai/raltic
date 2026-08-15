@@ -28,6 +28,10 @@ type MarketingButtonProps = {
   ctaTarget?: string;
 };
 
+function crossesIntoPrivateSurface(href: string): boolean {
+  return /^\/(?:login|signup|forgot-password|reset-password|verify-email|invite|s)(?:[/?#]|$)/.test(href);
+}
+
 const variants: Record<MarketingButtonVariant, string> = {
   primary: "h-11 rounded-full px-6 text-[15px] font-medium",
   secondary: "h-11 rounded-full px-5 text-sm font-medium",
@@ -78,8 +82,8 @@ export function MarketingButton({
   rel,
   ctaTarget,
 }: MarketingButtonProps) {
-  const render = target ? (
-    <a href={href} target={target} rel={rel ?? "noreferrer"} />
+  const render = target || crossesIntoPrivateSurface(href) ? (
+    <a href={href} target={target} rel={target ? (rel ?? "noreferrer") : rel} />
   ) : (
     <Link href={href} />
   );

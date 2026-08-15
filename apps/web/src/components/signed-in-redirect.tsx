@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import { api } from "@/lib/api";
 import {
@@ -23,14 +22,15 @@ import {
  *
  * Signed-out users: no-op, marketing renders normally.
  *
- * Why client-only + router.replace:
+ * Why client-only + location.replace:
  *   • Doing this on the server would require reading better-auth's
  *     session cookie + an extra API hop in the SSR render — adds
  *     latency to every public visit even for signed-out users.
  *   • `useSession()` only fires the API call when the cookie is present,
  *     so the signed-out path stays free.
- *   • `router.replace` (not push) so the back button doesn't trap the
- *     user on /.
+ *   • A full-document replace prevents marketing-only analytics from
+ *     surviving a client transition into the authenticated workspace.
+ *   • `replace` (not assign) keeps the back button from trapping the user on /.
  *
  * Fallback chain matches /me's resolver: defaultServerSlug →
  * personalServerSlug → first server in the list. If none resolves
@@ -38,7 +38,6 @@ import {
  * started" — they probably need to finish a stuck signup.
  */
 export function SignedInRedirect(): null {
-  const router = useRouter();
   const { data: session, isPending } = useSession();
   // One-shot guard: useSession is reactive but redirect should fire once
   // per landing. Without this, an HMR refresh that re-fires the effect
@@ -74,7 +73,7 @@ export function SignedInRedirect(): null {
           : null;
         if (target) {
           clearStoredOnboardingIntent();
-          router.replace(target);
+          window.location.replace(target);
         }
         // No workspace at all — leave the user on marketing. They'll
         // see Get Started CTA. Genuinely shouldn't happen post-onboarding.
@@ -85,7 +84,7 @@ export function SignedInRedirect(): null {
     })();
 
     return () => { cancelled = true; };
-  }, [isPending, session?.user, router]);
+  }, [isPending, session?.user]);
 
   return null;
 }

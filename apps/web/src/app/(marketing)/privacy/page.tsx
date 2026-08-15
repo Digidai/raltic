@@ -19,11 +19,11 @@ import { MarketingFooter } from "@/components/marketing/footer";
  */
 export const metadata: Metadata = {
   title: "Privacy Policy — Raltic",
-  description: "How Raltic handles account, workspace, bridge-runtime, connector, and first-party analytics data during private beta.",
+  description: "How Raltic handles account, workspace, bridge-runtime, connector, first-party analytics, and consent-gated Microsoft Clarity data during private beta.",
   alternates: { canonical: "https://raltic.com/privacy" },
 };
 
-const LAST_UPDATED = "July 26, 2026";
+const LAST_UPDATED = "August 15, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -53,6 +53,7 @@ export default function PrivacyPage() {
             <li><B>Connector credentials</B>: when you wire up GitHub, Linear, or Notion, the personal access tokens you provide are stored envelope-encrypted (AES-GCM) in our database and only decrypted at the moment an agent you authorized invokes a connector tool.</li>
             <li><B>Runtime keys + bridge metadata</B>: when you run our bridge daemon, we issue a per-computer runtime key (revocable instantly). We see the hostname, fingerprint, and detected runtimes you reported.</li>
             <li><B>Marketing events</B>: when you visit public pages or move through the first-workflow path, we record the page path, event name, optional CTA/workflow target, referring hostname, and UTM parameters via <Code>/api/marketing/event</Code>. Random first-party anonymous, session, and 30-day journey IDs let us measure conversion without storing the full referrer URL, raw IP address, email, or a browser fingerprint in the analytics table. After sign-in, the journey can be associated with your Raltic account.</li>
+            <li><B>Optional public-site behavioral analytics</B>: only after you select "Allow analytics," Microsoft Clarity processes the public marketing page content and interactions needed to produce heatmaps and reconstructed session replays, such as page visits, clicks, pointer movement, and scrolling, together with browser, device, and referral metadata. Raltic passes <Code>analytics_Storage: granted</Code> and always passes <Code>ad_Storage: denied</Code>. We do not send Clarity your Raltic account ID, and the Clarity script is not installed in the login, signup, or authenticated workspace layouts. Input boxes, numbers, and email addresses are masked by Clarity by default; we do not unmask them.</li>
             <li><B>Operational logs</B>: request paths, status codes, error stacks. No raw request bodies are logged.</li>
           </UL>
 
@@ -61,7 +62,8 @@ export default function PrivacyPage() {
             <li>Your repository or local files by default — bridge runtimes read them on your machine. Raltic receives a code excerpt or file only when a user or agent deliberately posts it as a message or artifact. The AI CLI may separately send context to its model provider under that provider&apos;s terms.</li>
             <li>Your AI provider API keys (Anthropic, OpenAI, Google, etc.) — the keys live in your CLI / daemon, not in our database.</li>
             <li>Browser-fingerprinting signals beyond what your browser sends in normal HTTP headers.</li>
-            <li>Third-party behavioral analytics scripts. We don't include Google Analytics, Segment, Mixpanel, or equivalent cross-site trackers.</li>
+            <li>Behavioral recordings of login, signup, room, message, task, connector, or other authenticated product surfaces. Clarity is limited to the public marketing route group.</li>
+            <li>Advertising or retargeting identifiers through Clarity. Its advertising storage is always denied. We do not include Google Analytics, Segment, or Mixpanel.</li>
           </UL>
 
           <H2>4. How we use what we collect</H2>
@@ -69,6 +71,7 @@ export default function PrivacyPage() {
             <li>To run the Service — render your rooms, deliver messages, dispatch agent turns, enforce authorization.</li>
             <li>To bill you when the Team tier ships (not active today — Raltic is in free private beta).</li>
             <li>To debug failures and improve reliability — operational logs are read by engineers when investigating incidents.</li>
+            <li>To improve public-site navigation and conversion — opted-in Clarity heatmaps and session replays help us find confusing copy, missed calls to action, and broken interactions.</li>
             <li>To respond to your support requests.</li>
           </UL>
           <P>
@@ -90,6 +93,7 @@ export default function PrivacyPage() {
             <li>Transport between your browser and Raltic uses HTTPS + WSS only.</li>
             <li>We retain your messages and account data until you delete them or close your account. Account deletion within 30 days of request; ask via <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="mailto:privacy@raltic.com">privacy@raltic.com</a>.</li>
             <li>First-party marketing events are retained for 180 days. Network metadata used to classify marketing-form spam is removed after 90 days; the form submission remains until it is resolved or deleted.</li>
+            <li>Microsoft currently retains Clarity playback data for 30 days and click, heatmap, labeled, or favorited session data for up to 9 months. Microsoft deletes data from its servers, including backups, after the applicable retention period. See the current <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="https://learn.microsoft.com/en-us/clarity/setup-and-installation/data-retention" target="_blank" rel="noreferrer">Clarity retention documentation</a>.</li>
             <li>Operational logs are retained for ~14 days for incident review.</li>
           </UL>
 
@@ -121,10 +125,12 @@ export default function PrivacyPage() {
           <UL>
             <li><Code>better-auth.session_token</Code> — authentication, required.</li>
             <li><Code>ral_utm</Code> — first-touch attribution; 30 days; first-party only.</li>
+            <li><Code>ral_analytics_consent</Code> — remembers your Clarity choice for 180 days; first-party and required only to preserve that preference.</li>
+            <li><Code>_clck</Code> and <Code>_clsk</Code> — Microsoft Clarity first-party pseudonymous identifiers used to connect opted-in page views and sessions. They are available to Clarity only after you allow analytics. Raltic keeps Clarity advertising storage denied.</li>
             <li>Cloudflare may set its own <Code>__cf_*</Code> cookies for bot mitigation.</li>
           </UL>
           <P>
-            Raltic also stores random first-party analytics identifiers in local or session storage. They expire or rotate with the acquisition journey and do not contain account details.
+            If you decline analytics or have not made a choice, Raltic does not load the Clarity script. You can change the choice from "Analytics settings" in the public-site footer. Raltic also stores random first-party analytics identifiers in local or session storage. They expire or rotate with the acquisition journey and do not contain account details. See Microsoft&apos;s <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="https://learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-cookies" target="_blank" rel="noreferrer">Clarity cookie documentation</a> and <a className="text-[#2563eb] underline break-words hover:text-[#1d4ed8]" href="https://privacy.microsoft.com/en-us/privacystatement" target="_blank" rel="noreferrer">Privacy Statement</a> for its processing details.
           </P>
 
           <H2>10. Children</H2>

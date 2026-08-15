@@ -77,7 +77,7 @@ export function MarketingNav() {
           <Link href="/blog" className={linkClass}>Blog</Link>
           <Link href="/pricing" className={linkClass}>Pricing</Link>
           <ResourcesDropdown />
-          <Link href="/login" className={linkClass}>Sign in</Link>
+          <a href="/login" className={linkClass}>Sign in</a>
           <MarketingButton href={PRIMARY_SIGNUP_HREF} variant="light-nav-primary">
             Get started <ArrowRight className="h-3.5 w-3.5" />
           </MarketingButton>

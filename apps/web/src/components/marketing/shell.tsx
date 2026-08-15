@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { MarketingNav } from "@/components/marketing-nav";
+import { MicrosoftClarity } from "@/components/marketing/microsoft-clarity";
 import { MarketingTracking } from "@/components/marketing/tracking";
 
 /**
@@ -15,6 +16,7 @@ import { MarketingTracking } from "@/components/marketing/tracking";
  * Includes:
  *   - light theme container
  *   - MarketingTracking beacon (UTM capture + landing_view)
+ *   - consent-gated Microsoft Clarity on public marketing routes only
  *   - sticky MarketingNav
  *
  * NOTE: deliberately does NOT include SignedInRedirect. Auto-redirect to
@@ -30,6 +32,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
   return (
     <div className="bg-[#fafaf8] text-foreground" style={{ "--radius": "12px" } as CSSProperties}>
       <MarketingTracking />
+      <MicrosoftClarity />
       <MarketingNav />
       {children}
     </div>

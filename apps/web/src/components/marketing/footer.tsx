@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { RalticLogo } from "@/components/raltic-logo";
+import { AnalyticsPreferencesButton } from "@/components/marketing/microsoft-clarity";
 import { cn } from "@/lib/utils";
 
 /**
@@ -108,14 +109,17 @@ export function MarketingFooter({ lead, leadId, theme = "light" }: MarketingFoot
       >
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs sm:flex-row">
           <span>© {new Date().getFullYear()} Raltic</span>
-          <span>
-            Reach out:{" "}
-            <a
-              className={isLight ? "text-muted-foreground underline-offset-4 hover:text-foreground hover:underline" : "raltic-marketing-footer-link"}
-              href="mailto:hello@raltic.com"
-            >
-              hello@raltic.com
-            </a>
+          <span className="flex items-center gap-4">
+            <AnalyticsPreferencesButton />
+            <span>
+              Reach out:{" "}
+              <a
+                className={isLight ? "text-muted-foreground underline-offset-4 hover:text-foreground hover:underline" : "raltic-marketing-footer-link"}
+                href="mailto:hello@raltic.com"
+              >
+                hello@raltic.com
+              </a>
+            </span>
           </span>
         </div>
       </div>
@@ -130,12 +134,21 @@ function FooterCol({ isLight, label, links }: { isLight: boolean; label: string;
       <ul className="space-y-2.5 text-sm">
         {links.map((l) => (
           <li key={l.href + l.label}>
-            <Link
-              href={l.href}
-              className={isLight ? "text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" : "raltic-marketing-footer-link"}
-            >
-              {l.label}
-            </Link>
+            {/^\/(?:login|signup)(?:[/?#]|$)/.test(l.href) ? (
+              <a
+                href={l.href}
+                className={isLight ? "text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" : "raltic-marketing-footer-link"}
+              >
+                {l.label}
+              </a>
+            ) : (
+              <Link
+                href={l.href}
+                className={isLight ? "text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline" : "raltic-marketing-footer-link"}
+              >
+                {l.label}
+              </Link>
+            )}
           </li>
         ))}
       </ul>

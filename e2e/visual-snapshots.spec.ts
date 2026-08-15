@@ -1,9 +1,18 @@
 import { devices, expect, type Page, test } from "@playwright/test";
+import { CLARITY_CONSENT_COOKIE } from "../apps/web/src/lib/clarity";
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 const RUN_VISUAL = process.env.E2E_RUN_VISUAL === "1";
 
 async function gotoStable(page: Page, path: string) {
+  const baseURL = process.env.E2E_BASE_URL;
+  if (!baseURL) throw new Error("E2E_BASE_URL is required for visual snapshots");
+  await page.context().addCookies([{
+    name: CLARITY_CONSENT_COOKIE,
+    value: "denied",
+    url: baseURL,
+    sameSite: "Lax",
+  }]);
   const response = await page.goto(path, { waitUntil: "domcontentloaded" });
   expect(response?.status(), `${path} should load`).toBe(200);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -101,15 +101,10 @@ const SCENARIOS: WorkflowScenario[] = [
 
 export function WorkflowPreview(): React.ReactElement {
   const [activeKey, setActiveKey] = useState<ScenarioKey>("launch");
-  const [isInteractive, setIsInteractive] = useState(false);
   const active = useMemo(
     () => SCENARIOS.find((scenario) => scenario.key === activeKey) ?? SCENARIOS[0],
     [activeKey],
   );
-
-  useEffect(() => {
-    setIsInteractive(true);
-  }, []);
 
   return (
     <div
@@ -137,7 +132,6 @@ export function WorkflowPreview(): React.ReactElement {
                 key={scenario.key}
                 type="button"
                 aria-pressed={selected}
-                disabled={!isInteractive}
                 onClick={() => setActiveKey(scenario.key)}
                 variant="ghost"
                 size="sm"

@@ -21,8 +21,10 @@ import {
  *      to /api/marketing/event with the path + utm fields. Failure
  *      is silent (we'd rather lose a beacon than break a landing).
  *
- * No third-party scripts and no fingerprinting. MarketingShell mounts this
- * once for the public route group, so pathname must be a dependency.
+ * This component remains first-party only and does no fingerprinting.
+ * Consent-gated third-party analytics are managed separately by
+ * MicrosoftClarity. MarketingShell mounts both once for the public route
+ * group, so pathname must be a dependency here.
  */
 export function MarketingTracking({ event = "landing_view" }: { event?: FunnelEvent }) {
   const pathname = usePathname();
