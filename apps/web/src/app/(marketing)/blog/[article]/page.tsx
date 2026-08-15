@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Clock3, ExternalLink } from "lucide-react";
 import { Breadcrumbs } from "@/components/marketing/breadcrumbs";
-import { ContentRouteMap, ContextLink, EvidenceBoard } from "@/components/marketing/content-visuals";
+import { ContentRouteMap, ContextLink, DecisionPathVisual, EvidenceBoard } from "@/components/marketing/content-visuals";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { JsonLdScript } from "@/components/marketing/json-ld";
@@ -81,6 +81,7 @@ export default async function BlogArticlePage({ params }: Props) {
                 <p className="text-xs font-medium uppercase text-amber-800">Direct answer</p>
                 <p className="mt-3 text-lg leading-relaxed text-zinc-800">{article.directAnswer}</p>
               </section>
+              {article.visual && <DecisionPathVisual visual={article.visual} />}
               {article.sections.map((section, index) => {
                 const connection = connections[index % Math.max(connections.length, 1)];
                 return (

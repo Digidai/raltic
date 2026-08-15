@@ -1,12 +1,19 @@
 import Link from "next/link";
 import type { ReactElement } from "react";
 import {
+  Activity,
   ArrowRight,
+  Blocks,
   Check,
   CircleDot,
+  Layers3,
+  RefreshCw,
   Route,
   Scale,
+  UsersRound,
+  Workflow,
 } from "lucide-react";
+import type { DecisionVisual } from "@/lib/growth-content";
 import { cn } from "@/lib/utils";
 
 type VisualEmphasis = "attention" | "evidence" | "insight" | "reference";
@@ -185,6 +192,49 @@ export function ComparisonFitMap({
           </div>
         </div>
       </div>
+    </figure>
+  );
+}
+
+const decisionIcons = [Blocks, Workflow, Activity, UsersRound];
+
+export function DecisionPathVisual({
+  visual,
+}: {
+  visual: DecisionVisual;
+}): ReactElement {
+  const CaptionIcon = visual.mode === "stack" ? Layers3 : RefreshCw;
+
+  return (
+    <figure
+      data-content-visual={`decision-${visual.mode}`}
+      className="mt-10 border-y border-zinc-300 bg-[#fafaf8] px-5 py-8 sm:px-7"
+    >
+      <figcaption className="flex items-center gap-2 text-blue-800">
+        <CaptionIcon className="h-4 w-4" aria-hidden="true" />
+        <span className="text-xs font-medium uppercase">{visual.eyebrow}</span>
+      </figcaption>
+      <p className="mt-3 max-w-2xl text-xl font-medium leading-snug text-zinc-900">{visual.title}</p>
+      <ol className="mt-7 grid border-t border-zinc-300 sm:grid-cols-2 lg:grid-cols-4">
+        {visual.items.map((item, index) => {
+          const Icon = decisionIcons[index % decisionIcons.length];
+          return (
+            <li
+              key={`${item.label}-${index}`}
+              className="min-h-40 border-b border-zinc-300 py-5 sm:odd:border-r sm:px-5 sm:first:pl-0 lg:border-r lg:px-5 lg:odd:border-r lg:last:border-r-0 lg:last:pr-0"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-800">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <span className="font-mono text-[11px] text-zinc-500">{String(index + 1).padStart(2, "0")}</span>
+              </div>
+              <p className="mt-4 text-sm font-medium text-zinc-900">{item.label}</p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-600">{item.detail}</p>
+            </li>
+          );
+        })}
+      </ol>
     </figure>
   );
 }

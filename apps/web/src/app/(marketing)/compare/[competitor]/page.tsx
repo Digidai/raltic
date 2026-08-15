@@ -46,6 +46,11 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
   const ralticFits = page.rows
     .filter((row) => row.raltic === "yes" && row.them !== "yes")
     .map((row) => row.need);
+  const related = page.related ?? [
+    { href: "/best/ai-agent-orchestration-platforms", label: "Orchestration platform shortlist" },
+    { href: "/blog/how-to-evaluate-ai-agent-platforms", label: "Platform evaluation method" },
+    { href: "/answers/how-do-you-compare-ai-agent-platforms", label: "Nine comparison dimensions" },
+  ];
 
   return (
     <>
@@ -128,7 +133,7 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
             </div>
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-zinc-500">
-            Capability-fit review updated August 13, 2026. &quot;Partial&quot; means the capability exists but is not the product&apos;s primary workflow model. Tell us at <span className="text-zinc-800">hello@raltic.com</span> if a source has changed.
+            Capability-fit review updated August 15, 2026. &quot;Partial&quot; means the capability exists but is not the product&apos;s primary workflow model. Tell us at <span className="text-zinc-800">hello@raltic.com</span> if a source has changed.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs">
             {page.sourceLinks.map((source) => (
@@ -204,11 +209,7 @@ export default async function ComparePage({ params }: Props): Promise<React.Reac
         <div className="mx-auto max-w-5xl">
           <h2 className="text-xl font-medium text-zinc-900">Continue the evaluation</h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {[
-              { href: "/best/ai-agent-orchestration-platforms", label: "Orchestration platform shortlist" },
-              { href: "/blog/how-to-evaluate-ai-agent-platforms", label: "Platform evaluation method" },
-              { href: "/answers/how-do-you-compare-ai-agent-platforms", label: "Nine comparison dimensions" },
-            ].map((item) => (
+            {related.map((item) => (
               <Link key={item.href} href={item.href} className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4 text-sm font-medium text-zinc-800 hover:border-blue-300 hover:text-blue-700">
                 {item.label}<ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
               </Link>

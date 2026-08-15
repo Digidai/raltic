@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Clock3, ExternalLink, Info, Scale } from "lucide-react";
 import { Breadcrumbs } from "@/components/marketing/breadcrumbs";
-import { ContentRouteMap, EvidenceBoard } from "@/components/marketing/content-visuals";
+import { ContentRouteMap, DecisionPathVisual, EvidenceBoard } from "@/components/marketing/content-visuals";
 import { MarketingFaqList } from "@/components/marketing/faq-list";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { JsonLdScript } from "@/components/marketing/json-ld";
@@ -61,6 +61,7 @@ export default async function BuyerGuideDetailPage({ params }: Props) {
               <p className="text-xs font-medium uppercase text-rose-800">Direct answer</p>
               <p className="mt-3 text-lg leading-relaxed text-zinc-800">{guide.directAnswer}</p>
             </section>
+            {guide.visual && <DecisionPathVisual visual={guide.visual} />}
 
             <section id="method" className="scroll-mt-28 py-14">
               <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr]">

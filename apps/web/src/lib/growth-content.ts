@@ -17,6 +17,16 @@ export type ContentSection = {
   bullets?: string[];
 };
 
+export type DecisionVisual = {
+  eyebrow: string;
+  title: string;
+  mode: "stack" | "loop";
+  items: Array<{
+    label: string;
+    detail: string;
+  }>;
+};
+
 export type FeaturePage = {
   slug: string;
   name: string;
@@ -61,6 +71,7 @@ export type BlogArticle = {
   published: string;
   updated: string;
   readTime: string;
+  visual?: DecisionVisual;
   sections: ContentSection[];
   sources: ContentSource[];
   faqs: FaqEntry[];
@@ -74,6 +85,7 @@ export type AnswerPage = {
   metaDescription: string;
   keywords: string[];
   shortAnswer: string;
+  visual?: DecisionVisual;
   sections: ContentSection[];
   faqs: FaqEntry[];
   related: ContentLink[];
