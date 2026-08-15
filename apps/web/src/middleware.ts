@@ -135,6 +135,12 @@ const SENTRY_DOMAIN = "https://*.ingest.sentry.io https://*.sentry.io";
 // no analytics data is collected. Detected by codex T9 hygiene test.
 const CF_INSIGHTS = "https://static.cloudflareinsights.com";
 
+// Microsoft Clarity loads its tag and collection endpoints from a rotating
+// clarity.ms subdomain set, with c.bing.com used by the service as documented
+// in Clarity's CSP guidance. Clarity is still consent-gated in the marketing
+// layout; CSP permission alone does not cause it to execute.
+const MICROSOFT_CLARITY = "https://*.clarity.ms https://c.bing.com";
+
 // CSP is mode-aware:
 //   • Dev: keep `unsafe-eval` so Next.js HMR works (its dev compiler
 //     uses eval); allow `ws://` to local wrangler.
@@ -151,12 +157,12 @@ function wsOriginOf(httpOrigin: string): string {
 const CSP_DIRECTIVES = [
   "default-src 'self'",
   IS_DEV
-    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CF_INSIGHTS}`
-    : `script-src 'self' 'unsafe-inline' ${CF_INSIGHTS}`,
+    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CF_INSIGHTS} ${MICROSOFT_CLARITY}`
+    : `script-src 'self' 'unsafe-inline' ${CF_INSIGHTS} ${MICROSOFT_CLARITY}`,
   "style-src 'self' 'unsafe-inline'",                // Tailwind JIT inline runtime styles
   "img-src 'self' data: blob: https:",               // avatars + OG + uploaded files via R2
   "font-src 'self' data:",
-  `connect-src 'self' ${API_ORIGIN} ${wsOriginOf(API_ORIGIN)} ${SENTRY_DOMAIN} ${CF_INSIGHTS}`,
+  `connect-src 'self' ${API_ORIGIN} ${wsOriginOf(API_ORIGIN)} ${SENTRY_DOMAIN} ${CF_INSIGHTS} ${MICROSOFT_CLARITY}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
